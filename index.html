@@ -223,6 +223,14 @@
     <details><summary>JSON crudo</summary><pre id="rawJsonCalls"></pre></details>
   </div>
 
+  <div class="panel" id="respTimesPanel" style="display:none;">
+    <h2>Tiempos de respuesta a leads entrantes</h2>
+    <p class="help">Por cada embudo, el promedio de tiempo entre que el lead entró y recibió el primer mensaje del asesor/bot, contando solo horas dentro de horario laboral (lunes a viernes, 9:00-18:00). La columna "real" es el tiempo de reloj sin ajustar, de referencia. Los que aún no han recibido respuesta se muestran aparte, no cuentan en el promedio.</p>
+    <div id="respTimesTable"></div>
+    <div class="help" id="respTimesNota" style="margin-top:10px;"></div>
+    <details><summary>JSON crudo</summary><pre id="rawJsonRespTimes"></pre></details>
+  </div>
+
 </div>
 
 <script>
@@ -249,6 +257,10 @@ const els = {
   callsTableCreador: document.getElementById('callsTableCreador'),
   callsNota: document.getElementById('callsNota'),
   rawJsonCalls: document.getElementById('rawJsonCalls'),
+  respTimesPanel: document.getElementById('respTimesPanel'),
+  respTimesTable: document.getElementById('respTimesTable'),
+  respTimesNota: document.getElementById('respTimesNota'),
+  rawJsonRespTimes: document.getElementById('rawJsonRespTimes'),
 };
 
 let filterBy = 'created_at';
@@ -347,7 +359,7 @@ els.btnGenerar.addEventListener('click', async () => {
   const useSnapshot = calificadosMode === 'actual';
 
   els.btnGenerar.disabled = true;
-  setStatus('Generando reporte de desempeño y cross-tab de calificados…', 'pending');
+  setStatus('Generando reporte de desempeño, cross-tab de calificados, llamadas y tiempos de respuesta…', 'pending');
   els.resultsRow.style.display = 'none';
 
   try {
@@ -367,9 +379,14 @@ els.btnGenerar.addEventListener('click', async () => {
       date_from: els.dateFrom.value, date_to: els.dateTo.value,
       agent_ids: agentIds,
     };
+    const respTimesBody = {
+      type: 'leads', view: 'response_times',
+      date_from: els.dateFrom.value, date_to: els.dateTo.value,
+      pipeline_ids: pipelineIds,
+    };
 
-    const [perfData, crossData, callsData] = await Promise.all([
-      callWebhook(perfBody), callWebhook(crossBody), callWebhook(callsBody)
+    const [perfData, crossData, callsData, respTimesData] = await Promise.all([
+      callWebhook(perfBody), callWebhook(crossBody), callWebhook(callsBody), callWebhook(respTimesBody)
     ]);
 
     const perfPayload = extractPayload(perfData, 'por_embudo');
@@ -385,8 +402,13 @@ els.btnGenerar.addEventListener('click', async () => {
     renderLlamadas(callsPayload);
     els.rawJsonCalls.textContent = JSON.stringify(callsData, null, 2);
 
+    const respTimesPayload = extractPayload(respTimesData, 'por_embudo');
+    renderTiemposRespuesta(respTimesPayload);
+    els.rawJsonRespTimes.textContent = JSON.stringify(respTimesData, null, 2);
+
     els.resultsRow.style.display = 'flex';
     els.callsPanel.style.display = 'block';
+    els.respTimesPanel.style.display = 'block';
     setStatus(`Listo. Desempeño: ${perfPayload.total_leads_extraidos} leads extraídos (filtrado por ${perfPayload.periodo.filtrado_por}). Calificados: ${crossPayload.totales.leads_calificados} en total. Llamadas: ${callsPayload.total_llamadas}.`, 'ok');
   } catch (err) {
     setStatus('No se pudo generar el reporte: ' + err.message, 'err');
@@ -419,6 +441,8 @@ function renderResultados(payload) {
       <td class="num"><span class="numval">${e.calificado}</span><span class="pct">${pct(e.calificado, e.total)}</span></td>
       <td class="num"><span class="numval">${e.ganado}</span></td>
       <td class="num"><span class="numval">$${e.monto_ganado.toLocaleString('es-MX')}</span></td>
+      <td class="num"><span class="numval">${pct(e.ganado, e.total)}</span></td>
+      <td class="num"><span class="numval">${pct(e.ganado, e.total)}</span></td>
       <td class="num"><span class="numval">${e.perdido}</span></td>
       <td class="motivos" title="${motivosCompleto}">${motivosCorto}</td>
     </tr>`;
@@ -427,7 +451,7 @@ function renderResultados(payload) {
   els.resultsTable.innerHTML = `
     <div class="table-scroll">
     <table>
-      <thead><tr><th>Embudo</th><th class="num">Total</th><th class="num">Efectivo</th><th class="num">Cotiz.</th><th class="num">Calif.</th><th class="num">Ganado</th><th class="num">Monto</th><th class="num">Perdido</th><th>Motivos</th></tr></thead>
+      <thead><tr><th>Embudo</th><th class="num">Total</th><th class="num">Efectivo</th><th class="num">Cotiz.</th><th class="num">Calif.</th><th class="num">Ganado</th><th class="num">Monto</th><th class="num">Tasa conv.</th><th class="num">Tasa cierre</th><th class="num">Perdido</th><th>Motivos</th></tr></thead>
       <tbody>${rows}
         <tr class="totales">
           <td>Total</td><td class="num"><span class="numval">${totales.total}</span></td>
@@ -435,6 +459,8 @@ function renderResultados(payload) {
           <td class="num"><span class="numval">${totales.cotizacion}</span><span class="pct">${pct(totales.cotizacion, totales.total)}</span></td>
           <td class="num"><span class="numval">${totales.calificado}</span><span class="pct">${pct(totales.calificado, totales.total)}</span></td>
           <td class="num"><span class="numval">${totales.ganado}</span></td><td class="num"><span class="numval">$${totales.monto_ganado.toLocaleString('es-MX')}</span></td>
+          <td class="num"><span class="numval">${pct(totales.ganado, totales.total)}</span></td>
+          <td class="num"><span class="numval">${pct(totales.ganado, totales.total)}</span></td>
           <td class="num"><span class="numval">${totales.perdido}</span></td><td></td>
         </tr>
       </tbody>
@@ -539,6 +565,36 @@ function renderLlamadas(payload) {
   const agentes = Object.values(payload.por_creador || {});
   els.callsTableCreador.innerHTML = tablaAgentes(agentes);
   els.callsNota.textContent = payload.nota_metodologica || '';
+}
+
+function fmtDuracionCorta(segundos) {
+  if (segundos == null) return '—';
+  const h = Math.floor(segundos / 3600);
+  const m = Math.round((segundos % 3600) / 60);
+  if (h > 0) return `${h}h ${m}m`;
+  return `${m}m`;
+}
+
+function renderTiemposRespuesta(payload) {
+  const embudos = Object.values(payload.por_embudo || {});
+  if (!embudos.length) { els.respTimesTable.innerHTML = '<div class="empty">Sin datos en este periodo.</div>'; return; }
+  const rows = embudos.map(e => `
+    <tr>
+      <td>${e.embudo}</td>
+      <td class="num">${e.leads_entrantes}</td>
+      <td class="num">${e.leads_con_respuesta}</td>
+      <td class="num">${e.leads_pendientes}</td>
+      <td class="num">${fmtDuracionCorta(e.promedio_segundos_habiles)}</td>
+      <td class="num">${fmtDuracionCorta(e.promedio_segundos_real)}</td>
+    </tr>`).join('');
+  els.respTimesTable.innerHTML = `
+    <div class="table-scroll">
+    <table>
+      <thead><tr><th>Embudo</th><th class="num">Entrantes</th><th class="num">Contactados</th><th class="num">Pendientes</th><th class="num">Promedio (horario laboral)</th><th class="num">Promedio (real)</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    </div>`;
+  els.respTimesNota.textContent = payload.nota_metodologica || '';
 }
 
 </script>
