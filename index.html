@@ -225,7 +225,7 @@
 
   <div class="panel" id="respTimesPanel" style="display:none;">
     <h2>Tiempos de respuesta a leads entrantes</h2>
-    <p class="help">Por cada embudo, el promedio de tiempo entre que el lead entró y recibió el primer mensaje del asesor/bot, contando solo horas dentro de horario laboral (lunes a viernes, 9:00-18:00). La columna "real" es el tiempo de reloj sin ajustar, de referencia. Los que aún no han recibido respuesta se muestran aparte, no cuentan en el promedio.</p>
+    <p class="help">Por cada embudo, el promedio de tiempo entre que el lead entró y recibió el primer contacto real del asesor/bot (mensaje o llamada saliente, lo que haya pasado primero), contando solo horas dentro de horario laboral (lunes a viernes, 9:00-18:00). La columna "real" es el tiempo de reloj sin ajustar, de referencia.</p>
     <div id="respTimesTable"></div>
     <div class="help" id="respTimesNota" style="margin-top:10px;"></div>
     <details><summary>JSON crudo</summary><pre id="rawJsonRespTimes"></pre></details>
@@ -583,14 +583,13 @@ function renderTiemposRespuesta(payload) {
       <td>${e.embudo}</td>
       <td class="num">${e.leads_entrantes}</td>
       <td class="num">${e.leads_con_respuesta}</td>
-      <td class="num">${e.leads_pendientes}</td>
       <td class="num">${fmtDuracionCorta(e.promedio_segundos_habiles)}</td>
       <td class="num">${fmtDuracionCorta(e.promedio_segundos_real)}</td>
     </tr>`).join('');
   els.respTimesTable.innerHTML = `
     <div class="table-scroll">
     <table>
-      <thead><tr><th>Embudo</th><th class="num">Entrantes</th><th class="num">Contactados</th><th class="num">Pendientes</th><th class="num">Promedio (horario laboral)</th><th class="num">Promedio (real)</th></tr></thead>
+      <thead><tr><th>Embudo</th><th class="num">Entrantes</th><th class="num">Contactados</th><th class="num">Promedio (horario laboral)</th><th class="num">Promedio (real)</th></tr></thead>
       <tbody>${rows}</tbody>
     </table>
     </div>`;
