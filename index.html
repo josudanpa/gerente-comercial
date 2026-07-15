@@ -4,149 +4,264 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Auditoría comercial</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #1b1d1f;
-    --panel: #232629;
-    --panel-2: #2a2e31;
-    --ink: #e9e6e0;
-    --ink-soft: #9aa0a3;
-    --ink-faint: #6f7578;
-    --line: #353a3d;
-    --accent: #7fc4b3;
-    --accent-dim: #4d7d71;
-    --won: #79c08a;
-    --lost: #d97a63;
-    --radius: 10px;
-    --mono: "SF Mono", "Consolas", "Menlo", monospace;
-    --sans: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --bg: #0f1117;
+    --surface: #161a24;
+    --surface-2: #1c2130;
+    --surface-hover: #212739;
+    --border: #262c3d;
+    --border-soft: #1e2330;
+    --ink: #edf0f7;
+    --ink-soft: #9aa1b8;
+    --ink-faint: #5c6280;
+
+    --c-volume: #7c8aff;
+    --c-positive: #46d9b0;
+    --c-money: #f2b84b;
+    --c-time: #b28dfa;
+    --c-loss: #f2765c;
+    --c-identity: #f0709e;
+    --c-neutral: #7d84a0;
+
+    --radius-lg: 16px;
+    --radius-md: 12px;
+    --radius-sm: 8px;
+
+    --display: 'Space Grotesk', 'Segoe UI', sans-serif;
+    --body: 'Inter', -apple-system, 'Segoe UI', sans-serif;
+    --mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
   }
   * { box-sizing: border-box; }
   body {
     margin: 0;
-    background: var(--bg);
+    background:
+      radial-gradient(1200px 600px at 12% -10%, rgba(124,138,255,0.10), transparent 60%),
+      radial-gradient(1000px 520px at 100% 0%, rgba(70,217,176,0.07), transparent 55%),
+      var(--bg);
     color: var(--ink);
-    font-family: var(--sans);
-    line-height: 1.45;
-    padding: 32px 24px 80px;
+    font-family: var(--body);
+    line-height: 1.5;
+    padding: 28px 20px 90px;
+    -webkit-font-smoothing: antialiased;
   }
-  .wrap { max-width: 1100px; margin: 0 auto; }
-  header { margin-bottom: 26px; }
-  .eyebrow {
-    font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase;
-    color: var(--accent); font-weight: 600; margin-bottom: 6px;
-  }
-  h1 { font-size: 24px; margin: 0 0 6px; letter-spacing: -0.01em; color: var(--ink); }
-  .sub { color: var(--ink-soft); font-size: 13.5px; max-width: 640px; }
+  .wrap { max-width: 1180px; margin: 0 auto; }
 
+  /* ---------- Header ---------- */
+  .top {
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    margin-bottom: 24px; flex-wrap: wrap;
+  }
+  .brand { display: flex; align-items: center; gap: 14px; }
+  .brand-mark {
+    width: 44px; height: 44px; border-radius: 12px; flex-shrink: 0;
+    background: linear-gradient(135deg, var(--c-volume), var(--c-positive));
+    display: flex; align-items: center; justify-content: center; color: #0f1117;
+  }
+  .eyebrow {
+    font-size: 11.5px; letter-spacing: .09em; text-transform: uppercase;
+    color: var(--c-positive); font-weight: 600; margin-bottom: 3px;
+  }
+  h1 { font-family: var(--display); font-size: 22px; margin: 0; letter-spacing: -.01em; color: var(--ink); font-weight: 600; }
+  .status {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 12.5px; font-family: var(--mono); padding: 8px 14px;
+    border-radius: 999px; border: 1px solid var(--border); background: var(--surface);
+    color: var(--ink-soft); white-space: pre-wrap; max-width: 420px;
+  }
+  .status::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: var(--ink-faint); flex-shrink: 0; }
+  .status.ok { color: var(--c-positive); border-color: color-mix(in srgb, var(--c-positive) 35%, var(--border)); }
+  .status.ok::before { background: var(--c-positive); box-shadow: 0 0 8px var(--c-positive); }
+  .status.err { color: var(--c-loss); border-color: color-mix(in srgb, var(--c-loss) 35%, var(--border)); }
+  .status.err::before { background: var(--c-loss); }
+  .status.pending::before { background: var(--c-volume); animation: pulse 1.4s ease-in-out infinite; }
+
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .3; } }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* ---------- Panels ---------- */
   .panel {
-    background: var(--panel);
-    border: 1px solid var(--line);
-    border-radius: var(--radius);
-    padding: 20px 22px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 22px 24px 24px;
     margin-bottom: 18px;
+    position: relative;
+    overflow: hidden;
+  }
+  .panel::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: var(--panel-accent, var(--c-neutral));
+    opacity: .9;
+  }
+  .panel-head { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; }
+  .panel-icon {
+    width: 34px; height: 34px; border-radius: 10px; flex-shrink: 0;
+    background: color-mix(in srgb, var(--panel-accent, var(--c-neutral)) 16%, transparent);
+    color: var(--panel-accent, var(--c-neutral));
+    display: flex; align-items: center; justify-content: center;
   }
   .panel h2 {
-    font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em;
-    color: var(--ink-soft); margin: 0 0 4px; font-weight: 600;
+    font-family: var(--display); font-size: 15.5px; font-weight: 600;
+    color: var(--ink); margin: 0; letter-spacing: -.005em;
   }
-  .help {
-    color: var(--ink-faint); font-size: 12px; margin: 0 0 16px; max-width: 680px;
-  }
-  label { font-size: 13px; color: var(--ink-soft); display: block; margin-bottom: 4px; }
-  input[type="text"], input[type="date"] {
-    width: 100%; padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px;
-    font-family: var(--sans); font-size: 14px; background: var(--panel-2); color: var(--ink);
-  }
-  input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.8); }
+  .help { color: var(--ink-faint); font-size: 12.5px; margin: 0 0 16px; max-width: 720px; line-height: 1.55; }
 
-  .row { display: flex; gap: 16px; flex-wrap: wrap; align-items: end; }
+  /* ---------- Stat cards ---------- */
+  .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 20px; }
+  .stat-card {
+    background: var(--surface-2); border: 1px solid var(--border-soft); border-radius: var(--radius-md);
+    padding: 14px 14px; display: flex; align-items: center; gap: 11px;
+    transition: transform .15s ease, border-color .15s ease;
+  }
+  .stat-card:hover { transform: translateY(-2px); border-color: var(--stat-color); }
+  .stat-icon {
+    width: 36px; height: 36px; border-radius: 9px; flex-shrink: 0;
+    background: color-mix(in srgb, var(--stat-color) 18%, transparent); color: var(--stat-color);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .stat-label { font-size: 10.5px; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-faint); font-weight: 600; margin-bottom: 2px; }
+  .stat-value { font-family: var(--display); font-size: 20px; font-weight: 700; color: var(--ink); line-height: 1.15; }
+  .stat-sub { font-size: 11px; color: var(--ink-soft); margin-top: 1px; }
+
+  /* ---------- Form controls ---------- */
+  label.field-label { font-size: 12.5px; color: var(--ink-soft); display: block; margin-bottom: 6px; font-weight: 500; }
+  input[type="date"] {
+    width: 100%; padding: 9px 11px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+    font-family: var(--body); font-size: 13.5px; background: var(--surface-2); color: var(--ink);
+  }
+  input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.85); cursor: pointer; }
+  input:focus-visible, button:focus-visible, .chip:focus-within { outline: 2px solid var(--c-volume); outline-offset: 2px; }
+
+  .row { display: flex; gap: 16px; flex-wrap: wrap; align-items: end; margin-bottom: 14px; }
   .row > div { flex: 1; min-width: 170px; }
-  .row.tight > div { flex: 0 0 auto; min-width: 0; }
 
-  .presets { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+  .presets { display: flex; gap: 7px; flex-wrap: wrap; margin: 10px 0 4px; }
   .presets button {
-    background: var(--panel-2); color: var(--ink-soft); border: 1px solid var(--line);
-    font-weight: 500; padding: 5px 10px; font-size: 12px;
+    background: var(--surface-2); color: var(--ink-soft); border: 1px solid var(--border);
+    font-weight: 500; padding: 6px 13px; font-size: 12.5px; border-radius: 999px;
   }
-  .presets button:hover { color: var(--ink); border-color: var(--accent-dim); }
+  .presets button:hover { color: var(--ink); border-color: var(--c-volume); }
 
-  .toggle-group { display: flex; gap: 0; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; width: fit-content; }
+  .toggle-group { display: inline-flex; border: 1px solid var(--border); border-radius: 999px; overflow: hidden; background: var(--surface-2); }
   .toggle-group label {
-    margin: 0; padding: 7px 12px; font-size: 13px; cursor: pointer; color: var(--ink-soft);
-    background: var(--panel-2); border-right: 1px solid var(--line);
+    margin: 0; padding: 7px 15px; font-size: 12.5px; cursor: pointer; color: var(--ink-soft);
+    transition: all .15s ease; font-weight: 500;
   }
-  .toggle-group label:last-child { border-right: none; }
-  .toggle-group input { display: none; }
-  .toggle-group input:checked + span { color: var(--bg); }
-  .toggle-group label.active { background: var(--accent); color: var(--bg); font-weight: 600; }
+  .toggle-group label.active { background: var(--c-volume); color: #0e1020; font-weight: 600; }
 
-  button {
-    background: var(--accent); color: #16201d; border: none; padding: 10px 20px;
-    border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; transition: opacity 0.15s;
+  button#btnGenerar {
+    background: linear-gradient(135deg, var(--c-volume), var(--c-positive));
+    color: #0d0f18; border: none; padding: 12px 26px;
+    border-radius: 999px; font-size: 14px; font-weight: 700; cursor: pointer;
+    font-family: var(--display); letter-spacing: -.005em;
+    transition: opacity .15s ease, transform .15s ease;
   }
-  button:hover { opacity: 0.88; }
-  button:disabled { opacity: 0.45; cursor: not-allowed; }
-  button.secondary { background: transparent; color: var(--accent); border: 1px solid var(--accent-dim); }
+  button#btnGenerar:hover { opacity: .92; transform: translateY(-1px); }
+  button#btnGenerar:disabled { opacity: .4; cursor: not-allowed; transform: none; }
 
-  .checks { display: flex; flex-wrap: wrap; gap: 8px 16px; margin-top: 4px; }
-  .checks label {
-    display: flex; align-items: center; gap: 6px; color: var(--ink); font-size: 13px; margin: 0; cursor: pointer;
+  .chips { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 4px; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px 6px 10px;
+    border-radius: 999px; border: 1px solid var(--border); background: var(--surface-2);
+    cursor: pointer; font-size: 12.5px; color: var(--ink-soft); transition: all .15s ease; user-select: none;
   }
-  .checkbox-line { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--ink-soft); cursor: pointer; }
-  #tagChecks { max-height: 170px; overflow-y: auto; padding: 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel-2); }
+  .chip input { display: none; }
+  .chip:has(input:checked) {
+    background: color-mix(in srgb, var(--c-volume) 22%, var(--surface-2));
+    border-color: var(--c-volume); color: var(--ink);
+  }
+  .chip-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--ink-faint); flex-shrink: 0; }
+  .chip:has(input:checked) .chip-dot { background: var(--c-volume); }
+  #tagChecks.chips { max-height: 150px; overflow-y: auto; padding: 2px; }
 
-  .status { font-size: 13px; margin-top: 12px; white-space: pre-wrap; font-family: var(--mono); }
-  .status.ok { color: var(--won); }
-  .status.err { color: var(--lost); }
-  .status.pending { color: var(--ink-soft); }
-
+  /* ---------- Tables ---------- */
   table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  .table-scroll { overflow-x: auto; }
-  th, td { padding: 8px 10px; text-align: right; border-bottom: 1px solid var(--line); vertical-align: middle; }
+  .table-scroll { overflow-x: auto; border-radius: var(--radius-md); border: 1px solid var(--border-soft); animation: fadeUp .35s ease; }
+  th, td { padding: 11px 13px; text-align: right; vertical-align: middle; }
   th:first-child, td:first-child { text-align: left; }
-  thead th { color: var(--ink-faint); font-weight: 600; text-transform: uppercase; font-size: 10.5px; letter-spacing: 0.04em; white-space: nowrap; }
+  thead th {
+    color: var(--ink-faint); font-weight: 600; text-transform: uppercase; font-size: 10px;
+    letter-spacing: .05em; white-space: nowrap; background: var(--surface-2); border-bottom: 1px solid var(--border);
+  }
+  tbody tr { border-bottom: 1px solid var(--border-soft); transition: background .12s ease; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: var(--surface-hover); }
   td.num, th.num { font-family: var(--mono); }
-  tr.totales td { font-weight: 700; border-top: 2px solid var(--ink-soft); border-bottom: none; }
+  tr.totales { background: var(--surface-2); }
+  tr.totales td { font-weight: 700; font-family: var(--mono); }
+  tr.totales td:first-child { font-family: var(--body); }
   .numval { display: block; }
-  .pct { display: block; color: var(--accent); font-size: 10.5px; margin-top: 1px; font-family: var(--mono); }
-  .motivos { font-size: 11px; color: #e0b18f; max-width: 170px; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: help; }
+  .pct { display: block; color: var(--c-positive); font-size: 10.5px; margin-top: 1px; font-family: var(--mono); }
+  .motivos { font-size: 11px; color: var(--c-loss); max-width: 170px; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: help; }
+
+  .avatar {
+    display: inline-flex; align-items: center; justify-content: center; border-radius: 50%;
+    color: #0d0f18; font-weight: 700; font-size: 12px; font-family: var(--display);
+    margin-right: 9px; vertical-align: middle; flex-shrink: 0;
+  }
+  .person-cell { display: flex; align-items: center; }
 
   details { margin-top: 14px; }
-  summary { cursor: pointer; font-size: 12.5px; color: var(--ink-faint); }
-  pre {
-    background: #15171a; padding: 14px; border-radius: 6px; font-family: var(--mono);
-    font-size: 11px; overflow-x: auto; max-height: 320px; color: var(--ink-soft);
+  summary {
+    cursor: pointer; font-size: 12px; color: var(--ink-faint); display: inline-flex;
+    align-items: center; gap: 6px; padding: 4px 0;
   }
-  .empty { color: var(--ink-soft); font-size: 13px; padding: 20px 0; text-align: center; }
+  summary:hover { color: var(--ink-soft); }
+  pre {
+    background: #0a0b10; padding: 14px; border-radius: var(--radius-sm); font-family: var(--mono);
+    font-size: 11px; overflow-x: auto; max-height: 320px; color: var(--ink-soft); border: 1px solid var(--border-soft);
+  }
+  .empty { color: var(--ink-faint); font-size: 13px; padding: 28px 0; text-align: center; }
   .resultsRow { display: flex; gap: 18px; flex-wrap: wrap; }
   .resultsRow > .panel { flex: 1; min-width: 380px; }
+
+  @media (max-width: 640px) {
+    body { padding: 18px 12px 70px; }
+    .panel { padding: 18px 16px 20px; }
+    .top { align-items: flex-start; }
+    button#btnGenerar { width: 100%; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+  }
 </style>
 </head>
 <body>
 <div class="wrap">
 
-  <header>
-    <div class="eyebrow">Digital Crew · Auditoría comercial</div>
-    <h1>Reporte de desempeño y pipeline</h1>
-    <div class="sub">Lee directo de Kommo: desempeño del periodo elegido y un corte de quién está calificado ahora mismo, por embudo.</div>
+  <header class="top">
+    <div class="brand">
+      <div class="brand-mark" id="brandIcon"></div>
+      <div>
+        <div class="eyebrow">Digital Crew · Auditoría comercial</div>
+        <h1>Reporte de desempeño y pipeline</h1>
+      </div>
+    </div>
+    <div class="status pending" id="status">Cargando catálogo…</div>
   </header>
 
-  <div class="panel">
-    <h2>Filtros</h2>
+  <div class="panel" style="--panel-accent: var(--c-neutral);">
+    <div class="panel-head">
+      <div class="panel-icon" id="iconFiltros"></div>
+      <h2>Filtros</h2>
+    </div>
     <p class="help">El rango de fechas filtra el reporte de desempeño. El cross-tab de calificados es un corte del momento actual — solo usa fecha de creación si decides acotarlo, no fecha de cierre (un lead calificado, por definición, no está cerrado).</p>
 
     <div class="row">
       <div>
-        <label for="dateFrom">Desde</label>
+        <label class="field-label" for="dateFrom">Desde</label>
         <input type="date" id="dateFrom">
       </div>
       <div>
-        <label for="dateTo">Hasta</label>
+        <label class="field-label" for="dateTo">Hasta</label>
         <input type="date" id="dateTo">
       </div>
       <div>
-        <label>Filtrar desempeño por</label>
+        <label class="field-label">Filtrar desempeño por</label>
         <div class="toggle-group" id="filterByToggle">
           <label class="active" data-value="created_at"><span>Fecha de creación</span></label>
           <label data-value="closed_at"><span>Fecha de cierre</span></label>
@@ -159,73 +274,91 @@
       <button type="button" data-preset="mes">Este mes</button>
       <button type="button" data-preset="mesPasado">Mes pasado</button>
     </div>
-    <p class="help" style="margin-top:8px;">
-      <b>Fecha de creación:</b> leads que nacieron en ese rango, sin importar dónde terminaron.
-      <b>Fecha de cierre:</b> leads que se ganaron o perdieron en ese rango, sin importar cuándo nacieron.
+    <p class="help" style="margin-top:10px;">
+      <b style="color:var(--ink-soft)">Fecha de creación:</b> leads que nacieron en ese rango, sin importar dónde terminaron. &nbsp;
+      <b style="color:var(--ink-soft)">Fecha de cierre:</b> leads que se ganaron o perdieron en ese rango, sin importar cuándo nacieron.
     </p>
 
-    <div style="margin-top:14px;">
-      <label>Embudos (vacío = todos)</label>
-      <div class="checks" id="pipelineChecks"><span class="help">Cargando catálogo…</span></div>
+    <div style="margin-top:16px;">
+      <label class="field-label">Embudos (vacío = todos)</label>
+      <div class="chips" id="pipelineChecks"><span class="help">Cargando catálogo…</span></div>
     </div>
-    <div style="margin-top:14px;">
-      <label>Agentes (vacío = todos)</label>
-      <div class="checks" id="agentChecks"></div>
+    <div style="margin-top:16px;">
+      <label class="field-label">Agentes (vacío = todos)</label>
+      <div class="chips" id="agentChecks"></div>
     </div>
-    <div style="margin-top:14px;">
-      <label>Etiquetas (vacío = sin filtrar por etiqueta)</label>
-      <div class="checks" id="tagChecks"></div>
-      <p class="help" style="margin-top:6px;">Filtro manual y opcional, aplica a los embudos que estés incluyendo arriba. Si no marcas ninguna, no se filtra por etiqueta. Si marcas una o más, solo se cuentan los leads que tengan al menos una de esas etiquetas (antes esto venía forzado en el embudo web con Meta/Google; ahora tú decides si y cuándo aplicarlo).</p>
+    <div style="margin-top:16px;">
+      <label class="field-label">Etiquetas (vacío = sin filtrar por etiqueta)</label>
+      <div class="chips" id="tagChecks"></div>
+      <p class="help" style="margin-top:8px;">Filtro manual y opcional, aplica a los embudos que estés incluyendo arriba. Si marcas una o más, solo se cuentan los leads que tengan al menos una de esas etiquetas.</p>
     </div>
 
-    <div style="margin-top:16px;">
-      <label>Calificados por embudo: ¿cuáles incluyo?</label>
+    <div style="margin-top:18px;">
+      <label class="field-label">Calificados por embudo: ¿cuáles incluyo?</label>
       <div class="toggle-group" id="calificadosToggle">
         <label class="active" data-value="actual"><span>Todos los que hay ahora</span></label>
         <label data-value="periodo"><span>Solo los creados en ese periodo</span></label>
       </div>
-      <p class="help" style="margin-top:6px;">"Todos los que hay ahora" ignora las fechas de arriba — es la foto completa del pipeline hoy. "Solo los creados en ese periodo" lo limita a leads que nacieron en el rango de fechas que pusiste arriba.</p>
+      <p class="help" style="margin-top:8px;">"Todos los que hay ahora" ignora las fechas de arriba — es la foto completa del pipeline hoy. "Solo los creados en ese periodo" lo limita a leads que nacieron en el rango de fechas que pusiste arriba.</p>
     </div>
 
-    <div style="margin-top:16px;">
+    <div style="margin-top:20px;">
       <button id="btnGenerar">Generar reporte completo</button>
     </div>
-
-    <div class="status pending" id="status">Cargando catálogo de embudos y agentes…</div>
   </div>
 
   <div class="resultsRow" id="resultsRow" style="display:none;">
-    <div class="panel">
-      <h2>Desempeño del periodo</h2>
-      <p class="help">Cuántos leads entraron, a cuántos se les habló de verdad, cuántos llegaron a cotización/calificado, y cómo se perdieron los que se perdieron. Efectivo y cotización cuentan también a leads que llegaron ahí antes de perderse; calificado solo cuenta si el lead sigue ahí (o más adelante) ahora mismo.</p>
+    <div class="panel" style="--panel-accent: var(--c-volume);">
+      <div class="panel-head">
+        <div class="panel-icon" id="iconDesempeno"></div>
+        <h2>Desempeño del periodo</h2>
+      </div>
+      <p class="help">Cuántos leads entraron, a cuántos se les habló de verdad, cuántos llegaron a cotización/calificado, y cómo se perdieron los que se perdieron.</p>
+      <div id="resultsStats"></div>
       <div id="resultsTable"></div>
       <details><summary>JSON crudo</summary><pre id="rawJson"></pre></details>
     </div>
-    <div class="panel">
-      <h2>Calificados por embudo</h2>
+    <div class="panel" style="--panel-accent: var(--c-positive);">
+      <div class="panel-head">
+        <div class="panel-icon" id="iconCalificados"></div>
+        <h2>Calificados por embudo</h2>
+      </div>
       <p class="help">Quién está parado en la etapa "Calificado" ahora mismo, en cada embudo, y a cuánto suma en pesos.</p>
+      <div id="crosstabStats"></div>
       <div id="crosstabTable"></div>
       <div class="help" id="crosstabExcluidos" style="margin-top:10px;"></div>
       <details><summary>JSON crudo</summary><pre id="rawJsonCrosstab"></pre></details>
     </div>
-    <div class="panel">
-      <h2>Ganados del periodo</h2>
+    <div class="panel" style="--panel-accent: var(--c-money);">
+      <div class="panel-head">
+        <div class="panel-icon" id="iconGanados"></div>
+        <h2>Ganados del periodo</h2>
+      </div>
       <p class="help">Proyectos cerrados (ganados) por embudo en el rango de fechas elegido, el monto total y el ticket promedio de venta.</p>
+      <div id="ganadosStats"></div>
       <div id="ganadosTable"></div>
     </div>
   </div>
 
-  <div class="panel" id="callsPanel" style="display:none;">
-    <h2>Volumen de llamadas por asesor</h2>
+  <div class="panel" id="callsPanel" style="display:none; --panel-accent: var(--c-volume);">
+    <div class="panel-head">
+      <div class="panel-icon" id="iconLlamadas"></div>
+      <h2>Volumen de llamadas por asesor</h2>
+    </div>
     <p class="help">Llamadas entrantes y salientes registradas en Kommo en el rango de fechas, agrupadas por quién realizó/registró la llamada vía Twilio.</p>
+    <div id="callsStats"></div>
     <div id="callsTableCreador"></div>
     <div class="help" id="callsNota" style="margin-top:10px;"></div>
     <details><summary>JSON crudo</summary><pre id="rawJsonCalls"></pre></details>
   </div>
 
-  <div class="panel" id="respTimesPanel" style="display:none;">
-    <h2>Tiempos de respuesta a leads entrantes</h2>
-    <p class="help">Por cada embudo, el promedio de tiempo entre que el lead entró y recibió el primer contacto real del asesor/bot (mensaje o llamada saliente, lo que haya pasado primero), contando solo horas dentro de horario laboral (lunes a viernes, 9:00-18:00). La columna "real" es el tiempo de reloj sin ajustar, de referencia.</p>
+  <div class="panel" id="respTimesPanel" style="display:none; --panel-accent: var(--c-time);">
+    <div class="panel-head">
+      <div class="panel-icon" id="iconTiempos"></div>
+      <h2>Tiempos de respuesta a leads entrantes</h2>
+    </div>
+    <p class="help">Por cada embudo, el promedio de tiempo entre que el lead entró y recibió el primer contacto real del asesor/bot (mensaje o llamada saliente, lo que haya pasado primero), contando solo horas dentro de horario laboral (lunes a viernes, 9:00-18:00).</p>
+    <div id="respTimesStats"></div>
     <div id="respTimesTable"></div>
     <div class="help" id="respTimesNota" style="margin-top:10px;"></div>
     <details><summary>JSON crudo</summary><pre id="rawJsonRespTimes"></pre></details>
@@ -234,6 +367,58 @@
 </div>
 
 <script>
+/* ============================== ICONOS ============================== */
+const ICONS = {
+  layers: '<polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/>',
+  sliders: '<line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/>',
+  target: '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>',
+  dollar: '<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>',
+  phone: '<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>',
+  clock: '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
+  users: '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+  arrowUpRight: '<line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/>',
+  arrowDownLeft: '<line x1="17" y1="7" x2="7" y2="17"/><polyline points="17 17 7 17 7 7"/>',
+  checkCircle: '<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>',
+  xCircle: '<circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>',
+  trendingUp: '<polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>',
+  zap: '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>',
+  barChart: '<line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/>',
+};
+function icon(name, color, size) {
+  size = size || 18;
+  color = color || 'currentColor';
+  return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none" stroke="' + color + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + (ICONS[name] || '') + '</svg>';
+}
+function paintIcon(elId, name, color) {
+  const el = document.getElementById(elId);
+  if (el) el.innerHTML = icon(name, color, 20);
+}
+function statCard(name, color, label, value, sub) {
+  return '<div class="stat-card" style="--stat-color:' + color + '">' +
+    '<div class="stat-icon">' + icon(name, color, 18) + '</div>' +
+    '<div><div class="stat-label">' + label + '</div><div class="stat-value">' + value + '</div>' +
+    (sub ? '<div class="stat-sub">' + sub + '</div>' : '') + '</div></div>';
+}
+function hashHue(str) {
+  let h = 0;
+  for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) % 360;
+  return Math.abs(h);
+}
+function avatarHtml(name) {
+  const initials = name.split(/\s+/).filter(Boolean).map(w => w[0]).slice(0, 2).join('').toUpperCase() || '?';
+  const hue = hashHue(name);
+  return '<span class="avatar" style="width:28px;height:28px;background:hsl(' + hue + ' 60% 52%)">' + initials + '</span>';
+}
+
+paintIcon('brandIcon', 'layers', '#0f1117');
+paintIcon('iconFiltros', 'sliders', 'var(--c-neutral)');
+paintIcon('iconDesempeno', 'layers', 'var(--c-volume)');
+paintIcon('iconCalificados', 'target', 'var(--c-positive)');
+paintIcon('iconGanados', 'dollar', 'var(--c-money)');
+paintIcon('iconLlamadas', 'phone', 'var(--c-volume)');
+paintIcon('iconTiempos', 'zap', 'var(--c-time)');
+
+/* ============================== DATOS (sin cambios de lógica) ============================== */
 const WEBHOOK_URL = "https://digital-crew-n8n.xrzfaj.easypanel.host/webhook/AI-AUDITORIA-COMERCIAL";
 
 const els = {
@@ -247,17 +432,22 @@ const els = {
   calificadosToggle: document.getElementById('calificadosToggle'),
   status: document.getElementById('status'),
   resultsRow: document.getElementById('resultsRow'),
+  resultsStats: document.getElementById('resultsStats'),
   resultsTable: document.getElementById('resultsTable'),
   rawJson: document.getElementById('rawJson'),
+  crosstabStats: document.getElementById('crosstabStats'),
   crosstabTable: document.getElementById('crosstabTable'),
   crosstabExcluidos: document.getElementById('crosstabExcluidos'),
   rawJsonCrosstab: document.getElementById('rawJsonCrosstab'),
+  ganadosStats: document.getElementById('ganadosStats'),
   ganadosTable: document.getElementById('ganadosTable'),
   callsPanel: document.getElementById('callsPanel'),
+  callsStats: document.getElementById('callsStats'),
   callsTableCreador: document.getElementById('callsTableCreador'),
   callsNota: document.getElementById('callsNota'),
   rawJsonCalls: document.getElementById('rawJsonCalls'),
   respTimesPanel: document.getElementById('respTimesPanel'),
+  respTimesStats: document.getElementById('respTimesStats'),
   respTimesTable: document.getElementById('respTimesTable'),
   respTimesNota: document.getElementById('respTimesNota'),
   rawJsonRespTimes: document.getElementById('rawJsonRespTimes'),
@@ -265,7 +455,7 @@ const els = {
 
 let filterBy = 'created_at';
 let calificadosMode = 'actual';
-let agentsCatalog = []; // [{id, name}] — se llena al cargar el catálogo inicial
+let agentsCatalog = [];
 
 els.calificadosToggle.addEventListener('click', (e) => {
   const label = e.target.closest('label');
@@ -291,7 +481,7 @@ document.querySelectorAll('[data-preset]').forEach(btn => {
     let from, to;
     if (btn.dataset.preset === 'hoy') { from = today; to = today; }
     if (btn.dataset.preset === 'semana') {
-      const day = (today.getDay() + 6) % 7; // lunes = 0
+      const day = (today.getDay() + 6) % 7;
       from = new Date(today); from.setDate(today.getDate() - day);
       to = today;
     }
@@ -331,15 +521,14 @@ async function callWebhook(body) {
 
 function pct(n, total) { return total ? Math.round((n / total) * 100) + '%' : '0%'; }
 
-// --- Carga inicial del catálogo (sin botón, sin URL visible) ---
 (async function cargarCatalogo() {
   try {
     const data = await callWebhook({ type: 'scan' });
     const scanData = extractPayload(data, 'pipelines');
     agentsCatalog = scanData.agents || [];
-    els.pipelineChecks.innerHTML = scanData.pipelines.map(p => `<label><input type="checkbox" value="${p.id}" class="pipelineCheck"> ${p.name}</label>`).join('');
-    els.agentChecks.innerHTML = scanData.agents.map(a => `<label><input type="checkbox" value="${a.id}" class="agentCheck"> ${a.name}</label>`).join('');
-    els.tagChecks.innerHTML = (scanData.tags || []).map(t => `<label><input type="checkbox" value="${t.id}" class="tagCheck"> ${t.name}</label>`).join('') || '<span class="help">Sin etiquetas en la cuenta.</span>';
+    els.pipelineChecks.innerHTML = scanData.pipelines.map(p => `<label class="chip"><input type="checkbox" value="${p.id}" class="pipelineCheck"><span class="chip-dot"></span>${p.name}</label>`).join('');
+    els.agentChecks.innerHTML = scanData.agents.map(a => `<label class="chip"><input type="checkbox" value="${a.id}" class="agentCheck"><span class="chip-dot"></span>${a.name}</label>`).join('');
+    els.tagChecks.innerHTML = (scanData.tags || []).map(t => `<label class="chip"><input type="checkbox" value="${t.id}" class="tagCheck"><span class="chip-dot"></span>${t.name}</label>`).join('') || '<span class="help">Sin etiquetas en la cuenta.</span>';
     setStatus('Catálogo listo.', 'ok');
   } catch (err) {
     setStatus('No se pudo cargar el catálogo: ' + err.message, 'err');
@@ -347,7 +536,6 @@ function pct(n, total) { return total ? Math.round((n / total) * 100) + '%' : '0
   }
 })();
 
-// --- Un solo botón: dispara los dos reportes y muestra ambos ---
 els.btnGenerar.addEventListener('click', async () => {
   if (!els.dateFrom.value || !els.dateTo.value) {
     setStatus('Falta elegir el rango de fechas.', 'err');
@@ -409,7 +597,7 @@ els.btnGenerar.addEventListener('click', async () => {
     els.resultsRow.style.display = 'flex';
     els.callsPanel.style.display = 'block';
     els.respTimesPanel.style.display = 'block';
-    setStatus(`Listo. Desempeño: ${perfPayload.total_leads_extraidos} leads extraídos (filtrado por ${perfPayload.periodo.filtrado_por}). Calificados: ${crossPayload.totales.leads_calificados} en total. Llamadas: ${callsPayload.total_llamadas}.`, 'ok');
+    setStatus(`Listo · ${perfPayload.total_leads_extraidos} leads · ${crossPayload.totales.leads_calificados} calificados · ${callsPayload.total_llamadas} llamadas`, 'ok');
   } catch (err) {
     setStatus('No se pudo generar el reporte: ' + err.message, 'err');
     console.error(err);
@@ -418,14 +606,22 @@ els.btnGenerar.addEventListener('click', async () => {
   }
 });
 
+/* ============================== RENDER: Desempeño ============================== */
 function renderResultados(payload) {
   const embudos = Object.values(payload.por_embudo || {});
-  if (!embudos.length) { els.resultsTable.innerHTML = '<div class="empty">Sin leads en este periodo con estos filtros.</div>'; return; }
+  if (!embudos.length) { els.resultsStats.innerHTML = ''; els.resultsTable.innerHTML = '<div class="empty">Sin leads en este periodo con estos filtros.</div>'; return; }
   const totales = embudos.reduce((acc, e) => {
     acc.total += e.total; acc.efectivo += e.efectivo; acc.cotizacion += e.cotizacion;
     acc.calificado += e.calificado; acc.ganado += e.ganado; acc.perdido += e.perdido; acc.monto_ganado += e.monto_ganado;
     return acc;
   }, { total: 0, efectivo: 0, cotizacion: 0, calificado: 0, ganado: 0, perdido: 0, monto_ganado: 0 });
+
+  els.resultsStats.innerHTML = '<div class="stats-row">' +
+    statCard('layers', 'var(--c-volume)', 'Total leads', totales.total) +
+    statCard('checkCircle', 'var(--c-positive)', 'Ganados', totales.ganado, pct(totales.ganado, totales.total) + ' de conversión') +
+    statCard('dollar', 'var(--c-money)', 'Monto ganado', '$' + totales.monto_ganado.toLocaleString('es-MX', {maximumFractionDigits:0})) +
+    statCard('xCircle', 'var(--c-loss)', 'Perdidos', totales.perdido) +
+    '</div>';
 
   const rows = embudos.map(e => {
     const motivosOrdenados = Object.entries(e.motivos_perdida).sort((a, b) => b[1] - a[1]);
@@ -468,9 +664,16 @@ function renderResultados(payload) {
     </div>`;
 }
 
+/* ============================== RENDER: Calificados ============================== */
 function renderCrosstab(payload) {
   const embudos = Object.values(payload.por_embudo || {});
-  if (!embudos.length) { els.crosstabTable.innerHTML = '<div class="empty">Sin resultados.</div>'; return; }
+  if (!embudos.length) { els.crosstabStats.innerHTML = ''; els.crosstabTable.innerHTML = '<div class="empty">Sin resultados.</div>'; return; }
+
+  els.crosstabStats.innerHTML = '<div class="stats-row">' +
+    statCard('target', 'var(--c-positive)', 'Leads calificados', payload.totales.leads_calificados) +
+    statCard('dollar', 'var(--c-money)', 'Monto calificado', '$' + payload.totales.monto_calificado.toLocaleString('es-MX')) +
+    '</div>';
+
   const rows = embudos.map(e => `<tr><td>${e.embudo}</td><td class="num">${e.leads_calificados}</td><td class="num">$${e.monto_calificado.toLocaleString('es-MX')}</td></tr>`).join('');
   els.crosstabTable.innerHTML = `
     <div class="table-scroll">
@@ -485,11 +688,20 @@ function renderCrosstab(payload) {
   els.crosstabExcluidos.textContent = excluidos.length ? `No incluidos (sin etapa "Calificado"): ${excluidos.join(', ')}` : '';
 }
 
+/* ============================== RENDER: Ganados ============================== */
 function renderGanados(payload) {
   const embudos = Object.values(payload.por_embudo || {}).filter(e => e.ganado > 0);
-  if (!embudos.length) { els.ganadosTable.innerHTML = '<div class="empty">Sin ganados en este periodo con estos filtros.</div>'; return; }
+  if (!embudos.length) { els.ganadosStats.innerHTML = ''; els.ganadosTable.innerHTML = '<div class="empty">Sin ganados en este periodo con estos filtros.</div>'; return; }
   const totalProyectos = embudos.reduce((s, e) => s + e.ganado, 0);
   const totalMonto = embudos.reduce((s, e) => s + e.monto_ganado, 0);
+  const ticketTotal = totalProyectos ? (totalMonto / totalProyectos) : 0;
+
+  els.ganadosStats.innerHTML = '<div class="stats-row">' +
+    statCard('checkCircle', 'var(--c-positive)', 'Proyectos', totalProyectos) +
+    statCard('dollar', 'var(--c-money)', 'Monto total', '$' + totalMonto.toLocaleString('es-MX', {maximumFractionDigits:0})) +
+    statCard('barChart', 'var(--c-money)', 'Ticket promedio', '$' + ticketTotal.toLocaleString('es-MX', {maximumFractionDigits:0})) +
+    '</div>';
+
   const rows = embudos.map(e => {
     const ticket = e.ganado ? (e.monto_ganado / e.ganado) : 0;
     return `
@@ -500,7 +712,6 @@ function renderGanados(payload) {
       <td class="num"><span class="numval">$${ticket.toLocaleString('es-MX', {maximumFractionDigits:0})}</span></td>
     </tr>`;
   }).join('');
-  const ticketTotal = totalProyectos ? (totalMonto / totalProyectos) : 0;
   els.ganadosTable.innerHTML = `
     <div class="table-scroll">
     <table>
@@ -517,18 +728,17 @@ function renderGanados(payload) {
     </div>`;
 }
 
+/* ============================== RENDER: Llamadas ============================== */
 function nombreAgente(id) {
   const found = agentsCatalog.find(a => String(a.id) === String(id));
   return found ? found.name : `Usuario ${id}`;
 }
-
 function fmtDuracion(segundos) {
   const h = Math.floor(segundos / 3600);
   const m = Math.floor((segundos % 3600) / 60);
   if (h > 0) return `${h}h ${m}m`;
   return `${m}m`;
 }
-
 function tablaAgentes(agentes) {
   if (!agentes.length) return '<div class="empty">Sin llamadas en este periodo.</div>';
   agentes = [...agentes].sort((a, b) => b.total - a.total);
@@ -538,7 +748,7 @@ function tablaAgentes(agentes) {
   }, { salientes: 0, entrantes: 0, total: 0, duracion_segundos: 0 });
   const rows = agentes.map(a => `
     <tr>
-      <td>${nombreAgente(a.agent_id)}</td>
+      <td><span class="person-cell">${avatarHtml(nombreAgente(a.agent_id))}${nombreAgente(a.agent_id)}</span></td>
       <td class="num">${a.salientes}</td>
       <td class="num">${a.entrantes}</td>
       <td class="num">${a.total}</td>
@@ -560,13 +770,26 @@ function tablaAgentes(agentes) {
     </table>
     </div>`;
 }
-
 function renderLlamadas(payload) {
   const agentes = Object.values(payload.por_creador || {});
+  const totales = agentes.reduce((acc, a) => {
+    acc.salientes += a.salientes; acc.entrantes += a.entrantes; acc.total += a.total; acc.duracion_segundos += a.duracion_segundos;
+    return acc;
+  }, { salientes: 0, entrantes: 0, total: 0, duracion_segundos: 0 });
+
+  els.callsStats.innerHTML = '<div class="stats-row">' +
+    statCard('users', 'var(--c-identity, var(--c-volume))', 'Asesores', agentes.length, 'Activos en el periodo') +
+    statCard('arrowUpRight', 'var(--c-volume)', 'Salientes', totales.salientes) +
+    statCard('arrowDownLeft', 'var(--c-positive)', 'Entrantes', totales.entrantes) +
+    statCard('phone', 'var(--c-volume)', 'Total llamadas', totales.total) +
+    statCard('clock', 'var(--c-time)', 'Tiempo total', fmtDuracion(totales.duracion_segundos)) +
+    '</div>';
+
   els.callsTableCreador.innerHTML = tablaAgentes(agentes);
   els.callsNota.textContent = payload.nota_metodologica || '';
 }
 
+/* ============================== RENDER: Tiempos de respuesta ============================== */
 function fmtDuracionCorta(segundos) {
   if (segundos == null) return '—';
   const h = Math.floor(segundos / 3600);
@@ -574,10 +797,21 @@ function fmtDuracionCorta(segundos) {
   if (h > 0) return `${h}h ${m}m`;
   return `${m}m`;
 }
-
 function renderTiemposRespuesta(payload) {
   const embudos = Object.values(payload.por_embudo || {});
-  if (!embudos.length) { els.respTimesTable.innerHTML = '<div class="empty">Sin datos en este periodo.</div>'; return; }
+  if (!embudos.length) { els.respTimesStats.innerHTML = ''; els.respTimesTable.innerHTML = '<div class="empty">Sin datos en este periodo.</div>'; return; }
+
+  const totalEntrantes = embudos.reduce((s, e) => s + e.leads_entrantes, 0);
+  const totalContactados = embudos.reduce((s, e) => s + e.leads_con_respuesta, 0);
+  const sumaHabiles = embudos.reduce((s, e) => s + e.promedio_segundos_habiles * e.leads_con_respuesta, 0);
+  const promGeneralHabil = totalContactados ? Math.round(sumaHabiles / totalContactados) : 0;
+
+  els.respTimesStats.innerHTML = '<div class="stats-row">' +
+    statCard('layers', 'var(--c-volume)', 'Entrantes', totalEntrantes) +
+    statCard('checkCircle', 'var(--c-positive)', 'Contactados', totalContactados) +
+    statCard('zap', 'var(--c-time)', 'Promedio (horario laboral)', fmtDuracionCorta(promGeneralHabil)) +
+    '</div>';
+
   const rows = embudos.map(e => `
     <tr>
       <td>${e.embudo}</td>
@@ -595,7 +829,6 @@ function renderTiemposRespuesta(payload) {
     </div>`;
   els.respTimesNota.textContent = payload.nota_metodologica || '';
 }
-
 </script>
 </body>
 </html>
