@@ -329,6 +329,9 @@
       <p class="help">Proyectos cerrados (ganados) por embudo en el rango de fechas elegido, el monto total y el ticket promedio de venta.</p>
       <div id="ganadosStats"></div>
       <div id="ganadosTable"></div>
+      <h3 style="font-family:var(--display); font-size:13px; color:var(--ink-soft); font-weight:600; margin:22px 0 4px; letter-spacing:-.005em;">Desglose de leads ganados</h3>
+      <p class="help" style="margin-bottom:12px;">Cada venta cerrada en el periodo, con contacto, compañía, responsable y etiquetas. Ordenado de mayor a menor monto.</p>
+      <div id="ganadosDetalleTable"></div>
     </div>
   </div>
 
@@ -433,6 +436,7 @@ const els = {
   rawJsonCrosstab: document.getElementById('rawJsonCrosstab'),
   ganadosStats: document.getElementById('ganadosStats'),
   ganadosTable: document.getElementById('ganadosTable'),
+  ganadosDetalleTable: document.getElementById('ganadosDetalleTable'),
   callsPanel: document.getElementById('callsPanel'),
   callsStats: document.getElementById('callsStats'),
   callsTableCreador: document.getElementById('callsTableCreador'),
@@ -683,6 +687,7 @@ function renderCrosstab(payload) {
 /* ============================== RENDER: Ganados ============================== */
 function renderGanados(payload) {
   const embudos = Object.values(payload.por_embudo || {}).filter(e => e.ganado > 0);
+  renderGanadosDetalle(payload.ganados_detalle || []);
   if (!embudos.length) { els.ganadosStats.innerHTML = ''; els.ganadosTable.innerHTML = '<div class="empty">Sin ganados en este periodo con estos filtros.</div>'; return; }
   const totalProyectos = embudos.reduce((s, e) => s + e.ganado, 0);
   const totalMonto = embudos.reduce((s, e) => s + e.monto_ganado, 0);
@@ -720,7 +725,27 @@ function renderGanados(payload) {
     </div>`;
 }
 
-/* ============================== RENDER: Llamadas ============================== */
+function renderGanadosDetalle(detalle) {
+  if (!detalle.length) { els.ganadosDetalleTable.innerHTML = '<div class="empty">Sin ganados en este periodo con estos filtros.</div>'; return; }
+  const rows = detalle.map(g => `
+    <tr>
+      <td>${g.nombre_lead}</td>
+      <td>${g.nombre_contacto || '—'}</td>
+      <td class="num"><span class="numval">$${(g.monto || 0).toLocaleString('es-MX')}</span></td>
+      <td>${g.compania || '—'}</td>
+      <td><span class="person-cell">${avatarHtml(nombreAgente(g.responsible_user_id))}${nombreAgente(g.responsible_user_id)}</span></td>
+      <td>${(g.etiquetas && g.etiquetas.length) ? g.etiquetas.join(', ') : '—'}</td>
+    </tr>`).join('');
+  els.ganadosDetalleTable.innerHTML = `
+    <div class="table-scroll">
+    <table>
+      <thead><tr><th>Nombre lead</th><th>Contacto</th><th class="num">Monto</th><th>Compañía</th><th>Responsable</th><th>Etiquetas</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    </div>`;
+}
+
+
 function nombreAgente(id) {
   const found = agentsCatalog.find(a => String(a.id) === String(id));
   return found ? found.name : `Usuario ${id}`;
