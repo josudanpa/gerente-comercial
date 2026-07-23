@@ -134,11 +134,9 @@
   .presets { display: flex; gap: 7px; flex-wrap: wrap; margin: 10px 0 4px; }
   .presets button {
     background: var(--surface-2); color: var(--ink-soft); border: 1px solid var(--border);
-    font-weight: 500; padding: 6px 13px; font-size: 12.5px; border-radius: 999px; cursor: pointer;
-    transition: all .15s ease;
+    font-weight: 500; padding: 6px 13px; font-size: 12.5px; border-radius: 999px;
   }
   .presets button:hover { color: var(--ink); border-color: var(--ink-soft); }
-  .presets button.active { background: var(--ink); color: #101114; border-color: var(--ink); font-weight: 600; }
 
   .toggle-group { display: inline-flex; border: 1px solid var(--border); border-radius: 999px; overflow: hidden; background: var(--surface-2); }
   .toggle-group label {
@@ -304,6 +302,26 @@
   <div class="resultsRow" id="resultsRow" style="display:none;">
     <div class="panel">
       <div class="panel-head">
+        <div class="panel-icon" id="iconLeadsPeriodo"></div>
+        <h2>Leads por periodo</h2>
+      </div>
+      <p class="help">Cuántos leads se están administrando ahora mismo, vistos de dos formas — por asesor y por embudo. Las dos sumas tienen que coincidir: es la misma población de leads, nada más que el desglose es distinto.</p>
+      <div id="leadsPeriodoStats"></div>
+      <div style="display:flex; gap:20px; flex-wrap:wrap; margin-top:14px;">
+        <div style="flex:1; min-width:260px;">
+          <h3 style="font-family:var(--display); font-size:12.5px; color:var(--ink-soft); font-weight:600; margin:0 0 8px; text-decoration:underline; text-underline-offset:3px;">Leads administrados por asesor</h3>
+          <p class="help" style="margin-bottom:8px;">Mide capacidad instalada — referencia: ~250 leads/mes por asesor.</p>
+          <div id="leadsPorAsesorTable"></div>
+        </div>
+        <div style="flex:1; min-width:260px;">
+          <h3 style="font-family:var(--display); font-size:12.5px; color:var(--ink-soft); font-weight:600; margin:0 0 8px; text-decoration:underline; text-underline-offset:3px;">Leads administrados por embudo</h3>
+          <p class="help" style="margin-bottom:8px;">Para revisar si cada embudo va cumpliendo su meta de leads entrantes del mes.</p>
+          <div id="leadsPorEmbudoTable"></div>
+        </div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-head">
         <div class="panel-icon" id="iconDesempeno"></div>
         <h2>Desempeño del periodo</h2>
       </div>
@@ -332,18 +350,7 @@
       <div id="ganadosStats"></div>
       <div id="ganadosTable"></div>
       <h3 style="font-family:var(--display); font-size:13px; color:var(--ink-soft); font-weight:600; margin:22px 0 4px; letter-spacing:-.005em;">Desglose de leads ganados</h3>
-      
-      <!-- CONTROLES DE ORDENAMIENTO DE LEADS GANADOS -->
-      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 12px;">
-        <p class="help" style="margin-bottom: 0;">Cada venta cerrada en el periodo, con contacto, compañía, responsable y etiquetas.</p>
-        <div class="presets" id="sortGanadosGroup" style="margin: 0;">
-          <button type="button" data-sort="nombre_asc">Nombre (A-Z)</button>
-          <button type="button" data-sort="nombre_desc">Nombre (Z-A)</button>
-          <button type="button" data-sort="monto_desc" class="active">Monto (↓)</button>
-          <button type="button" data-sort="monto_asc">Monto (↑)</button>
-        </div>
-      </div>
-
+      <p class="help" style="margin-bottom:12px;">Cada venta cerrada en el periodo, con contacto, compañía, responsable y etiquetas. Ordenado de mayor a menor monto.</p>
       <div id="ganadosDetalleTable"></div>
     </div>
   </div>
@@ -420,13 +427,14 @@ function avatarHtml(name) {
 
 paintIcon('brandIcon', 'layers', '#0f1117');
 paintIcon('iconFiltros', 'sliders', 'var(--c-neutral)');
+paintIcon('iconLeadsPeriodo', 'layers', 'var(--ink-soft)');
 paintIcon('iconDesempeno', 'layers', 'var(--ink-soft)');
 paintIcon('iconCalificados', 'target', 'var(--c-positive)');
 paintIcon('iconGanados', 'dollar', 'var(--ink-soft)');
 paintIcon('iconLlamadas', 'phone', 'var(--ink-soft)');
 paintIcon('iconTiempos', 'zap', 'var(--ink-soft)');
 
-/* ============================== DATOS ============================== */
+/* ============================== DATOS (sin cambios de lógica) ============================== */
 const WEBHOOK_URL = "https://digital-crew-n8n.xrzfaj.easypanel.host/webhook/AI-AUDITORIA-COMERCIAL";
 
 const els = {
@@ -443,6 +451,9 @@ const els = {
   resultsStats: document.getElementById('resultsStats'),
   resultsTable: document.getElementById('resultsTable'),
   rawJson: document.getElementById('rawJson'),
+  leadsPeriodoStats: document.getElementById('leadsPeriodoStats'),
+  leadsPorAsesorTable: document.getElementById('leadsPorAsesorTable'),
+  leadsPorEmbudoTable: document.getElementById('leadsPorEmbudoTable'),
   crosstabStats: document.getElementById('crosstabStats'),
   crosstabTable: document.getElementById('crosstabTable'),
   crosstabExcluidos: document.getElementById('crosstabExcluidos'),
@@ -465,10 +476,6 @@ const els = {
 let filterBy = 'created_at';
 let calificadosMode = 'actual';
 let agentsCatalog = [];
-
-// Variables de estado para los leads ganados
-let ganadosDetalleData = [];
-let currentGanadosSort = 'monto_desc';
 
 els.calificadosToggle.addEventListener('click', (e) => {
   const label = e.target.closest('label');
@@ -591,6 +598,7 @@ els.btnGenerar.addEventListener('click', async () => {
     ]);
 
     const perfPayload = extractPayload(perfData, 'por_embudo');
+    renderLeadsPorPeriodo(perfPayload);
     renderResultados(perfPayload);
     renderGanados(perfPayload);
     els.rawJson.textContent = JSON.stringify(perfData, null, 2);
@@ -618,6 +626,53 @@ els.btnGenerar.addEventListener('click', async () => {
     els.btnGenerar.disabled = false;
   }
 });
+
+/* ============================== RENDER: Leads por periodo ============================== */
+function miniTabla(rows, labelCol) {
+  if (!rows.length) return '<div class="empty">Sin datos.</div>';
+  const total = rows.reduce((s, r) => s + r.valor, 0);
+  const filas = rows.map(r => `
+    <tr>
+      <td>${r.etiqueta}</td>
+      <td class="num"><span class="numval">${r.valor}</span></td>
+    </tr>`).join('');
+  return `
+    <div class="table-scroll">
+    <table>
+      <thead><tr><th>${labelCol}</th><th class="num">Leads</th></tr></thead>
+      <tbody>${filas}
+        <tr class="totales"><td>Total</td><td class="num"><span class="numval">${total}</span></td></tr>
+      </tbody>
+    </table>
+    </div>`;
+}
+
+function renderLeadsPorPeriodo(payload) {
+  const porAsesor = payload.leads_por_asesor || {};
+  const porEmbudo = payload.leads_por_embudo || {};
+
+  const filasAsesor = Object.entries(porAsesor)
+    .map(([uid, valor]) => ({ etiqueta: nombreAgente(uid), valor }))
+    .sort((a, b) => b.valor - a.valor);
+  const filasEmbudo = Object.entries(porEmbudo)
+    .map(([key, valor]) => ({ etiqueta: key, valor }))
+    .filter(r => r.valor > 0)
+    .sort((a, b) => b.valor - a.valor);
+
+  const totalAsesor = filasAsesor.reduce((s, r) => s + r.valor, 0);
+  const totalEmbudo = filasEmbudo.reduce((s, r) => s + r.valor, 0);
+
+  els.leadsPeriodoStats.innerHTML = '<div class="stats-row">' +
+    statCard('layers', 'var(--ink-soft)', 'Total leads del periodo', totalAsesor) +
+    statCard('users', 'var(--ink-soft)', 'Asesores con leads', filasAsesor.length) +
+    (totalAsesor !== totalEmbudo
+      ? statCard('xCircle', 'var(--c-loss)', 'Revisar', 'sumas no coinciden (' + totalAsesor + ' vs ' + totalEmbudo + ')')
+      : '') +
+    '</div>';
+
+  els.leadsPorAsesorTable.innerHTML = miniTabla(filasAsesor, 'Asesor');
+  els.leadsPorEmbudoTable.innerHTML = miniTabla(filasEmbudo, 'Embudo');
+}
 
 /* ============================== RENDER: Desempeño ============================== */
 function renderResultados(payload) {
@@ -704,11 +759,7 @@ function renderCrosstab(payload) {
 /* ============================== RENDER: Ganados ============================== */
 function renderGanados(payload) {
   const embudos = Object.values(payload.por_embudo || {}).filter(e => e.ganado > 0);
-  
-  // Guardar datos globales de detalle
-  ganadosDetalleData = payload.ganados_detalle || [];
-  renderGanadosDetalle();
-
+  renderGanadosDetalle(payload.ganados_detalle || []);
   if (!embudos.length) { els.ganadosStats.innerHTML = ''; els.ganadosTable.innerHTML = '<div class="empty">Sin ganados en este periodo con estos filtros.</div>'; return; }
   const totalProyectos = embudos.reduce((s, e) => s + e.ganado, 0);
   const totalMonto = embudos.reduce((s, e) => s + e.monto_ganado, 0);
@@ -746,37 +797,9 @@ function renderGanados(payload) {
     </div>`;
 }
 
-/* Event listeners para botones de ordenamiento */
-document.getElementById('sortGanadosGroup').addEventListener('click', (e) => {
-  const btn = e.target.closest('button');
-  if (!btn) return;
-  document.querySelectorAll('#sortGanadosGroup button').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  currentGanadosSort = btn.dataset.sort;
-  renderGanadosDetalle();
-});
-
-function renderGanadosDetalle() {
-  if (!ganadosDetalleData || !ganadosDetalleData.length) { 
-    els.ganadosDetalleTable.innerHTML = '<div class="empty">Sin ganados en este periodo con estos filtros.</div>'; 
-    return; 
-  }
-
-  // Copia de los datos para ordenar
-  let sortedData = [...ganadosDetalleData];
-
-  // Lógica de ordenamiento
-  if (currentGanadosSort === 'nombre_asc') {
-    sortedData.sort((a, b) => (a.nombre_lead || '').localeCompare(b.nombre_lead || '', 'es', { sensitivity: 'base' }));
-  } else if (currentGanadosSort === 'nombre_desc') {
-    sortedData.sort((a, b) => (b.nombre_lead || '').localeCompare(a.nombre_lead || '', 'es', { sensitivity: 'base' }));
-  } else if (currentGanadosSort === 'monto_asc') {
-    sortedData.sort((a, b) => (a.monto || 0) - (b.monto || 0));
-  } else if (currentGanadosSort === 'monto_desc') {
-    sortedData.sort((a, b) => (b.monto || 0) - (a.monto || 0));
-  }
-
-  const rows = sortedData.map(g => `
+function renderGanadosDetalle(detalle) {
+  if (!detalle.length) { els.ganadosDetalleTable.innerHTML = '<div class="empty">Sin ganados en este periodo con estos filtros.</div>'; return; }
+  const rows = detalle.map(g => `
     <tr>
       <td>${g.nombre_lead}</td>
       <td>${g.nombre_contacto || '—'}</td>
@@ -785,7 +808,6 @@ function renderGanadosDetalle() {
       <td><span class="person-cell">${avatarHtml(nombreAgente(g.responsible_user_id))}${nombreAgente(g.responsible_user_id)}</span></td>
       <td>${(g.etiquetas && g.etiquetas.length) ? g.etiquetas.join(', ') : '—'}</td>
     </tr>`).join('');
-
   els.ganadosDetalleTable.innerHTML = `
     <div class="table-scroll">
     <table>
@@ -794,6 +816,7 @@ function renderGanadosDetalle() {
     </table>
     </div>`;
 }
+
 
 function nombreAgente(id) {
   const found = agentsCatalog.find(a => String(a.id) === String(id));
