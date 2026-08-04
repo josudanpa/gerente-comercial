@@ -188,12 +188,16 @@
   tr.totales td:first-child { font-family: var(--body); }
   .numval { display: block; }
   .pct { display: block; color: var(--c-positive); font-size: 10.5px; margin-top: 1px; font-family: var(--mono); }
-  .meta-progress { display: flex; align-items: center; justify-content: flex-end; gap: 10px; }
-  .meta-progress-pct { font-family: var(--mono); font-size: 12px; color: var(--ink); min-width: 52px; text-align: right; }
-  .meta-progress-pct--empty { color: var(--ink-faint); }
-  .meta-progress-track { width: 90px; height: 6px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--border-soft); overflow: hidden; flex-shrink: 0; }
-  .meta-progress-fill { display: block; height: 100%; border-radius: 999px; background: var(--c-positive); }
   .motivos { font-size: 11px; color: var(--c-loss); max-width: 170px; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: help; }
+
+  input.inv-pauta {
+    width: 100%; max-width: 130px; padding: 7px 9px; border: 1px solid var(--border);
+    border-radius: var(--radius-sm); font-family: var(--mono); font-size: 12.5px;
+    background: var(--surface); color: var(--ink); text-align: right;
+  }
+  input.inv-pauta:focus-visible { outline: 2px solid var(--ink-soft); outline-offset: 1px; }
+  input.inv-pauta.saving { border-color: var(--c-positive); }
+  input.inv-pauta::-webkit-outer-spin-button, input.inv-pauta::-webkit-inner-spin-button { opacity: .5; }
 
   .avatar {
     display: inline-flex; align-items: center; justify-content: center; border-radius: 50%;
@@ -308,18 +312,18 @@
     <div class="panel">
       <div class="panel-head">
         <div class="panel-icon" id="iconLeadsPeriodo"></div>
-        <h2>Leads recibidos por periodo</h2>
+        <h2>Leads por periodo</h2>
       </div>
       <p class="help">Cuántos leads se están administrando ahora mismo, vistos de dos formas — por asesor y por embudo. Las dos sumas tienen que coincidir: es la misma población de leads, nada más que el desglose es distinto.</p>
       <div id="leadsPeriodoStats"></div>
       <div style="display:flex; gap:20px; flex-wrap:wrap; margin-top:14px;">
         <div style="flex:1; min-width:260px;">
-          <h3 style="font-family:var(--display); font-size:12.5px; color:var(--ink-soft); font-weight:600; margin:0 0 8px; text-decoration:underline; text-underline-offset:3px;">Leads recibidos por asesor</h3>
+          <h3 style="font-family:var(--display); font-size:12.5px; color:var(--ink-soft); font-weight:600; margin:0 0 8px; text-decoration:underline; text-underline-offset:3px;">Leads administrados por asesor</h3>
           <p class="help" style="margin-bottom:8px;">Mide capacidad instalada — referencia: ~250 leads/mes por asesor.</p>
           <div id="leadsPorAsesorTable"></div>
         </div>
         <div style="flex:1; min-width:260px;">
-          <h3 style="font-family:var(--display); font-size:12.5px; color:var(--ink-soft); font-weight:600; margin:0 0 8px; text-decoration:underline; text-underline-offset:3px;">Leads recibido por embudo</h3>
+          <h3 style="font-family:var(--display); font-size:12.5px; color:var(--ink-soft); font-weight:600; margin:0 0 8px; text-decoration:underline; text-underline-offset:3px;">Leads administrados por embudo</h3>
           <p class="help" style="margin-bottom:8px;">Para revisar si cada embudo va cumpliendo su meta de leads entrantes del mes.</p>
           <div id="leadsPorEmbudoTable"></div>
         </div>
@@ -605,7 +609,7 @@ els.btnGenerar.addEventListener('click', async () => {
     const perfPayload = extractPayload(perfData, 'por_embudo');
     renderLeadsPorPeriodo(perfPayload);
     renderResultados(perfPayload);
-    renderGanados(perfPayload);
+    await renderGanados(perfPayload);
     els.rawJson.textContent = JSON.stringify(perfData, null, 2);
 
     const crossPayload = extractPayload(crossData, 'totales');
@@ -652,54 +656,6 @@ function miniTabla(rows, labelCol) {
     </div>`;
 }
 
-// Metas mensuales fijas por embudo (pendiente moverlas a un config editable);
-// el % y la barra se recalculan solos cada vez que cambian los leads.
-const METAS_MENSUALES = {
-  web_edu_dc: 80,
-  campanas_publicitarias: 29,
-  talleres_venta: 22,
-  agentes_venta: 33,
-};
-
-function metaProgressHtml(valor, meta) {
-  if (!meta) {
-    return '<div class="meta-progress">' +
-      '<span class="meta-progress-pct meta-progress-pct--empty">–</span>' +
-      '<span class="meta-progress-track"><span class="meta-progress-fill" style="width:0%"></span></span>' +
-      '</div>';
-  }
-  const pctNum = (valor / meta) * 100;
-  const fillWidth = Math.min(pctNum, 100);
-  return '<div class="meta-progress">' +
-    '<span class="meta-progress-pct">' + pctNum.toFixed(1) + '%</span>' +
-    '<span class="meta-progress-track"><span class="meta-progress-fill" style="width:' + fillWidth + '%"></span></span>' +
-    '</div>';
-}
-
-function tablaLeadsPorEmbudo(rows) {
-  if (!rows.length) return '<div class="empty">Sin datos.</div>';
-  const total = rows.reduce((s, r) => s + r.valor, 0);
-  const filas = rows.map(r => {
-    const meta = METAS_MENSUALES[r.etiqueta] || null;
-    return `
-    <tr>
-      <td>${r.etiqueta}</td>
-      <td class="num">${meta || '–'}</td>
-      <td class="num"><span class="numval">${r.valor}</span></td>
-      <td class="num">${metaProgressHtml(r.valor, meta)}</td>
-    </tr>`;
-  }).join('');
-  return `
-    <div class="table-scroll">
-    <table>
-      <thead><tr><th>Embudo</th><th class="num">Meta mensual</th><th class="num">Leads</th><th class="num">% Meta cumplida</th></tr></thead>
-      <tbody>${filas}
-        <tr class="totales"><td>Total</td><td class="num">–</td><td class="num"><span class="numval">${total}</span></td><td class="num">–</td></tr>
-      </tbody>
-    </table>
-    </div>`;
-}
-
 function renderLeadsPorPeriodo(payload) {
   const porAsesor = payload.leads_por_asesor || {};
   const porEmbudo = payload.leads_por_embudo || {};
@@ -724,7 +680,7 @@ function renderLeadsPorPeriodo(payload) {
     '</div>';
 
   els.leadsPorAsesorTable.innerHTML = miniTabla(filasAsesor, 'Asesor');
-  els.leadsPorEmbudoTable.innerHTML = tablaLeadsPorEmbudo(filasEmbudo);
+  els.leadsPorEmbudoTable.innerHTML = miniTabla(filasEmbudo, 'Embudo');
 }
 
 /* ============================== RENDER: Desempeño ============================== */
@@ -809,8 +765,49 @@ function renderCrosstab(payload) {
   els.crosstabExcluidos.textContent = excluidos.length ? `No incluidos (sin etapa "Calificado"): ${excluidos.join(', ')}` : '';
 }
 
+/* ============================== Inversión en pauta (persistente, compartida) ============================== */
+const INV_PAUTA_KEY = 'inversion_pauta_por_embudo';
+let invPautaCache = {};
+
+async function cargarInversionPauta() {
+  try {
+    const res = await window.storage.get(INV_PAUTA_KEY, true);
+    invPautaCache = (res && res.value) ? JSON.parse(res.value) : {};
+  } catch (err) {
+    invPautaCache = {};
+  }
+  return invPautaCache;
+}
+
+async function guardarInversionPauta(embudoKey, valor) {
+  invPautaCache[embudoKey] = valor;
+  try {
+    await window.storage.set(INV_PAUTA_KEY, JSON.stringify(invPautaCache), true);
+    return true;
+  } catch (err) {
+    console.error('No se pudo guardar inversión en pauta:', err);
+    return false;
+  }
+}
+
+function attachInvPautaHandlers(container) {
+  container.querySelectorAll('input.inv-pauta').forEach(inp => {
+    let debounceTimer = null;
+    inp.addEventListener('input', () => {
+      const embudoKey = inp.dataset.embudo;
+      const valor = inp.value === '' ? null : Number(inp.value);
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(async () => {
+        inp.classList.add('saving');
+        await guardarInversionPauta(embudoKey, valor);
+        setTimeout(() => inp.classList.remove('saving'), 400);
+      }, 500);
+    });
+  });
+}
+
 /* ============================== RENDER: Ganados ============================== */
-function renderGanados(payload) {
+async function renderGanados(payload) {
   const embudos = Object.values(payload.por_embudo || {}).filter(e => e.ganado > 0);
   renderGanadosDetalle(payload.ganados_detalle || []);
   if (!embudos.length) { els.ganadosStats.innerHTML = ''; els.ganadosTable.innerHTML = '<div class="empty">Sin ganados en este periodo con estos filtros.</div>'; return; }
@@ -824,12 +821,18 @@ function renderGanados(payload) {
     statCard('barChart', 'var(--ink-soft)', 'Ticket promedio', '$' + ticketTotal.toLocaleString('es-MX', {maximumFractionDigits:0})) +
     '</div>';
 
+  await cargarInversionPauta();
+  const totalInversion = embudos.reduce((s, e) => s + (Number(invPautaCache[e.embudo]) || 0), 0);
+
   const rows = embudos.map(e => {
     const ticket = e.ganado ? (e.monto_ganado / e.ganado) : 0;
+    const valInversion = invPautaCache[e.embudo];
+    const inversionAttr = (valInversion === null || valInversion === undefined) ? '' : valInversion;
     return `
     <tr>
       <td>${e.embudo}</td>
       <td class="num"><span class="numval">${e.ganado}</span></td>
+      <td class="num"><input type="number" class="inv-pauta" data-embudo="${e.embudo}" placeholder="—" value="${inversionAttr}"></td>
       <td class="num"><span class="numval">$${e.monto_ganado.toLocaleString('es-MX', {maximumFractionDigits:0})}</span></td>
       <td class="num"><span class="numval">$${ticket.toLocaleString('es-MX', {maximumFractionDigits:0})}</span></td>
     </tr>`;
@@ -837,17 +840,19 @@ function renderGanados(payload) {
   els.ganadosTable.innerHTML = `
     <div class="table-scroll">
     <table>
-      <thead><tr><th>Embudo</th><th class="num">Proyectos</th><th class="num">Monto (MXN)</th><th class="num">Ticket promedio</th></tr></thead>
+      <thead><tr><th>Embudo</th><th class="num">Proyectos</th><th class="num">Inversión en pauta</th><th class="num">Monto (MXN)</th><th class="num">Ticket promedio</th></tr></thead>
       <tbody>${rows}
         <tr class="totales">
           <td>Total</td>
           <td class="num"><span class="numval">${totalProyectos}</span></td>
+          <td class="num"><span class="numval">$${totalInversion.toLocaleString('es-MX', {maximumFractionDigits:0})}</span></td>
           <td class="num"><span class="numval">$${totalMonto.toLocaleString('es-MX', {maximumFractionDigits:0})}</span></td>
           <td class="num"><span class="numval">$${ticketTotal.toLocaleString('es-MX', {maximumFractionDigits:0})}</span></td>
         </tr>
       </tbody>
     </table>
     </div>`;
+  attachInvPautaHandlers(els.ganadosTable);
 }
 
 function renderGanadosDetalle(detalle) {
