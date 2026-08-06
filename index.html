@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+  <!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
@@ -804,9 +804,30 @@ async function guardarMeta(embudoKey, metaVenta, inversionPauta) {
 
 function pctMetaClass(pct, tieneMeta) {
   if (!tieneMeta) return 'sinmeta';
-  if (pct >= 90) return 'alto';
+  if (pct >= 100) return 'alto';
   if (pct >= 50) return 'medio';
   return 'bajo';
+}
+
+function recalcularTotales(container) {
+  const totalRow = container.querySelector('tr[data-total-row]');
+  if (!totalRow) return;
+  const totalMontoGanado = Number(totalRow.dataset.montoGanado) || 0;
+
+  let totalMeta = 0, totalInv = 0;
+  container.querySelectorAll('tr[data-embudo-row]').forEach(row => {
+    totalMeta += Number(row.querySelector('input.meta-venta').value) || 0;
+    totalInv += Number(row.querySelector('input.inv-pauta').value) || 0;
+  });
+
+  const tieneMeta = totalMeta > 0;
+  const pct = tieneMeta ? (totalMontoGanado / totalMeta * 100) : 0;
+
+  totalRow.querySelector('.total-meta-val').textContent = '$' + totalMeta.toLocaleString('es-MX', {maximumFractionDigits:0});
+  totalRow.querySelector('.total-inv-val').textContent = '$' + totalInv.toLocaleString('es-MX', {maximumFractionDigits:0});
+  const pctEl = totalRow.querySelector('.total-pct-val');
+  pctEl.textContent = tieneMeta ? pct.toFixed(1) + '%' : '—';
+  pctEl.className = 'pct-meta total-pct-val ' + pctMetaClass(pct, tieneMeta);
 }
 
 function attachMetaHandlers(container) {
@@ -856,8 +877,8 @@ function attachMetaHandlers(container) {
       }, 600);
     }
 
-    inpMeta.addEventListener('input', () => { recalcularPct(); guardarConDebounce(); });
-    inpInv.addEventListener('input', guardarConDebounce);
+    inpMeta.addEventListener('input', () => { recalcularPct(); recalcularTotales(container); guardarConDebounce(); });
+    inpInv.addEventListener('input', () => { recalcularTotales(container); guardarConDebounce(); });
   });
 }
 
@@ -902,16 +923,16 @@ async function renderGanados(payload) {
   els.ganadosTable.innerHTML = `
     <div class="table-scroll">
     <table>
-      <thead><tr><th>Embudo</th><th class="num">Proyectos</th><th class="num">Meta de venta</th><th class="num">Inversión en pauta</th><th class="num">Monto (MXN)</th><th class="num">Ticket promedio</th><th class="num">% alcanzado</th></tr></thead>
+      <thead><tr><th>Embudo</th><th class="num">Proyectos</th><th class="num">Meta de venta</th><th class="num">Inversión en pauta</th><th class="num">Monto (MXN)</th><th class="num">Ticket promedio</th><th class="num">% alcanzado de venta</th></tr></thead>
       <tbody>${rows}
-        <tr class="totales">
+        <tr class="totales" data-total-row data-monto-ganado="${totalMonto}">
           <td>Total</td>
           <td class="num"><span class="numval">${totalProyectos}</span></td>
-          <td class="num"><span class="numval">$${totalMeta.toLocaleString('es-MX', {maximumFractionDigits:0})}</span></td>
-          <td class="num"><span class="numval">$${totalInversion.toLocaleString('es-MX', {maximumFractionDigits:0})}</span></td>
+          <td class="num"><span class="numval total-meta-val">$${totalMeta.toLocaleString('es-MX', {maximumFractionDigits:0})}</span></td>
+          <td class="num"><span class="numval total-inv-val">$${totalInversion.toLocaleString('es-MX', {maximumFractionDigits:0})}</span></td>
           <td class="num"><span class="numval">$${totalMonto.toLocaleString('es-MX', {maximumFractionDigits:0})}</span></td>
           <td class="num"><span class="numval">$${ticketTotal.toLocaleString('es-MX', {maximumFractionDigits:0})}</span></td>
-          <td class="num"><span class="pct-meta ${pctMetaClass(pctTotal, totalMeta > 0)}">${totalMeta > 0 ? pctTotal.toFixed(1) + '%' : '—'}</span></td>
+          <td class="num"><span class="pct-meta total-pct-val ${pctMetaClass(pctTotal, totalMeta > 0)}">${totalMeta > 0 ? pctTotal.toFixed(1) + '%' : '—'}</span></td>
         </tr>
       </tbody>
     </table>
