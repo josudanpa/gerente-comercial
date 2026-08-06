@@ -190,14 +190,19 @@
   .pct { display: block; color: var(--c-positive); font-size: 10.5px; margin-top: 1px; font-family: var(--mono); }
   .motivos { font-size: 11px; color: var(--c-loss); max-width: 170px; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: help; }
 
-  input.inv-pauta {
+  input.editable-cell {
     width: 100%; max-width: 130px; padding: 7px 9px; border: 1px solid var(--border);
     border-radius: var(--radius-sm); font-family: var(--mono); font-size: 12.5px;
     background: var(--surface); color: var(--ink); text-align: right;
   }
-  input.inv-pauta:focus-visible { outline: 2px solid var(--ink-soft); outline-offset: 1px; }
-  input.inv-pauta.saving { border-color: var(--c-positive); }
-  input.inv-pauta::-webkit-outer-spin-button, input.inv-pauta::-webkit-inner-spin-button { opacity: .5; }
+  input.editable-cell:focus-visible { outline: 2px solid var(--ink-soft); outline-offset: 1px; }
+  input.editable-cell.saving { border-color: var(--c-positive); }
+  input.editable-cell::-webkit-outer-spin-button, input.editable-cell::-webkit-inner-spin-button { opacity: .5; }
+  .pct-meta { font-family: var(--mono); font-weight: 600; }
+  .pct-meta.alto { color: var(--c-positive); }
+  .pct-meta.medio { color: #d6a24a; }
+  .pct-meta.bajo { color: var(--c-loss); }
+  .pct-meta.sinmeta { color: var(--ink-faint); font-weight: 400; }
 
   .avatar {
     display: inline-flex; align-items: center; justify-content: center; border-radius: 50%;
@@ -765,44 +770,69 @@ function renderCrosstab(payload) {
   els.crosstabExcluidos.textContent = excluidos.length ? `No incluidos (sin etapa "Calificado"): ${excluidos.join(', ')}` : '';
 }
 
-/* ============================== Inversión en pauta (persistente, compartida) ============================== */
-const INV_PAUTA_KEY = 'inversion_pauta_por_embudo';
-let invPautaCache = {};
+/* ============================== Metas y pauta (persistente en Postgres vía n8n) ============================== */
+let metasCache = {};
 
-async function cargarInversionPauta() {
+async function cargarMetas() {
   try {
-    const res = await window.storage.get(INV_PAUTA_KEY, true);
-    invPautaCache = (res && res.value) ? JSON.parse(res.value) : {};
+    const data = await callWebhook({ type: 'metas', action: 'get' });
+    const payload = extractPayload(data, 'por_embudo');
+    metasCache = payload.por_embudo || {};
   } catch (err) {
-    invPautaCache = {};
+    console.error('No se pudieron cargar metas/inversión:', err);
+    metasCache = {};
   }
-  return invPautaCache;
+  return metasCache;
 }
 
-async function guardarInversionPauta(embudoKey, valor) {
-  invPautaCache[embudoKey] = valor;
+async function guardarMeta(embudoKey, metaVenta, inversionPauta) {
+  metasCache[embudoKey] = { meta_venta: metaVenta, inversion_pauta: inversionPauta };
   try {
-    await window.storage.set(INV_PAUTA_KEY, JSON.stringify(invPautaCache), true);
+    await callWebhook({ type: 'metas', action: 'set', embudo: embudoKey, meta_venta: metaVenta, inversion_pauta: inversionPauta });
     return true;
   } catch (err) {
-    console.error('No se pudo guardar inversión en pauta:', err);
+    console.error('No se pudo guardar meta/inversión:', err);
     return false;
   }
 }
 
-function attachInvPautaHandlers(container) {
-  container.querySelectorAll('input.inv-pauta').forEach(inp => {
+function pctMetaClass(pct, tieneMeta) {
+  if (!tieneMeta) return 'sinmeta';
+  if (pct >= 90) return 'alto';
+  if (pct >= 50) return 'medio';
+  return 'bajo';
+}
+
+function attachMetaHandlers(container) {
+  container.querySelectorAll('tr[data-embudo-row]').forEach(row => {
+    const embudoKey = row.dataset.embudoRow;
+    const inpMeta = row.querySelector('input.meta-venta');
+    const inpInv = row.querySelector('input.inv-pauta');
+    const pctCell = row.querySelector('.pct-meta');
+    const montoGanado = Number(row.dataset.montoGanado) || 0;
     let debounceTimer = null;
-    inp.addEventListener('input', () => {
-      const embudoKey = inp.dataset.embudo;
-      const valor = inp.value === '' ? null : Number(inp.value);
+
+    function recalcularPct() {
+      const metaVal = Number(inpMeta.value) || 0;
+      const tieneMeta = metaVal > 0;
+      const pct = tieneMeta ? (montoGanado / metaVal * 100) : 0;
+      pctCell.textContent = tieneMeta ? pct.toFixed(1) + '%' : '—';
+      pctCell.className = 'pct-meta ' + pctMetaClass(pct, tieneMeta);
+    }
+
+    function guardarConDebounce() {
       clearTimeout(debounceTimer);
+      inpMeta.classList.add('saving'); inpInv.classList.add('saving');
       debounceTimer = setTimeout(async () => {
-        inp.classList.add('saving');
-        await guardarInversionPauta(embudoKey, valor);
-        setTimeout(() => inp.classList.remove('saving'), 400);
-      }, 500);
-    });
+        const metaVal = inpMeta.value === '' ? 0 : Number(inpMeta.value);
+        const invVal = inpInv.value === '' ? 0 : Number(inpInv.value);
+        await guardarMeta(embudoKey, metaVal, invVal);
+        setTimeout(() => { inpMeta.classList.remove('saving'); inpInv.classList.remove('saving'); }, 400);
+      }, 600);
+    }
+
+    inpMeta.addEventListener('input', () => { recalcularPct(); guardarConDebounce(); });
+    inpInv.addEventListener('input', guardarConDebounce);
   });
 }
 
@@ -821,38 +851,47 @@ async function renderGanados(payload) {
     statCard('barChart', 'var(--ink-soft)', 'Ticket promedio', '$' + ticketTotal.toLocaleString('es-MX', {maximumFractionDigits:0})) +
     '</div>';
 
-  await cargarInversionPauta();
-  const totalInversion = embudos.reduce((s, e) => s + (Number(invPautaCache[e.embudo]) || 0), 0);
+  await cargarMetas();
+  const totalMeta = embudos.reduce((s, e) => s + (Number((metasCache[e.embudo] || {}).meta_venta) || 0), 0);
+  const totalInversion = embudos.reduce((s, e) => s + (Number((metasCache[e.embudo] || {}).inversion_pauta) || 0), 0);
+  const pctTotal = totalMeta > 0 ? (totalMonto / totalMeta * 100) : 0;
 
   const rows = embudos.map(e => {
     const ticket = e.ganado ? (e.monto_ganado / e.ganado) : 0;
-    const valInversion = invPautaCache[e.embudo];
-    const inversionAttr = (valInversion === null || valInversion === undefined) ? '' : valInversion;
+    const guardado = metasCache[e.embudo] || {};
+    const metaVal = guardado.meta_venta || 0;
+    const invVal = guardado.inversion_pauta || 0;
+    const tieneMeta = metaVal > 0;
+    const pct = tieneMeta ? (e.monto_ganado / metaVal * 100) : 0;
     return `
-    <tr>
+    <tr data-embudo-row="${e.embudo}" data-monto-ganado="${e.monto_ganado}">
       <td>${e.embudo}</td>
       <td class="num"><span class="numval">${e.ganado}</span></td>
-      <td class="num"><input type="number" class="inv-pauta" data-embudo="${e.embudo}" placeholder="—" value="${inversionAttr}"></td>
+      <td class="num"><input type="number" class="editable-cell meta-venta" placeholder="—" value="${metaVal || ''}"></td>
+      <td class="num"><input type="number" class="editable-cell inv-pauta" placeholder="—" value="${invVal || ''}"></td>
       <td class="num"><span class="numval">$${e.monto_ganado.toLocaleString('es-MX', {maximumFractionDigits:0})}</span></td>
       <td class="num"><span class="numval">$${ticket.toLocaleString('es-MX', {maximumFractionDigits:0})}</span></td>
+      <td class="num"><span class="pct-meta ${pctMetaClass(pct, tieneMeta)}">${tieneMeta ? pct.toFixed(1) + '%' : '—'}</span></td>
     </tr>`;
   }).join('');
   els.ganadosTable.innerHTML = `
     <div class="table-scroll">
     <table>
-      <thead><tr><th>Embudo</th><th class="num">Proyectos</th><th class="num">Inversión en pauta</th><th class="num">Monto (MXN)</th><th class="num">Ticket promedio</th></tr></thead>
+      <thead><tr><th>Embudo</th><th class="num">Proyectos</th><th class="num">Meta de venta</th><th class="num">Inversión en pauta</th><th class="num">Monto (MXN)</th><th class="num">Ticket promedio</th><th class="num">% alcanzado</th></tr></thead>
       <tbody>${rows}
         <tr class="totales">
           <td>Total</td>
           <td class="num"><span class="numval">${totalProyectos}</span></td>
+          <td class="num"><span class="numval">$${totalMeta.toLocaleString('es-MX', {maximumFractionDigits:0})}</span></td>
           <td class="num"><span class="numval">$${totalInversion.toLocaleString('es-MX', {maximumFractionDigits:0})}</span></td>
           <td class="num"><span class="numval">$${totalMonto.toLocaleString('es-MX', {maximumFractionDigits:0})}</span></td>
           <td class="num"><span class="numval">$${ticketTotal.toLocaleString('es-MX', {maximumFractionDigits:0})}</span></td>
+          <td class="num"><span class="pct-meta ${pctMetaClass(pctTotal, totalMeta > 0)}">${totalMeta > 0 ? pctTotal.toFixed(1) + '%' : '—'}</span></td>
         </tr>
       </tbody>
     </table>
     </div>`;
-  attachInvPautaHandlers(els.ganadosTable);
+  attachMetaHandlers(els.ganadosTable);
 }
 
 function renderGanadosDetalle(detalle) {
