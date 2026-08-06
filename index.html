@@ -197,7 +197,13 @@
   }
   input.editable-cell:focus-visible { outline: 2px solid var(--ink-soft); outline-offset: 1px; }
   input.editable-cell.saving { border-color: var(--c-positive); }
+  input.editable-cell.error { border-color: var(--c-loss); }
   input.editable-cell::-webkit-outer-spin-button, input.editable-cell::-webkit-inner-spin-button { opacity: .5; }
+  .editable-cell-wrap { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; }
+  .save-indicator { font-size: 9.5px; font-family: var(--mono); color: var(--ink-faint); height: 12px; letter-spacing: .01em; }
+  .save-indicator.pending { color: var(--ink-faint); }
+  .save-indicator.ok { color: var(--c-positive); }
+  .save-indicator.err { color: var(--c-loss); }
   .pct-meta { font-family: var(--mono); font-weight: 600; }
   .pct-meta.alto { color: var(--c-positive); }
   .pct-meta.medio { color: #d6a24a; }
@@ -809,6 +815,8 @@ function attachMetaHandlers(container) {
     const inpMeta = row.querySelector('input.meta-venta');
     const inpInv = row.querySelector('input.inv-pauta');
     const pctCell = row.querySelector('.pct-meta');
+    const indMeta = row.querySelector('.save-indicator.meta-ind');
+    const indInv = row.querySelector('.save-indicator.inv-ind');
     const montoGanado = Number(row.dataset.montoGanado) || 0;
     let debounceTimer = null;
 
@@ -820,14 +828,31 @@ function attachMetaHandlers(container) {
       pctCell.className = 'pct-meta ' + pctMetaClass(pct, tieneMeta);
     }
 
+    function setIndicador(el, texto, clase) {
+      el.textContent = texto;
+      el.className = 'save-indicator ' + clase;
+    }
+
     function guardarConDebounce() {
       clearTimeout(debounceTimer);
-      inpMeta.classList.add('saving'); inpInv.classList.add('saving');
+      setIndicador(indMeta, 'Editando…', 'pending');
+      setIndicador(indInv, 'Editando…', 'pending');
       debounceTimer = setTimeout(async () => {
         const metaVal = inpMeta.value === '' ? 0 : Number(inpMeta.value);
         const invVal = inpInv.value === '' ? 0 : Number(inpInv.value);
-        await guardarMeta(embudoKey, metaVal, invVal);
-        setTimeout(() => { inpMeta.classList.remove('saving'); inpInv.classList.remove('saving'); }, 400);
+        setIndicador(indMeta, 'Guardando…', 'pending');
+        setIndicador(indInv, 'Guardando…', 'pending');
+        inpMeta.classList.remove('error'); inpInv.classList.remove('error');
+        const ok = await guardarMeta(embudoKey, metaVal, invVal);
+        if (ok) {
+          setIndicador(indMeta, 'Guardado ✓', 'ok');
+          setIndicador(indInv, 'Guardado ✓', 'ok');
+          setTimeout(() => { setIndicador(indMeta, '', ''); setIndicador(indInv, '', ''); }, 2000);
+        } else {
+          setIndicador(indMeta, 'Error al guardar', 'err');
+          setIndicador(indInv, 'Error al guardar', 'err');
+          inpMeta.classList.add('error'); inpInv.classList.add('error');
+        }
       }, 600);
     }
 
@@ -867,8 +892,8 @@ async function renderGanados(payload) {
     <tr data-embudo-row="${e.embudo}" data-monto-ganado="${e.monto_ganado}">
       <td>${e.embudo}</td>
       <td class="num"><span class="numval">${e.ganado}</span></td>
-      <td class="num"><input type="number" class="editable-cell meta-venta" placeholder="—" value="${metaVal || ''}"></td>
-      <td class="num"><input type="number" class="editable-cell inv-pauta" placeholder="—" value="${invVal || ''}"></td>
+      <td class="num"><div class="editable-cell-wrap"><input type="number" class="editable-cell meta-venta" placeholder="—" value="${metaVal || ''}"><span class="save-indicator meta-ind"></span></div></td>
+      <td class="num"><div class="editable-cell-wrap"><input type="number" class="editable-cell inv-pauta" placeholder="—" value="${invVal || ''}"><span class="save-indicator inv-ind"></span></div></td>
       <td class="num"><span class="numval">$${e.monto_ganado.toLocaleString('es-MX', {maximumFractionDigits:0})}</span></td>
       <td class="num"><span class="numval">$${ticket.toLocaleString('es-MX', {maximumFractionDigits:0})}</span></td>
       <td class="num"><span class="pct-meta ${pctMetaClass(pct, tieneMeta)}">${tieneMeta ? pct.toFixed(1) + '%' : '—'}</span></td>
