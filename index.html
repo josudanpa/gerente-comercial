@@ -204,6 +204,14 @@
   .save-indicator.pending { color: var(--ink-faint); }
   .save-indicator.ok { color: var(--c-positive); }
   .save-indicator.err { color: var(--c-loss); }
+  .meta-leads-cell { display: flex; align-items: center; justify-content: flex-end; gap: 10px; }
+  .meta-leads-pct { font-family: var(--mono); font-size: 12.5px; color: var(--ink); white-space: nowrap; }
+  .meta-leads-pct.vacio { color: var(--ink-faint); }
+  .meta-leads-bar {
+    width: 140px; height: 7px; border-radius: 999px; background: var(--surface-hover);
+    overflow: hidden; flex-shrink: 0;
+  }
+  .meta-leads-bar span { display: block; height: 100%; border-radius: 999px; background: #4ec06f; }
   .pct-meta { font-family: var(--mono); font-weight: 600; }
   .pct-meta.alto { color: var(--c-positive); }
   .pct-meta.medio { color: #d6a24a; }
@@ -323,18 +331,18 @@
     <div class="panel">
       <div class="panel-head">
         <div class="panel-icon" id="iconLeadsPeriodo"></div>
-        <h2>Leads por periodo</h2>
+        <h2>Leads recibidos por periodo</h2>
       </div>
       <p class="help">Cuántos leads se están administrando ahora mismo, vistos de dos formas — por asesor y por embudo. Las dos sumas tienen que coincidir: es la misma población de leads, nada más que el desglose es distinto.</p>
       <div id="leadsPeriodoStats"></div>
       <div style="display:flex; gap:20px; flex-wrap:wrap; margin-top:14px;">
         <div style="flex:1; min-width:260px;">
-          <h3 style="font-family:var(--display); font-size:12.5px; color:var(--ink-soft); font-weight:600; margin:0 0 8px; text-decoration:underline; text-underline-offset:3px;">Leads administrados por asesor</h3>
+          <h3 style="font-family:var(--display); font-size:12.5px; color:var(--ink-soft); font-weight:600; margin:0 0 8px; text-decoration:underline; text-underline-offset:3px;">Leads recibidos por asesor</h3>
           <p class="help" style="margin-bottom:8px;">Mide capacidad instalada — referencia: ~250 leads/mes por asesor.</p>
           <div id="leadsPorAsesorTable"></div>
         </div>
         <div style="flex:1; min-width:260px;">
-          <h3 style="font-family:var(--display); font-size:12.5px; color:var(--ink-soft); font-weight:600; margin:0 0 8px; text-decoration:underline; text-underline-offset:3px;">Leads administrados por embudo</h3>
+          <h3 style="font-family:var(--display); font-size:12.5px; color:var(--ink-soft); font-weight:600; margin:0 0 8px; text-decoration:underline; text-underline-offset:3px;">Leads recibido por embudo</h3>
           <p class="help" style="margin-bottom:8px;">Para revisar si cada embudo va cumpliendo su meta de leads entrantes del mes.</p>
           <div id="leadsPorEmbudoTable"></div>
         </div>
@@ -667,6 +675,53 @@ function miniTabla(rows, labelCol) {
     </div>`;
 }
 
+// Meta mensual de leads entrantes por embudo. Valores fijos, definidos por
+// direccion -- los embudos que no aparecen aqui no tienen meta y se muestran
+// con "—" (no se inventa una meta ni se cuenta en el total).
+const META_LEADS_POR_EMBUDO = {
+  web_edu_dc: 80,
+  campanas_publicitarias: 29,
+  talleres_venta: 22,
+  agentes_venta: 33,
+};
+
+function tablaEmbudosConMeta(rows) {
+  if (!rows.length) return '<div class="empty">Sin datos.</div>';
+  const totalLeads = rows.reduce((s, r) => s + r.valor, 0);
+  const filas = rows.map(r => {
+    const meta = META_LEADS_POR_EMBUDO[r.etiqueta];
+    const tieneMeta = meta != null && meta > 0;
+    const pct = tieneMeta ? (r.valor / meta * 100) : 0;
+    const anchoBarra = tieneMeta ? Math.min(100, pct) : 0;
+    return `
+    <tr>
+      <td>${r.etiqueta}</td>
+      <td class="num"><span class="numval">${tieneMeta ? meta : '—'}</span></td>
+      <td class="num"><span class="numval">${r.valor}</span></td>
+      <td class="num">
+        <div class="meta-leads-cell">
+          <span class="meta-leads-pct${tieneMeta ? '' : ' vacio'}">${tieneMeta ? pct.toFixed(1) + '%' : '—'}</span>
+          <div class="meta-leads-bar"><span style="width:${anchoBarra}%"></span></div>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+  return `
+    <div class="table-scroll">
+    <table>
+      <thead><tr><th>Embudo</th><th class="num">Meta mensual</th><th class="num">Leads</th><th class="num">% Meta cumplida</th></tr></thead>
+      <tbody>${filas}
+        <tr class="totales">
+          <td>Total</td>
+          <td class="num"><span class="numval">—</span></td>
+          <td class="num"><span class="numval">${totalLeads}</span></td>
+          <td class="num"><span class="numval">—</span></td>
+        </tr>
+      </tbody>
+    </table>
+    </div>`;
+}
+
 function renderLeadsPorPeriodo(payload) {
   const porAsesor = payload.leads_por_asesor || {};
   const porEmbudo = payload.leads_por_embudo || {};
@@ -683,7 +738,7 @@ function renderLeadsPorPeriodo(payload) {
   const totalEmbudo = filasEmbudo.reduce((s, r) => s + r.valor, 0);
 
   els.leadsPeriodoStats.innerHTML = '<div class="stats-row">' +
-    statCard('layers', 'var(--ink-soft)', 'Total leads del periodo', totalAsesor) +
+    statCard('layers', 'var(--ink-soft)', 'Total de leads recibidos del periodo', totalAsesor) +
     statCard('users', 'var(--ink-soft)', 'Asesores con leads', filasAsesor.length) +
     (totalAsesor !== totalEmbudo
       ? statCard('xCircle', 'var(--c-loss)', 'Revisar', 'sumas no coinciden (' + totalAsesor + ' vs ' + totalEmbudo + ')')
@@ -691,7 +746,7 @@ function renderLeadsPorPeriodo(payload) {
     '</div>';
 
   els.leadsPorAsesorTable.innerHTML = miniTabla(filasAsesor, 'Asesor');
-  els.leadsPorEmbudoTable.innerHTML = miniTabla(filasEmbudo, 'Embudo');
+  els.leadsPorEmbudoTable.innerHTML = tablaEmbudosConMeta(filasEmbudo);
 }
 
 /* ============================== RENDER: Desempeño ============================== */
