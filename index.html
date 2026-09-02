@@ -1,1121 +1,356 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Auditoría comercial</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<style>
-  :root {
-    --bg: #101114;
-    --surface: #17181c;
-    --surface-2: #1d1f24;
-    --surface-hover: #24262c;
-    --border: #2a2c33;
-    --border-soft: #212327;
-    --ink: #f2f3f5;
-    --ink-soft: #9a9da5;
-    --ink-faint: #5c5f68;
-
-    --c-positive: #6bb98a;
-    --c-loss: #cf7a63;
-    --c-neutral: #7d8089;
-
-    --radius-lg: 16px;
-    --radius-md: 12px;
-    --radius-sm: 8px;
-
-    --display: 'Space Grotesk', 'Segoe UI', sans-serif;
-    --body: 'Inter', -apple-system, 'Segoe UI', sans-serif;
-    --mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
-  }
-  * { box-sizing: border-box; }
-  body {
-    margin: 0;
-    background: var(--bg);
-    color: var(--ink);
-    font-family: var(--body);
-    line-height: 1.5;
-    padding: 28px 20px 90px;
-    -webkit-font-smoothing: antialiased;
-  }
-  .wrap { max-width: 1180px; margin: 0 auto; }
-
-  /* ---------- Header ---------- */
-  .top {
-    display: flex; align-items: center; justify-content: space-between; gap: 16px;
-    margin-bottom: 24px; flex-wrap: wrap;
-  }
-  .brand { display: flex; align-items: center; gap: 14px; }
-  .brand-mark {
-    width: 44px; height: 44px; border-radius: 12px; flex-shrink: 0;
-    background: var(--surface-2); border: 1px solid var(--border);
-    display: flex; align-items: center; justify-content: center; color: var(--ink-soft);
-  }
-  .eyebrow {
-    font-size: 11.5px; letter-spacing: .09em; text-transform: uppercase;
-    color: var(--c-positive); font-weight: 600; margin-bottom: 3px;
-  }
-  h1 { font-family: var(--display); font-size: 22px; margin: 0; letter-spacing: -.01em; color: var(--ink); font-weight: 600; }
-  .status {
-    display: inline-flex; align-items: center; gap: 8px;
-    font-size: 12.5px; font-family: var(--mono); padding: 8px 14px;
-    border-radius: 999px; border: 1px solid var(--border); background: var(--surface);
-    color: var(--ink-soft); white-space: pre-wrap; max-width: 420px;
-  }
-  .status::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: var(--ink-faint); flex-shrink: 0; }
-  .status.ok { color: var(--c-positive); border-color: color-mix(in srgb, var(--c-positive) 35%, var(--border)); }
-  .status.ok::before { background: var(--c-positive); box-shadow: 0 0 8px var(--c-positive); }
-  .status.err { color: var(--c-loss); border-color: color-mix(in srgb, var(--c-loss) 35%, var(--border)); }
-  .status.err::before { background: var(--c-loss); }
-  .status.pending::before { background: var(--ink-faint); animation: pulse 1.4s ease-in-out infinite; }
-
-  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .3; } }
-  @keyframes fadeUp { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
-
-  /* ---------- Panels ---------- */
-  .panel {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    padding: 22px 24px 24px;
-    margin-bottom: 18px;
-    position: relative;
-    overflow: hidden;
-  }
-  .panel::before {
-    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
-    background: var(--border);
-  }
-  .panel-head { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; }
-  .panel-icon {
-    width: 34px; height: 34px; border-radius: 10px; flex-shrink: 0;
-    background: var(--surface-2); border: 1px solid var(--border-soft);
-    color: var(--ink-soft);
-    display: flex; align-items: center; justify-content: center;
-  }
-  .panel h2 {
-    font-family: var(--display); font-size: 15.5px; font-weight: 600;
-    color: var(--ink); margin: 0; letter-spacing: -.005em;
-  }
-  .help { color: var(--ink-faint); font-size: 12.5px; margin: 0 0 16px; max-width: 720px; line-height: 1.55; }
-
-  /* ---------- Stat cards ---------- */
-  .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 20px; }
-  .stat-card {
-    background: var(--surface-2); border: 1px solid var(--border-soft); border-radius: var(--radius-md);
-    padding: 14px 14px; display: flex; align-items: center; gap: 11px;
-    transition: transform .15s ease, border-color .15s ease;
-  }
-  .stat-card:hover { transform: translateY(-2px); border-color: var(--stat-color); }
-  .stat-icon {
-    width: 36px; height: 36px; border-radius: 9px; flex-shrink: 0;
-    background: color-mix(in srgb, var(--stat-color) 18%, transparent); color: var(--stat-color);
-    display: flex; align-items: center; justify-content: center;
-  }
-  .stat-label { font-size: 10.5px; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-faint); font-weight: 600; margin-bottom: 2px; }
-  .stat-value { font-family: var(--display); font-size: 20px; font-weight: 700; color: var(--ink); line-height: 1.15; }
-  .stat-sub { font-size: 11px; color: var(--ink-soft); margin-top: 1px; }
-
-  /* ---------- Form controls ---------- */
-  label.field-label { font-size: 12.5px; color: var(--ink-soft); display: block; margin-bottom: 6px; font-weight: 500; }
-  input[type="date"] {
-    width: 100%; padding: 9px 11px; border: 1px solid var(--border); border-radius: var(--radius-sm);
-    font-family: var(--body); font-size: 13.5px; background: var(--surface-2); color: var(--ink);
-  }
-  input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.85); cursor: pointer; }
-  input:focus-visible, button:focus-visible, .chip:focus-within { outline: 2px solid var(--ink-soft); outline-offset: 2px; }
-
-  .row { display: flex; gap: 16px; flex-wrap: wrap; align-items: end; margin-bottom: 14px; }
-  .row > div { flex: 1; min-width: 170px; }
-
-  .presets { display: flex; gap: 7px; flex-wrap: wrap; margin: 10px 0 4px; }
-  .presets button {
-    background: var(--surface-2); color: var(--ink-soft); border: 1px solid var(--border);
-    font-weight: 500; padding: 6px 13px; font-size: 12.5px; border-radius: 999px;
-  }
-  .presets button:hover { color: var(--ink); border-color: var(--ink-soft); }
-
-  .toggle-group { display: inline-flex; border: 1px solid var(--border); border-radius: 999px; overflow: hidden; background: var(--surface-2); }
-  .toggle-group label {
-    margin: 0; padding: 7px 15px; font-size: 12.5px; cursor: pointer; color: var(--ink-soft);
-    transition: all .15s ease; font-weight: 500;
-  }
-  .toggle-group label.active { background: var(--ink); color: #101114; font-weight: 600; }
-
-  button#btnGenerar {
-    background: var(--ink);
-    color: #101114; border: none; padding: 12px 26px;
-    border-radius: 999px; font-size: 14px; font-weight: 700; cursor: pointer;
-    font-family: var(--display); letter-spacing: -.005em;
-    transition: opacity .15s ease, transform .15s ease;
-  }
-  button#btnGenerar:hover { opacity: .92; transform: translateY(-1px); }
-  button#btnGenerar:disabled { opacity: .4; cursor: not-allowed; transform: none; }
-
-  .chips { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 4px; }
-  .chip {
-    display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px 6px 10px;
-    border-radius: 999px; border: 1px solid var(--border); background: var(--surface-2);
-    cursor: pointer; font-size: 12.5px; color: var(--ink-soft); transition: all .15s ease; user-select: none;
-  }
-  .chip input { display: none; }
-  .chip:has(input:checked) {
-    background: var(--surface-hover);
-    border-color: var(--ink-soft); color: var(--ink);
-  }
-  .chip-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--ink-faint); flex-shrink: 0; }
-  .chip:has(input:checked) .chip-dot { background: var(--ink); }
-  #tagChecks.chips { max-height: 150px; overflow-y: auto; padding: 2px; }
-
-  /* ---------- Tables ---------- */
-  table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  .table-scroll { overflow-x: auto; border-radius: var(--radius-md); border: 1px solid var(--border-soft); animation: fadeUp .35s ease; }
-  th, td { padding: 11px 13px; text-align: right; vertical-align: middle; }
-  th:first-child, td:first-child { text-align: left; }
-  thead th {
-    color: var(--ink-faint); font-weight: 600; text-transform: uppercase; font-size: 10px;
-    letter-spacing: .05em; white-space: nowrap; background: var(--surface-2); border-bottom: 1px solid var(--border);
-  }
-  tbody tr { border-bottom: 1px solid var(--border-soft); transition: background .12s ease; }
-  tbody tr:last-child { border-bottom: none; }
-  tbody tr:hover { background: var(--surface-hover); }
-  td.num, th.num { font-family: var(--mono); }
-  tr.totales { background: var(--surface-2); }
-  tr.totales td { font-weight: 700; font-family: var(--mono); }
-  tr.totales td:first-child { font-family: var(--body); }
-  .numval { display: block; }
-  .pct { display: block; color: var(--c-positive); font-size: 10.5px; margin-top: 1px; font-family: var(--mono); }
-  .motivos { font-size: 11px; color: var(--c-loss); max-width: 170px; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: help; }
-
-  input.editable-cell {
-    width: 100%; max-width: 130px; padding: 7px 9px; border: 1px solid var(--border);
-    border-radius: var(--radius-sm); font-family: var(--mono); font-size: 12.5px;
-    background: var(--surface); color: var(--ink); text-align: right;
-  }
-  input.editable-cell:focus-visible { outline: 2px solid var(--ink-soft); outline-offset: 1px; }
-  input.editable-cell.saving { border-color: var(--c-positive); }
-  input.editable-cell.error { border-color: var(--c-loss); }
-  input.editable-cell::-webkit-outer-spin-button, input.editable-cell::-webkit-inner-spin-button { opacity: .5; }
-  .editable-cell-wrap { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; }
-  .save-indicator { font-size: 9.5px; font-family: var(--mono); color: var(--ink-faint); height: 12px; letter-spacing: .01em; }
-  .save-indicator.pending { color: var(--ink-faint); }
-  .save-indicator.ok { color: var(--c-positive); }
-  .save-indicator.err { color: var(--c-loss); }
-  .meta-leads-cell { display: flex; align-items: center; justify-content: flex-end; gap: 10px; }
-  .meta-leads-pct { font-family: var(--mono); font-size: 12.5px; color: var(--ink); white-space: nowrap; }
-  .meta-leads-pct.vacio { color: var(--ink-faint); }
-  .meta-leads-bar {
-    width: 140px; height: 7px; border-radius: 999px; background: var(--surface-hover);
-    overflow: hidden; flex-shrink: 0;
-  }
-  .meta-leads-bar span { display: block; height: 100%; border-radius: 999px; background: #4ec06f; }
-  .pct-meta { font-family: var(--mono); font-weight: 600; }
-  .pct-meta.alto { color: var(--c-positive); }
-  .pct-meta.medio { color: #d6a24a; }
-  .pct-meta.bajo { color: var(--c-loss); }
-  .pct-meta.sinmeta { color: var(--ink-faint); font-weight: 400; }
-
-  .avatar {
-    display: inline-flex; align-items: center; justify-content: center; border-radius: 50%;
-    color: #0d0f18; font-weight: 700; font-size: 12px; font-family: var(--display);
-    margin-right: 9px; vertical-align: middle; flex-shrink: 0;
-  }
-  .person-cell { display: flex; align-items: center; }
-
-  details { margin-top: 14px; }
-  summary {
-    cursor: pointer; font-size: 12px; color: var(--ink-faint); display: inline-flex;
-    align-items: center; gap: 6px; padding: 4px 0;
-  }
-  summary:hover { color: var(--ink-soft); }
-  pre {
-    background: #0a0b10; padding: 14px; border-radius: var(--radius-sm); font-family: var(--mono);
-    font-size: 11px; overflow-x: auto; max-height: 320px; color: var(--ink-soft); border: 1px solid var(--border-soft);
-  }
-  .empty { color: var(--ink-faint); font-size: 13px; padding: 28px 0; text-align: center; }
-  .resultsRow { display: block; }
-  .resultsRow > .panel { width: 100%; }
-
-  @media (max-width: 640px) {
-    body { padding: 18px 12px 70px; }
-    .panel { padding: 18px 16px 20px; }
-    .top { align-items: flex-start; }
-    button#btnGenerar { width: 100%; }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    *, *::before, *::after { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
-  }
-</style>
-</head>
-<body>
-<div class="wrap">
-
-  <header class="top">
-    <div class="brand">
-      <div class="brand-mark" id="brandIcon"></div>
-      <div>
-        <div class="eyebrow">Digital Crew · Auditoría comercial</div>
-        <h1>Reporte de desempeño y pipeline</h1>
-      </div>
-    </div>
-    <div class="status pending" id="status">Cargando catálogo…</div>
-  </header>
-
-  <div class="panel">
-    <div class="panel-head">
-      <div class="panel-icon" id="iconFiltros"></div>
-      <h2>Filtros</h2>
-    </div>
-    <p class="help">El rango de fechas filtra el reporte de desempeño. El cross-tab de calificados es un corte del momento actual — solo usa fecha de creación si decides acotarlo, no fecha de cierre (un lead calificado, por definición, no está cerrado).</p>
-
-    <div class="row">
-      <div>
-        <label class="field-label" for="dateFrom">Desde</label>
-        <input type="date" id="dateFrom">
-      </div>
-      <div>
-        <label class="field-label" for="dateTo">Hasta</label>
-        <input type="date" id="dateTo">
-      </div>
-      <div>
-        <label class="field-label">Filtrar desempeño por</label>
-        <div class="toggle-group" id="filterByToggle">
-          <label class="active" data-value="created_at"><span>Fecha de creación</span></label>
-          <label data-value="closed_at"><span>Fecha de cierre</span></label>
-        </div>
-      </div>
-    </div>
-    <div class="presets">
-      <button type="button" data-preset="hoy">Hoy</button>
-      <button type="button" data-preset="semana">Esta semana</button>
-      <button type="button" data-preset="mes">Este mes</button>
-      <button type="button" data-preset="mesPasado">Mes pasado</button>
-    </div>
-    <p class="help" style="margin-top:10px;">
-      <b style="color:var(--ink-soft)">Fecha de creación:</b> leads que nacieron en ese rango, sin importar dónde terminaron. &nbsp;
-      <b style="color:var(--ink-soft)">Fecha de cierre:</b> leads que se ganaron o perdieron en ese rango, sin importar cuándo nacieron.
-    </p>
-
-    <div style="margin-top:16px;">
-      <label class="field-label">Embudos (vacío = todos)</label>
-      <div class="chips" id="pipelineChecks"><span class="help">Cargando catálogo…</span></div>
-    </div>
-    <div style="margin-top:16px;">
-      <label class="field-label">Agentes (vacío = todos)</label>
-      <div class="chips" id="agentChecks"></div>
-    </div>
-    <div style="margin-top:16px;">
-      <label class="field-label">Etiquetas (vacío = sin filtrar por etiqueta)</label>
-      <div class="chips" id="tagChecks"></div>
-      <p class="help" style="margin-top:8px;">Filtro manual y opcional, aplica a los embudos que estés incluyendo arriba. Si marcas una o más, solo se cuentan los leads que tengan al menos una de esas etiquetas.</p>
-    </div>
-
-    <div style="margin-top:18px;">
-      <label class="field-label">Calificados por embudo: ¿cuáles incluyo?</label>
-      <div class="toggle-group" id="calificadosToggle">
-        <label class="active" data-value="actual"><span>Todos los que hay ahora</span></label>
-        <label data-value="periodo"><span>Solo los creados en ese periodo</span></label>
-      </div>
-      <p class="help" style="margin-top:8px;">"Todos los que hay ahora" ignora las fechas de arriba — es la foto completa del pipeline hoy. "Solo los creados en ese periodo" lo limita a leads que nacieron en el rango de fechas que pusiste arriba.</p>
-    </div>
-
-    <div style="margin-top:20px;">
-      <button id="btnGenerar">Generar reporte completo</button>
-    </div>
-  </div>
-
-  <div class="resultsRow" id="resultsRow" style="display:none;">
-    <div class="panel">
-      <div class="panel-head">
-        <div class="panel-icon" id="iconLeadsPeriodo"></div>
-        <h2>Leads recibidos por periodo</h2>
-      </div>
-      <p class="help">Cuántos leads se están administrando ahora mismo, vistos de dos formas — por asesor y por embudo. Las dos sumas tienen que coincidir: es la misma población de leads, nada más que el desglose es distinto.</p>
-      <div id="leadsPeriodoStats"></div>
-      <div style="display:flex; gap:20px; flex-wrap:wrap; margin-top:14px;">
-        <div style="flex:1; min-width:260px;">
-          <h3 style="font-family:var(--display); font-size:12.5px; color:var(--ink-soft); font-weight:600; margin:0 0 8px; text-decoration:underline; text-underline-offset:3px;">Leads recibidos por asesor</h3>
-          <p class="help" style="margin-bottom:8px;">Mide capacidad instalada — referencia: ~250 leads/mes por asesor.</p>
-          <div id="leadsPorAsesorTable"></div>
-        </div>
-        <div style="flex:1; min-width:260px;">
-          <h3 style="font-family:var(--display); font-size:12.5px; color:var(--ink-soft); font-weight:600; margin:0 0 8px; text-decoration:underline; text-underline-offset:3px;">Leads recibido por embudo</h3>
-          <p class="help" style="margin-bottom:8px;">Para revisar si cada embudo va cumpliendo su meta de leads entrantes del mes.</p>
-          <div id="leadsPorEmbudoTable"></div>
-        </div>
-      </div>
-    </div>
-    <div class="panel">
-      <div class="panel-head">
-        <div class="panel-icon" id="iconDesempeno"></div>
-        <h2>Desempeño del periodo</h2>
-      </div>
-      <p class="help">Cuántos leads entraron, a cuántos se les habló de verdad, cuántos llegaron a cotización/calificado, y cómo se perdieron los que se perdieron.</p>
-      <div id="resultsStats"></div>
-      <div id="resultsTable"></div>
-      <details><summary>JSON crudo</summary><pre id="rawJson"></pre></details>
-    </div>
-    <div class="panel">
-      <div class="panel-head">
-        <div class="panel-icon" id="iconCalificados"></div>
-        <h2>Calificados por embudo</h2>
-      </div>
-      <p class="help">Quién está parado en la etapa "Calificado" ahora mismo, en cada embudo, y a cuánto suma en pesos.</p>
-      <div id="crosstabStats"></div>
-      <div id="crosstabTable"></div>
-      <div class="help" id="crosstabExcluidos" style="margin-top:10px;"></div>
-      <details><summary>JSON crudo</summary><pre id="rawJsonCrosstab"></pre></details>
-    </div>
-    <div class="panel">
-      <div class="panel-head">
-        <div class="panel-icon" id="iconGanados"></div>
-        <h2>Ganados del periodo</h2>
-      </div>
-      <p class="help">Proyectos cerrados (ganados) por embudo en el rango de fechas elegido, el monto total y el ticket promedio de venta.</p>
-      <div id="ganadosStats"></div>
-      <div id="ganadosTable"></div>
-      <h3 style="font-family:var(--display); font-size:13px; color:var(--ink-soft); font-weight:600; margin:22px 0 4px; letter-spacing:-.005em;">Desglose de leads ganados</h3>
-      <p class="help" style="margin-bottom:12px;">Cada venta cerrada en el periodo, con contacto, compañía, responsable y etiquetas. Ordenado de mayor a menor monto.</p>
-      <div id="ganadosDetalleTable"></div>
-    </div>
-  </div>
-
-  <div class="panel" id="callsPanel" style="display:none;">
-    <div class="panel-head">
-      <div class="panel-icon" id="iconLlamadas"></div>
-      <h2>Volumen de llamadas por asesor</h2>
-    </div>
-    <p class="help">Llamadas entrantes y salientes registradas en Kommo en el rango de fechas, agrupadas por quién realizó/registró la llamada vía Twilio.</p>
-    <div id="callsStats"></div>
-    <div id="callsTableCreador"></div>
-    <div class="help" id="callsNota" style="margin-top:10px;"></div>
-    <details><summary>JSON crudo</summary><pre id="rawJsonCalls"></pre></details>
-  </div>
-
-  <div class="panel" id="respTimesPanel" style="display:none;">
-    <div class="panel-head">
-      <div class="panel-icon" id="iconTiempos"></div>
-      <h2>Tiempos de respuesta a leads entrantes</h2>
-    </div>
-    <p class="help">Por cada embudo, el promedio de tiempo entre que el lead entró y recibió el primer contacto real del asesor/bot (mensaje o llamada saliente, lo que haya pasado primero), contando solo horas dentro de horario laboral (lunes a viernes, 9:00-18:00).</p>
-    <div id="respTimesStats"></div>
-    <div id="respTimesTable"></div>
-    <div class="help" id="respTimesNota" style="margin-top:10px;"></div>
-    <details><summary>JSON crudo</summary><pre id="rawJsonRespTimes"></pre></details>
-  </div>
-
-</div>
-
-<script>
-/* ============================== ICONOS ============================== */
-const ICONS = {
-  layers: '<polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/>',
-  sliders: '<line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/>',
-  target: '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>',
-  dollar: '<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>',
-  phone: '<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>',
-  clock: '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
-  users: '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
-  arrowUpRight: '<line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/>',
-  arrowDownLeft: '<line x1="17" y1="7" x2="7" y2="17"/><polyline points="17 17 7 17 7 7"/>',
-  checkCircle: '<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>',
-  xCircle: '<circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>',
-  trendingUp: '<polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>',
-  zap: '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>',
-  barChart: '<line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/>',
-};
-function icon(name, color, size) {
-  size = size || 18;
-  color = color || 'currentColor';
-  return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none" stroke="' + color + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + (ICONS[name] || '') + '</svg>';
-}
-function paintIcon(elId, name, color) {
-  const el = document.getElementById(elId);
-  if (el) el.innerHTML = icon(name, color, 20);
-}
-function statCard(name, color, label, value, sub) {
-  return '<div class="stat-card" style="--stat-color:' + color + '">' +
-    '<div class="stat-icon">' + icon(name, color, 18) + '</div>' +
-    '<div><div class="stat-label">' + label + '</div><div class="stat-value">' + value + '</div>' +
-    (sub ? '<div class="stat-sub">' + sub + '</div>' : '') + '</div></div>';
-}
-function hashHue(str) {
-  let h = 0;
-  for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) % 360;
-  return Math.abs(h);
-}
-function avatarHtml(name) {
-  const initials = name.split(/\s+/).filter(Boolean).map(w => w[0]).slice(0, 2).join('').toUpperCase() || '?';
-  const hue = hashHue(name);
-  return '<span class="avatar" style="width:28px;height:28px;background:hsl(' + hue + ' 22% 32%)">' + initials + '</span>';
-}
-
-paintIcon('brandIcon', 'layers', '#0f1117');
-paintIcon('iconFiltros', 'sliders', 'var(--c-neutral)');
-paintIcon('iconLeadsPeriodo', 'layers', 'var(--ink-soft)');
-paintIcon('iconDesempeno', 'layers', 'var(--ink-soft)');
-paintIcon('iconCalificados', 'target', 'var(--c-positive)');
-paintIcon('iconGanados', 'dollar', 'var(--ink-soft)');
-paintIcon('iconLlamadas', 'phone', 'var(--ink-soft)');
-paintIcon('iconTiempos', 'zap', 'var(--ink-soft)');
-
-/* ============================== DATOS (sin cambios de lógica) ============================== */
-const WEBHOOK_URL = "https://digital-crew-n8n.xrzfaj.easypanel.host/webhook/AI-AUDITORIA-COMERCIAL";
-
-const els = {
-  dateFrom: document.getElementById('dateFrom'),
-  dateTo: document.getElementById('dateTo'),
-  filterByToggle: document.getElementById('filterByToggle'),
-  pipelineChecks: document.getElementById('pipelineChecks'),
-  agentChecks: document.getElementById('agentChecks'),
-  tagChecks: document.getElementById('tagChecks'),
-  btnGenerar: document.getElementById('btnGenerar'),
-  calificadosToggle: document.getElementById('calificadosToggle'),
-  status: document.getElementById('status'),
-  resultsRow: document.getElementById('resultsRow'),
-  resultsStats: document.getElementById('resultsStats'),
-  resultsTable: document.getElementById('resultsTable'),
-  rawJson: document.getElementById('rawJson'),
-  leadsPeriodoStats: document.getElementById('leadsPeriodoStats'),
-  leadsPorAsesorTable: document.getElementById('leadsPorAsesorTable'),
-  leadsPorEmbudoTable: document.getElementById('leadsPorEmbudoTable'),
-  crosstabStats: document.getElementById('crosstabStats'),
-  crosstabTable: document.getElementById('crosstabTable'),
-  crosstabExcluidos: document.getElementById('crosstabExcluidos'),
-  rawJsonCrosstab: document.getElementById('rawJsonCrosstab'),
-  ganadosStats: document.getElementById('ganadosStats'),
-  ganadosTable: document.getElementById('ganadosTable'),
-  ganadosDetalleTable: document.getElementById('ganadosDetalleTable'),
-  callsPanel: document.getElementById('callsPanel'),
-  callsStats: document.getElementById('callsStats'),
-  callsTableCreador: document.getElementById('callsTableCreador'),
-  callsNota: document.getElementById('callsNota'),
-  rawJsonCalls: document.getElementById('rawJsonCalls'),
-  respTimesPanel: document.getElementById('respTimesPanel'),
-  respTimesStats: document.getElementById('respTimesStats'),
-  respTimesTable: document.getElementById('respTimesTable'),
-  respTimesNota: document.getElementById('respTimesNota'),
-  rawJsonRespTimes: document.getElementById('rawJsonRespTimes'),
-};
-
-let filterBy = 'created_at';
-let calificadosMode = 'actual';
-let agentsCatalog = [];
-
-els.calificadosToggle.addEventListener('click', (e) => {
-  const label = e.target.closest('label');
-  if (!label) return;
-  [...els.calificadosToggle.children].forEach(l => l.classList.remove('active'));
-  label.classList.add('active');
-  calificadosMode = label.dataset.value;
-});
-
-els.filterByToggle.addEventListener('click', (e) => {
-  const label = e.target.closest('label');
-  if (!label) return;
-  [...els.filterByToggle.children].forEach(l => l.classList.remove('active'));
-  label.classList.add('active');
-  filterBy = label.dataset.value;
-});
-
-function fmt(d) { return d.toISOString().slice(0, 10); }
-
-document.querySelectorAll('[data-preset]').forEach(btn => {
-  btn.addEventListener('click', () => {
-    const today = new Date();
-    let from, to;
-    if (btn.dataset.preset === 'hoy') { from = today; to = today; }
-    if (btn.dataset.preset === 'semana') {
-      const day = (today.getDay() + 6) % 7;
-      from = new Date(today); from.setDate(today.getDate() - day);
-      to = today;
-    }
-    if (btn.dataset.preset === 'mes') {
-      from = new Date(today.getFullYear(), today.getMonth(), 1);
-      to = today;
-    }
-    if (btn.dataset.preset === 'mesPasado') {
-      from = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-      to = new Date(today.getFullYear(), today.getMonth(), 0);
-    }
-    els.dateFrom.value = fmt(from);
-    els.dateTo.value = fmt(to);
-  });
-});
-
-(function setDefaultDates() {
-  const today = new Date();
-  const first = new Date(today.getFullYear(), today.getMonth(), 1);
-  els.dateFrom.value = fmt(first);
-  els.dateTo.value = fmt(today);
-})();
-
-function setStatus(text, kind) { els.status.textContent = text; els.status.className = 'status ' + kind; }
-
-function extractPayload(data, requiredKey) {
-  const candidates = [data, Array.isArray(data) ? data[0] : null, Array.isArray(data) && data[0] ? data[0].json : null];
-  for (const c of candidates) { if (c && typeof c === 'object' && requiredKey in c) return c; }
-  throw new Error(`La respuesta no tiene la forma esperada (busqué "${requiredKey}"). Respuesta cruda:\n` + JSON.stringify(data, null, 2).slice(0, 1500));
-}
-
-async function callWebhook(body) {
-  const res = await fetch(WEBHOOK_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-  if (!res.ok) throw new Error(`El webhook respondió ${res.status}. Revisa que el workflow esté activo en n8n.`);
-  return res.json();
-}
-
-function pct(n, total) { return total ? Math.round((n / total) * 100) + '%' : '0%'; }
-
-(async function cargarCatalogo() {
-  try {
-    const data = await callWebhook({ type: 'scan' });
-    const scanData = extractPayload(data, 'pipelines');
-    agentsCatalog = scanData.agents || [];
-    els.pipelineChecks.innerHTML = scanData.pipelines.map(p => `<label class="chip"><input type="checkbox" value="${p.id}" class="pipelineCheck"><span class="chip-dot"></span>${p.name}</label>`).join('');
-    els.agentChecks.innerHTML = scanData.agents.map(a => `<label class="chip"><input type="checkbox" value="${a.id}" class="agentCheck"><span class="chip-dot"></span>${a.name}</label>`).join('');
-    els.tagChecks.innerHTML = (scanData.tags || []).map(t => `<label class="chip"><input type="checkbox" value="${t.id}" class="tagCheck"><span class="chip-dot"></span>${t.name}</label>`).join('') || '<span class="help">Sin etiquetas en la cuenta.</span>';
-    setStatus('Catálogo listo.', 'ok');
-  } catch (err) {
-    setStatus('No se pudo cargar el catálogo: ' + err.message, 'err');
-    console.error(err);
-  }
-})();
-
-els.btnGenerar.addEventListener('click', async () => {
-  if (!els.dateFrom.value || !els.dateTo.value) {
-    setStatus('Falta elegir el rango de fechas.', 'err');
-    return;
-  }
-  const pipelineIds = [...document.querySelectorAll('.pipelineCheck:checked')].map(c => Number(c.value));
-  const agentIds = [...document.querySelectorAll('.agentCheck:checked')].map(c => Number(c.value));
-  const tagIds = [...document.querySelectorAll('.tagCheck:checked')].map(c => Number(c.value));
-  const useSnapshot = calificadosMode === 'actual';
-
-  els.btnGenerar.disabled = true;
-  setStatus('Generando reporte de desempeño, cross-tab de calificados, llamadas y tiempos de respuesta…', 'pending');
-  els.resultsRow.style.display = 'none';
-
-  try {
-    const perfBody = {
-      type: 'leads', view: 'performance',
-      date_from: els.dateFrom.value, date_to: els.dateTo.value,
-      filter_by: filterBy,
-      pipeline_ids: pipelineIds, agent_ids: agentIds, tag_ids: tagIds,
-    };
-    const crossBody = {
-      type: 'leads', view: 'qualified_crosstab',
-      pipeline_ids: pipelineIds, agent_ids: agentIds, tag_ids: tagIds,
-    };
-    if (!useSnapshot) { crossBody.date_from = els.dateFrom.value; crossBody.date_to = els.dateTo.value; }
-    const callsBody = {
-      type: 'calls',
-      date_from: els.dateFrom.value, date_to: els.dateTo.value,
-      agent_ids: agentIds,
-    };
-    const respTimesBody = {
-      type: 'leads', view: 'response_times',
-      date_from: els.dateFrom.value, date_to: els.dateTo.value,
-      pipeline_ids: pipelineIds,
-    };
-
-    const [perfData, crossData, callsData, respTimesData] = await Promise.all([
-      callWebhook(perfBody), callWebhook(crossBody), callWebhook(callsBody), callWebhook(respTimesBody)
-    ]);
-
-    const perfPayload = extractPayload(perfData, 'por_embudo');
-    renderLeadsPorPeriodo(perfPayload);
-    renderResultados(perfPayload);
-    await renderGanados(perfPayload);
-    els.rawJson.textContent = JSON.stringify(perfData, null, 2);
-
-    const crossPayload = extractPayload(crossData, 'totales');
-    renderCrosstab(crossPayload);
-    els.rawJsonCrosstab.textContent = JSON.stringify(crossData, null, 2);
-
-    const callsPayload = extractPayload(callsData, 'por_creador');
-    renderLlamadas(callsPayload);
-    els.rawJsonCalls.textContent = JSON.stringify(callsData, null, 2);
-
-    const respTimesPayload = extractPayload(respTimesData, 'por_embudo');
-    renderTiemposRespuesta(respTimesPayload);
-    els.rawJsonRespTimes.textContent = JSON.stringify(respTimesData, null, 2);
-
-    els.resultsRow.style.display = 'block';
-    els.callsPanel.style.display = 'block';
-    els.respTimesPanel.style.display = 'block';
-    setStatus(`Listo · ${perfPayload.total_leads_extraidos} leads · ${crossPayload.totales.leads_calificados} calificados · ${callsPayload.total_llamadas} llamadas`, 'ok');
-  } catch (err) {
-    setStatus('No se pudo generar el reporte: ' + err.message, 'err');
-    console.error(err);
-  } finally {
-    els.btnGenerar.disabled = false;
-  }
-});
-
-/* ============================== RENDER: Leads por periodo ============================== */
-function miniTabla(rows, labelCol) {
-  if (!rows.length) return '<div class="empty">Sin datos.</div>';
-  const total = rows.reduce((s, r) => s + r.valor, 0);
-  const filas = rows.map(r => `
-    <tr>
-      <td>${r.etiqueta}</td>
-      <td class="num"><span class="numval">${r.valor}</span></td>
-    </tr>`).join('');
-  return `
-    <div class="table-scroll">
-    <table>
-      <thead><tr><th>${labelCol}</th><th class="num">Leads</th></tr></thead>
-      <tbody>${filas}
-        <tr class="totales"><td>Total</td><td class="num"><span class="numval">${total}</span></td></tr>
-      </tbody>
-    </table>
-    </div>`;
-}
-
-// Meta mensual de leads entrantes por embudo. Valores fijos, definidos por
-// direccion -- los embudos que no aparecen aqui no tienen meta y se muestran
-// con "—" (no se inventa una meta ni se cuenta en el total).
-const META_LEADS_POR_EMBUDO = {
-  web_edu_dc: 80,
-  campanas_publicitarias: 29,
-  talleres_venta: 22,
-  agentes_venta: 33,
-};
-
-function tablaEmbudosConMeta(rows) {
-  if (!rows.length) return '<div class="empty">Sin datos.</div>';
-  const totalLeads = rows.reduce((s, r) => s + r.valor, 0);
-  const filas = rows.map(r => {
-    const meta = META_LEADS_POR_EMBUDO[r.etiqueta];
-    const tieneMeta = meta != null && meta > 0;
-    const pct = tieneMeta ? (r.valor / meta * 100) : 0;
-    const anchoBarra = tieneMeta ? Math.min(100, pct) : 0;
-    return `
-    <tr>
-      <td>${r.etiqueta}</td>
-      <td class="num"><span class="numval">${tieneMeta ? meta : '—'}</span></td>
-      <td class="num"><span class="numval">${r.valor}</span></td>
-      <td class="num">
-        <div class="meta-leads-cell">
-          <span class="meta-leads-pct${tieneMeta ? '' : ' vacio'}">${tieneMeta ? pct.toFixed(1) + '%' : '—'}</span>
-          <div class="meta-leads-bar"><span style="width:${anchoBarra}%"></span></div>
-        </div>
-      </td>
-    </tr>`;
-  }).join('');
-  return `
-    <div class="table-scroll">
-    <table>
-      <thead><tr><th>Embudo</th><th class="num">Meta mensual</th><th class="num">Leads</th><th class="num">% Meta cumplida</th></tr></thead>
-      <tbody>${filas}
-        <tr class="totales">
-          <td>Total</td>
-          <td class="num"><span class="numval">—</span></td>
-          <td class="num"><span class="numval">${totalLeads}</span></td>
-          <td class="num"><span class="numval">—</span></td>
-        </tr>
-      </tbody>
-    </table>
-    </div>`;
-}
-
-function renderLeadsPorPeriodo(payload) {
-  const porAsesor = payload.leads_por_asesor || {};
-  const porEmbudo = payload.leads_por_embudo || {};
-
-  const filasAsesor = Object.entries(porAsesor)
-    .map(([uid, valor]) => ({ etiqueta: nombreAgente(uid), valor }))
-    .sort((a, b) => b.valor - a.valor);
-  const filasEmbudo = Object.entries(porEmbudo)
-    .map(([key, valor]) => ({ etiqueta: key, valor }))
-    .filter(r => r.valor > 0)
-    .sort((a, b) => b.valor - a.valor);
-
-  const totalAsesor = filasAsesor.reduce((s, r) => s + r.valor, 0);
-  const totalEmbudo = filasEmbudo.reduce((s, r) => s + r.valor, 0);
-
-  els.leadsPeriodoStats.innerHTML = '<div class="stats-row">' +
-    statCard('layers', 'var(--ink-soft)', 'Total de leads recibidos del periodo', totalAsesor) +
-    statCard('users', 'var(--ink-soft)', 'Asesores con leads', filasAsesor.length) +
-    (totalAsesor !== totalEmbudo
-      ? statCard('xCircle', 'var(--c-loss)', 'Revisar', 'sumas no coinciden (' + totalAsesor + ' vs ' + totalEmbudo + ')')
-      : '') +
-    '</div>';
-
-  els.leadsPorAsesorTable.innerHTML = miniTabla(filasAsesor, 'Asesor');
-  els.leadsPorEmbudoTable.innerHTML = tablaEmbudosConMeta(filasEmbudo);
-}
-
-/* ============================== RENDER: Desempeño ============================== */
-function renderResultados(payload) {
-  const embudos = Object.values(payload.por_embudo || {});
-  if (!embudos.length) { els.resultsStats.innerHTML = ''; els.resultsTable.innerHTML = '<div class="empty">Sin leads en este periodo con estos filtros.</div>'; return; }
-  const totales = embudos.reduce((acc, e) => {
-    acc.total += e.total; acc.efectivo += e.efectivo; acc.cotizacion += e.cotizacion;
-    acc.calificado += e.calificado; acc.ganado += e.ganado; acc.perdido += e.perdido; acc.monto_ganado += e.monto_ganado;
-    return acc;
-  }, { total: 0, efectivo: 0, cotizacion: 0, calificado: 0, ganado: 0, perdido: 0, monto_ganado: 0 });
-
-  els.resultsStats.innerHTML = '<div class="stats-row">' +
-    statCard('layers', 'var(--ink-soft)', 'Total leads', totales.total) +
-    statCard('checkCircle', 'var(--c-positive)', 'Ganados', totales.ganado, pct(totales.ganado, totales.total) + ' de conversión') +
-    statCard('dollar', 'var(--ink-soft)', 'Monto ganado', '$' + totales.monto_ganado.toLocaleString('es-MX', {maximumFractionDigits:0})) +
-    statCard('xCircle', 'var(--c-loss)', 'Perdidos', totales.perdido) +
-    '</div>';
-
-  const rows = embudos.map(e => {
-    const motivosOrdenados = Object.entries(e.motivos_perdida).sort((a, b) => b[1] - a[1]);
-    const motivosCompleto = motivosOrdenados.map(([m, c]) => `${m} (${c})`).join(', ') || 'Sin pérdidas';
-    const motivosCorto = motivosOrdenados.slice(0, 1).map(([m, c]) => `${m} (${c})`).join(', ')
-      + (motivosOrdenados.length > 1 ? ` +${motivosOrdenados.length - 1} más` : '') || '—';
-    return `
-    <tr>
-      <td>${e.embudo}</td>
-      <td class="num"><span class="numval">${e.total}</span></td>
-      <td class="num"><span class="numval">${e.efectivo}</span><span class="pct">${pct(e.efectivo, e.total)}</span></td>
-      <td class="num"><span class="numval">${e.cotizacion}</span><span class="pct">${pct(e.cotizacion, e.total)}</span></td>
-      <td class="num"><span class="numval">${e.calificado}</span><span class="pct">${pct(e.calificado, e.total)}</span></td>
-      <td class="num"><span class="numval">${e.ganado}</span></td>
-      <td class="num"><span class="numval">$${e.monto_ganado.toLocaleString('es-MX')}</span></td>
-      <td class="num"><span class="numval">${pct(e.ganado, e.total)}</span></td>
-      <td class="num"><span class="numval">${pct(e.ganado, e.total)}</span></td>
-      <td class="num"><span class="numval">${e.perdido}</span></td>
-      <td class="motivos" title="${motivosCompleto}">${motivosCorto}</td>
-    </tr>`;
-  }).join('');
-
-  els.resultsTable.innerHTML = `
-    <div class="table-scroll">
-    <table>
-      <thead><tr><th>Embudo</th><th class="num">Total</th><th class="num">Efectivo</th><th class="num">Cotiz.</th><th class="num">Calif.</th><th class="num">Ganado</th><th class="num">Monto</th><th class="num">Tasa conv.</th><th class="num">Tasa cierre</th><th class="num">Perdido</th><th>Motivos</th></tr></thead>
-      <tbody>${rows}
-        <tr class="totales">
-          <td>Total</td><td class="num"><span class="numval">${totales.total}</span></td>
-          <td class="num"><span class="numval">${totales.efectivo}</span><span class="pct">${pct(totales.efectivo, totales.total)}</span></td>
-          <td class="num"><span class="numval">${totales.cotizacion}</span><span class="pct">${pct(totales.cotizacion, totales.total)}</span></td>
-          <td class="num"><span class="numval">${totales.calificado}</span><span class="pct">${pct(totales.calificado, totales.total)}</span></td>
-          <td class="num"><span class="numval">${totales.ganado}</span></td><td class="num"><span class="numval">$${totales.monto_ganado.toLocaleString('es-MX')}</span></td>
-          <td class="num"><span class="numval">${pct(totales.ganado, totales.total)}</span></td>
-          <td class="num"><span class="numval">${pct(totales.ganado, totales.total)}</span></td>
-          <td class="num"><span class="numval">${totales.perdido}</span></td><td></td>
-        </tr>
-      </tbody>
-    </table>
-    </div>`;
-}
-
-/* ============================== RENDER: Calificados ============================== */
-function renderCrosstab(payload) {
-  const embudos = Object.values(payload.por_embudo || {});
-  if (!embudos.length) { els.crosstabStats.innerHTML = ''; els.crosstabTable.innerHTML = '<div class="empty">Sin resultados.</div>'; return; }
-
-  els.crosstabStats.innerHTML = '<div class="stats-row">' +
-    statCard('target', 'var(--c-positive)', 'Leads calificados', payload.totales.leads_calificados) +
-    statCard('dollar', 'var(--ink-soft)', 'Monto calificado', '$' + payload.totales.monto_calificado.toLocaleString('es-MX')) +
-    '</div>';
-
-  const rows = embudos.map(e => `<tr><td>${e.embudo}</td><td class="num">${e.leads_calificados}</td><td class="num">$${e.monto_calificado.toLocaleString('es-MX')}</td></tr>`).join('');
-  els.crosstabTable.innerHTML = `
-    <div class="table-scroll">
-    <table>
-      <thead><tr><th>Embudo</th><th class="num">Leads calificados</th><th class="num">Monto</th></tr></thead>
-      <tbody>${rows}
-        <tr class="totales"><td>Total</td><td class="num">${payload.totales.leads_calificados}</td><td class="num">$${payload.totales.monto_calificado.toLocaleString('es-MX')}</td></tr>
-      </tbody>
-    </table>
-    </div>`;
-  const excluidos = payload.embudos_excluidos_sin_etapa_calificado || [];
-  els.crosstabExcluidos.textContent = excluidos.length ? `No incluidos (sin etapa "Calificado"): ${excluidos.join(', ')}` : '';
-}
-
-/* ============================== Metas y pauta (persistente en Postgres vía n8n) ============================== */
-let metasCache = {};
-
-async function cargarMetas() {
-  try {
-    const data = await callWebhook({ type: 'metas', action: 'get' });
-    const payload = extractPayload(data, 'por_embudo');
-    metasCache = payload.por_embudo || {};
-  } catch (err) {
-    console.error('No se pudieron cargar metas/inversión:', err);
-    metasCache = {};
-  }
-  return metasCache;
-}
-
-async function guardarMeta(embudoKey, metaVenta, inversionPauta) {
-  metasCache[embudoKey] = { meta_venta: metaVenta, inversion_pauta: inversionPauta };
-  try {
-    await callWebhook({ type: 'metas', action: 'set', embudo: embudoKey, meta_venta: metaVenta, inversion_pauta: inversionPauta });
-    return true;
-  } catch (err) {
-    console.error('No se pudo guardar meta/inversión:', err);
-    return false;
-  }
-}
-
-function pctMetaClass(pct, tieneMeta) {
-  if (!tieneMeta) return 'sinmeta';
-  if (pct >= 100) return 'alto';
-  if (pct >= 50) return 'medio';
-  return 'bajo';
-}
-
-function recalcularTotales(container) {
-  const totalRow = container.querySelector('tr[data-total-row]');
-  if (!totalRow) return;
-  const totalMontoGanado = Number(totalRow.dataset.montoGanado) || 0;
-
-  let totalMeta = 0, totalInv = 0;
-  container.querySelectorAll('tr[data-embudo-row]').forEach(row => {
-    totalMeta += Number(row.querySelector('input.meta-venta').value) || 0;
-    totalInv += Number(row.querySelector('input.inv-pauta').value) || 0;
-  });
-
-  const tieneMeta = totalMeta > 0;
-  const pct = tieneMeta ? (totalMontoGanado / totalMeta * 100) : 0;
-
-  totalRow.querySelector('.total-meta-val').textContent = '$' + totalMeta.toLocaleString('es-MX', {maximumFractionDigits:0});
-  totalRow.querySelector('.total-inv-val').textContent = '$' + totalInv.toLocaleString('es-MX', {maximumFractionDigits:0});
-  const pctEl = totalRow.querySelector('.total-pct-val');
-  pctEl.textContent = tieneMeta ? pct.toFixed(1) + '%' : '—';
-  pctEl.className = 'pct-meta total-pct-val ' + pctMetaClass(pct, tieneMeta);
-}
-
-function attachMetaHandlers(container) {
-  container.querySelectorAll('tr[data-embudo-row]').forEach(row => {
-    const embudoKey = row.dataset.embudoRow;
-    const inpMeta = row.querySelector('input.meta-venta');
-    const inpInv = row.querySelector('input.inv-pauta');
-    const pctCell = row.querySelector('.pct-meta');
-    const indMeta = row.querySelector('.save-indicator.meta-ind');
-    const indInv = row.querySelector('.save-indicator.inv-ind');
-    const montoGanado = Number(row.dataset.montoGanado) || 0;
-    let debounceTimer = null;
-
-    function recalcularPct() {
-      const metaVal = Number(inpMeta.value) || 0;
-      const tieneMeta = metaVal > 0;
-      const pct = tieneMeta ? (montoGanado / metaVal * 100) : 0;
-      pctCell.textContent = tieneMeta ? pct.toFixed(1) + '%' : '—';
-      pctCell.className = 'pct-meta ' + pctMetaClass(pct, tieneMeta);
-    }
-
-    function setIndicador(el, texto, clase) {
-      el.textContent = texto;
-      el.className = 'save-indicator ' + clase;
-    }
-
-    function guardarConDebounce() {
-      clearTimeout(debounceTimer);
-      setIndicador(indMeta, 'Editando…', 'pending');
-      setIndicador(indInv, 'Editando…', 'pending');
-      debounceTimer = setTimeout(async () => {
-        const metaVal = inpMeta.value === '' ? 0 : Number(inpMeta.value);
-        const invVal = inpInv.value === '' ? 0 : Number(inpInv.value);
-        setIndicador(indMeta, 'Guardando…', 'pending');
-        setIndicador(indInv, 'Guardando…', 'pending');
-        inpMeta.classList.remove('error'); inpInv.classList.remove('error');
-        const ok = await guardarMeta(embudoKey, metaVal, invVal);
-        if (ok) {
-          setIndicador(indMeta, 'Guardado ✓', 'ok');
-          setIndicador(indInv, 'Guardado ✓', 'ok');
-          setTimeout(() => { setIndicador(indMeta, '', ''); setIndicador(indInv, '', ''); }, 2000);
-        } else {
-          setIndicador(indMeta, 'Error al guardar', 'err');
-          setIndicador(indInv, 'Error al guardar', 'err');
-          inpMeta.classList.add('error'); inpInv.classList.add('error');
+{
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "AI-AUDITORIA-SOJEDA",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
         }
-      }, 600);
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [-3856, 15888],
+      "id": "37a7dfc7-be0b-4abb-9b59-cc9d9bc606e3",
+      "name": "Webhook_Sojeda",
+      "webhookId": "9e585bfb-1d69-4a40-a257-3b181fef5164"
+    },
+    {
+      "parameters": {
+        "fields": {
+          "values": [
+            {
+              "name": "kommo_token",
+              "stringValue": "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImp0aSI6ImY4NWI3MTk2OTQ3ZDI2NDBmNDYyOTQyNmQ1NTg1N2U0NDQxMGFiMjFiY2U1Mzc1MTU2MTdhMWExMmI1NTk2MjE0YmE2MTdmMjAwNmFkMTBlIn0.eyJhdWQiOiI4M2QwY2U5Yi00NzQ1LTQ0N2UtOGNlNy0wMTExZmMwNWI0ZDQiLCJqdGkiOiJmODViNzE5Njk0N2QyNjQwZjQ2Mjk0MjZkNTU4NTdlNDQ0MTBhYjIxYmNlNTM3NTE1NjE3YTFhMTJiNTU5NjIxNGJhNjE3ZjIwMDZhZDEwZSIsImlhdCI6MTc4NTE5MDgxOSwibmJmIjoxNzg1MTkwODE5LCJleHAiOjE4ODU1OTM2MDAsInN1YiI6IjEzMTk3MTU1IiwiZ3JhbnRfdHlwZSI6IiIsImFjY291bnRfaWQiOjM0NTk1NDUxLCJiYXNlX2RvbWFpbiI6ImtvbW1vLmNvbSIsInZlcnNpb24iOjIsInNjb3BlcyI6WyJwdXNoX25vdGlmaWNhdGlvbnMiLCJmaWxlcyIsImNybSIsImZpbGVzX2RlbGV0ZSIsIm5vdGlmaWNhdGlvbnMiXSwiaGFzaF91dWlkIjoiOWEyZWY5OGEtZDg1OC00YmNjLTkxNWEtMjhkNWUwMzc2ZDkxIiwiYXBpX2RvbWFpbiI6ImFwaS1nLmtvbW1vLmNvbSJ9.hUTtV8ggvGb5dHByTdzBksiCtWJ36o_f3SKk-712JpRfPJz9D2xIZeiVeBVOTrVQG7dnEe0bBO1G-o_AW2bq-9AoD41XVBOwvWS6WLKepqZargyuoDasKAtMLs2763eG2cR3OlQfETUyTfGB8iKKtttwRodDDoj5lmB0FEoDPxG3jgN1RRj1NZGeENe-nLMFCwRAMUBFUf-W8WXWyCzH6dIzfGWdUoY8whLXjbOS2drdlfuLnE28vYcwIsko3s7ITVAm5sZp0orTET_84ZQqVgoniudwRiGO1gwXXU1KwjOe_80KAnCpIuYWXM8yNS8DRWACoY3BYBpygzLvDXrT4g"
+            },
+            {
+              "name": "kommo_subdomain",
+              "stringValue": "sojeda"
+            }
+          ]
+        },
+        "include": "none",
+        "options": {}
+      },
+      "id": "899555e5-f150-4dc8-a4cc-465ffd2bd241",
+      "name": "Config_Sojeda",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3,
+      "position": [-3584, 15888]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 1 },
+                "conditions": [
+                  {
+                    "id": "cond-scan-001",
+                    "leftValue": "={{ $('Webhook_Sojeda').first().json.body.type }}",
+                    "rightValue": "scan",
+                    "operator": { "type": "string", "operation": "equals", "name": "filter.operator.equals" }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "scan"
+            },
+            {
+              "conditions": {
+                "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 1 },
+                "conditions": [
+                  {
+                    "id": "cond-leads-002",
+                    "leftValue": "={{ $('Webhook_Sojeda').first().json.body.type }}",
+                    "rightValue": "leads",
+                    "operator": { "type": "string", "operation": "equals", "name": "filter.operator.equals" }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "leads"
+            },
+            {
+              "conditions": {
+                "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 1 },
+                "conditions": [
+                  {
+                    "id": "cond-calls-003",
+                    "leftValue": "={{ $('Webhook_Sojeda').first().json.body.type }}",
+                    "rightValue": "calls",
+                    "operator": { "type": "string", "operation": "equals", "name": "filter.operator.equals" }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "calls"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "20a83bc9-237c-4af9-904f-c45baf37409a",
+      "name": "Switch Tipo_Sojeda",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [-3248, 15872]
+    },
+    {
+      "parameters": {
+        "url": "=https://{{ $('Config_Sojeda').first().json.kommo_subdomain }}.kommo.com/api/v4/leads/pipelines?limit=50",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Content-Type", "value": "application/json" },
+            { "name": "authorization", "value": "=Bearer {{ $('Config_Sojeda').first().json.kommo_token }}" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fc8feb14-2c42-4370-80c2-02621211f0e5",
+      "name": "HTTP Pipelines_Sojeda",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-2848, 15744]
+    },
+    {
+      "parameters": {
+        "url": "=https://{{ $('Config_Sojeda').first().json.kommo_subdomain }}.kommo.com/api/v4/leads/tags?limit=250",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Content-Type", "value": "application/json" },
+            { "name": "authorization", "value": "=Bearer {{ $('Config_Sojeda').first().json.kommo_token }}" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fd3364df-ef77-4296-966d-e7505dbf031e",
+      "name": "HTTP Tags_Sojeda",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-2624, 15744]
+    },
+    {
+      "parameters": {
+        "url": "=https://{{ $('Config_Sojeda').first().json.kommo_subdomain }}.kommo.com/api/v4/users?limit=250",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Content-Type", "value": "application/json" },
+            { "name": "authorization", "value": "=Bearer {{ $('Config_Sojeda').first().json.kommo_token }}" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "57a03abd-1772-4b62-893f-822d8925bc64",
+      "name": "HTTP Users_Sojeda",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-2400, 15744]
+    },
+    {
+      "parameters": {
+        "jsCode": "function parse(raw) {\n  if (raw && typeof raw.data === 'string') { try { return JSON.parse(raw.data); } catch(e) {} }\n  return raw || {};\n}\nconst pipesData = parse($('HTTP Pipelines_Sojeda').first().json);\nconst tagsData  = parse($('HTTP Tags_Sojeda').first().json);\nconst usersData = parse($('HTTP Users_Sojeda').first().json);\nconst pipelines = ((pipesData._embedded || {}).pipelines || []).map(p => {\n  const stages = ((p._embedded || {}).statuses || []).filter(s => s.type !== 10000).sort((a,b)=>(a.sort||0)-(b.sort||0)).map(s=>({id:s.id,name:s.name}));\n  return { id: p.id, name: p.name, stages };\n});\nconst tags   = ((tagsData._embedded  || {}).tags  || []).map(t => ({ id: t.id, name: t.name })).sort((a, b) => a.name.localeCompare(b.name, 'es'));\nconst agents = ((usersData._embedded || {}).users || []).map(u => ({ id: u.id, name: u.name }));\nreturn [{ json: { type: 'scan_result', pipelines, tags, agents } }];"
+      },
+      "id": "d88a64d1-3a03-459f-8229-c01651991bdf",
+      "name": "Code Format Scan_Sojeda",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-2176, 15744]
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "id": "0aaccb14-7ac7-4ff2-8f0b-994fbc5e93a5",
+      "name": "Respond Scan_Sojeda",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [-1952, 15744]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Mapeo canonico de embudos -> categorias del reporte comercial (cuenta sojeda / ISTONE).\n// IDs obtenidos en vivo contra la API de Kommo el 30-jul-2026 (pipelines/leads/pipelines).\n// A diferencia de Digital Crew, aqui los 4 embudos son carteras por persona/cliente\n// (Sergio, Bernardo, ISTONE, OPA), no canales de marketing.\n//\n// 'efectivo' no aparece aqui: se deriva de actividad (primer WhatsApp saliente o nota\n// manual), no de una etapa de Kommo -- ver Calcular Tiempos de Respuesta_Sojeda.\n//\n// 'zoom' es null en leads_istone -- su proceso (Owner's Rep / EPCM) no agenda Zoom\n// como paso de venta, va directo a cotizacion. El resto del codigo ya hace\n// `if (x != null)` antes de usar cada campo, asi que dejarlo en null hace que esa\n// columna salga '-' (no aplica) en vez de 0.\nreturn [{ json: {\n  embudos: {\n    leads_sergio:   { pipeline_id: 11151599, zoom: 85567351,  cotizacion: 86504119,  negociacion: 86504127, ganado: 142, perdido: 143, stage_order: [85567335,92473515,88371579,93608543,86504115,85567347,85567351,86504119,86504123,86504127,85567343] },\n    leads_bernardo: { pipeline_id: 11345983, zoom: 87113491,  cotizacion: 87113495,  negociacion: 87113503, ganado: 142, perdido: 143, stage_order: [87090847,92473563,92473567,87090851,87090855,87090859,87113487,87113491,87113495,87113499,87113503] },\n    leads_istone:   { pipeline_id: 11729699, zoom: null,      cotizacion: 90567159,  negociacion: 90567163, ganado: 142, perdido: 143, stage_order: [90210831,90210835,90210839,90210843,92869811,90567159,90593047,90567163] },\n    leads_opa:      { pipeline_id: 13521616, zoom: 104324476, cotizacion: 104324632, negociacion: 104324480, ganado: 142, perdido: 143, stage_order: [104324468,104324472,104324612,104324616,104324620,104324624,104324628,104324476,104324632,104324636,104324480,104324640] }\n  }\n}}];"
+      },
+      "id": "ade16780-9061-4da0-b8fb-1c8803fd54c2",
+      "name": "Config Mapeo_Sojeda",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-2848, 16064]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Lee body del webhook, config de Kommo y el mapeo de embudos\nconst body = $('Webhook_Sojeda').first().json.body;\nconst cfg = $('Config_Sojeda').first().json;\nconst mapeo = $('Config Mapeo_Sojeda').first().json.embudos;\n\nif (!body || body.type !== 'leads') {\n  throw new Error(`Se esperaba type=\"leads\" pero llego type=\"${body && body.type}\". Revisa el cableado de Switch Tipo_Sojeda: su salida 'leads' (indice 1) debe ir a Config Mapeo_Sojeda.`);\n}\nif (!body.date_from || !body.date_to) {\n  throw new Error('Faltan date_from/date_to en la solicitud. Sin esto, el filtro de fecha hacia Kommo queda invalido y regresa TODOS los leads de la cuenta sin filtrar.');\n}\n\nconst filterBy = (body.filter_by === 'closed_at') ? 'closed_at' : 'created_at';\n\nfunction toUnixStart(dateStr) {\n  return Math.floor(new Date(`${dateStr}T00:00:00-06:00`).getTime() / 1000);\n}\nfunction toUnixEnd(dateStr) {\n  return Math.floor(new Date(`${dateStr}T23:59:59-06:00`).getTime() / 1000);\n}\n\nconst qp = [];\nfunction addParam(key, value) { qp.push(encodeURIComponent(key) + '=' + encodeURIComponent(value)); }\naddParam('with', 'loss_reason,tags,contacts,company');\naddParam('limit', '250');\naddParam(`filter[${filterBy}][from]`, toUnixStart(body.date_from));\naddParam(`filter[${filterBy}][to]`, toUnixEnd(body.date_to));\nif (body.agent_ids && body.agent_ids.length) {\n  body.agent_ids.forEach(id => addParam('filter[responsible_user_id][]', id));\n}\nif (body.pipeline_ids && body.pipeline_ids.length) {\n  body.pipeline_ids.forEach(id => addParam('filter[pipeline_id][]', id));\n}\n\n// Filtro opcional de etiquetas: 100% manual, elegido en el dashboard (tag_ids).\nconst tagFilterSet = (body.tag_ids && body.tag_ids.length) ? new Set(body.tag_ids.map(Number)) : null;\n\nlet nextUrl = `https://${cfg.kommo_subdomain}.kommo.com/api/v4/leads?${qp.join('&')}`;\nlet allLeads = [];\nlet guard = 0;\n\nwhile (nextUrl && guard < 50) {\n  let resp = await this.helpers.httpRequest({\n    method: 'GET',\n    url: nextUrl,\n    headers: { Authorization: `Bearer ${cfg.kommo_token}`, 'Content-Type': 'application/json' },\n    json: true,\n  });\n  if (!resp || typeof resp !== 'object') resp = {};\n  const pageLeads = (resp._embedded && resp._embedded.leads) || [];\n  allLeads = allLeads.concat(pageLeads);\n  nextUrl = (resp._links && resp._links.next && resp._links.next.href) || null;\n  guard++;\n}\n\nfunction buildPositionMap(stageOrder) {\n  const map = {};\n  stageOrder.forEach((stageId, idx) => { map[stageId] = idx; });\n  return map;\n}\n\n// ---------------------------------------------------------------------------\n// Credito historico para leads PERDIDOS: si un lead se marca perdido hoy pero\n// de verdad llego a zoom/cotizacion/negociacion antes de perderse, cuenta ahi\n// tambien (no se le quita el conteo de \"perdido\").\n// ---------------------------------------------------------------------------\nasync function fetchStatusHistory(leadIds) {\n  const ids = [...leadIds];\n  if (!ids.length) return [];\n  const out = [];\n  const BATCH = 10;\n  for (let i = 0; i < ids.length; i += BATCH) {\n    const batch = ids.slice(i, i + BATCH);\n    const eqp = [];\n    function addE(k, v) { eqp.push(encodeURIComponent(k) + '=' + encodeURIComponent(v)); }\n    addE('filter[type]', 'lead_status_changed');\n    addE('filter[entity]', 'lead');\n    addE('filter[entity_id]', batch.join(','));\n    addE('limit', '250');\n    let nextUrl = `https://${cfg.kommo_subdomain}.kommo.com/api/v4/events?${eqp.join('&')}`;\n    let guard = 0;\n    while (nextUrl && guard < 50) {\n      let resp = await this.helpers.httpRequest({\n        method: 'GET',\n        url: nextUrl,\n        headers: { Authorization: `Bearer ${cfg.kommo_token}`, 'Content-Type': 'application/json' },\n        json: true,\n      });\n      if (!resp || typeof resp !== 'object') resp = {};\n      const page = (resp._embedded && resp._embedded.events) || [];\n      out.push(...page);\n      nextUrl = (resp._links && resp._links.next && resp._links.next.href) || null;\n      guard++;\n    }\n  }\n  return out;\n}\n\nfunction parseStatusEvent(ev) {\n  const after = ev.value_after && ev.value_after[0];\n  const statusObj = after && (after.lead_status || after.status || after);\n  if (!statusObj || statusObj.id == null) return null;\n  return {\n    leadId: ev.entity_id,\n    statusId: statusObj.id,\n    pipelineId: statusObj.pipeline_id != null ? statusObj.pipeline_id : null,\n  };\n}\n\nconst resultado = {};\n\n// Entrante -> Contacto efectivo -> Zoom agendado -> Cotizacion -> Negociacion.\n// 'Contacto efectivo' vive en el payload de Tiempos de Respuesta (se deriva de\n// actividad, no de una etapa), asi que este nodo solo calcula zoom/cotizacion/\n// negociacion -- el dashboard une los dos payloads por clave de embudo.\n// zoom/cotizacion/negociacion quedan en null (no en 0) cuando ese embudo no\n// tiene esa etapa configurada, para que el dashboard pinte \"-\" en vez de un 0\n// que se leeria como \"nadie llego\", cuando en realidad el paso no aplica.\nfor (const [key, mcfg] of Object.entries(mapeo)) {\n  if (body.pipeline_ids && body.pipeline_ids.length && !body.pipeline_ids.includes(mcfg.pipeline_id)) continue;\n\n  const posMap = buildPositionMap(mcfg.stage_order);\n  const zoomPos = mcfg.zoom != null ? posMap[mcfg.zoom] : null;\n  const cotizacionPos = mcfg.cotizacion != null ? posMap[mcfg.cotizacion] : null;\n  const negociacionPos = mcfg.negociacion != null ? posMap[mcfg.negociacion] : null;\n\n  const acc = {\n    embudo: key,\n    pipeline_id: mcfg.pipeline_id,\n    total: 0,\n    zoom: zoomPos != null ? 0 : null,\n    cotizacion: cotizacionPos != null ? 0 : null,\n    negociacion: negociacionPos != null ? 0 : null,\n    ganado: 0,\n    perdido: 0,\n    monto_ganado: 0,\n    motivos_perdida: {},\n  };\n\n  let leadsEmbudo = allLeads.filter(l => l.pipeline_id === mcfg.pipeline_id);\n  if (tagFilterSet) {\n    leadsEmbudo = leadsEmbudo.filter(l => {\n      const tags = (l._embedded && l._embedded.tags) || [];\n      return tags.some(t => tagFilterSet.has(Number(t.id)));\n    });\n  }\n  acc.total = leadsEmbudo.length;\n\n  const perdidoIds = leadsEmbudo.filter(l => l.status_id === mcfg.perdido).map(l => l.id);\n  const maxPosPorLead = {};\n  if (perdidoIds.length && (zoomPos != null || cotizacionPos != null || negociacionPos != null)) {\n    const eventosHistorial = await fetchStatusHistory.call(this, perdidoIds);\n    for (const ev of eventosHistorial) {\n      const parsed = parseStatusEvent(ev);\n      if (!parsed) continue;\n      if (parsed.pipelineId != null && parsed.pipelineId !== mcfg.pipeline_id) continue;\n      const pos = posMap[parsed.statusId];\n      if (pos == null) continue;\n      if (maxPosPorLead[parsed.leadId] == null || pos > maxPosPorLead[parsed.leadId]) {\n        maxPosPorLead[parsed.leadId] = pos;\n      }\n    }\n  }\n\n  for (const lead of leadsEmbudo) {\n    if (lead.status_id === mcfg.ganado) {\n      acc.ganado++;\n      acc.monto_ganado += (lead.price || 0);\n      if (zoomPos != null) acc.zoom++;\n      if (cotizacionPos != null) acc.cotizacion++;\n      if (negociacionPos != null) acc.negociacion++;\n      continue;\n    }\n    if (lead.status_id === mcfg.perdido) {\n      acc.perdido++;\n      const motivo = (lead._embedded && lead._embedded.loss_reason && lead._embedded.loss_reason[0] && lead._embedded.loss_reason[0].name) || 'Sin motivo registrado';\n      acc.motivos_perdida[motivo] = (acc.motivos_perdida[motivo] || 0) + 1;\n      const maxPos = maxPosPorLead[lead.id];\n      if (maxPos != null) {\n        if (zoomPos != null && maxPos >= zoomPos) acc.zoom++;\n        if (cotizacionPos != null && maxPos >= cotizacionPos) acc.cotizacion++;\n        if (negociacionPos != null && maxPos >= negociacionPos) acc.negociacion++;\n      }\n      continue;\n    }\n    const leadPos = posMap[lead.status_id];\n    if (leadPos == null) continue;\n    if (zoomPos != null && leadPos >= zoomPos) acc.zoom++;\n    if (cotizacionPos != null && leadPos >= cotizacionPos) acc.cotizacion++;\n    if (negociacionPos != null && leadPos >= negociacionPos) acc.negociacion++;\n  }\n\n  resultado[key] = acc;\n}\n\nconst pipelineIdIncluido = {};\nfor (const [key, mcfg] of Object.entries(mapeo)) {\n  if (body.pipeline_ids && body.pipeline_ids.length && !body.pipeline_ids.includes(mcfg.pipeline_id)) continue;\n  pipelineIdIncluido[mcfg.pipeline_id] = true;\n}\n\nlet leadsParaPeriodo = allLeads.filter(l => pipelineIdIncluido[l.pipeline_id]);\nif (tagFilterSet) {\n  leadsParaPeriodo = leadsParaPeriodo.filter(l => {\n    const tags = (l._embedded && l._embedded.tags) || [];\n    return tags.some(t => tagFilterSet.has(Number(t.id)));\n  });\n}\n\nconst leadsPorAsesor = {};\nfor (const lead of leadsParaPeriodo) {\n  const uid = lead.responsible_user_id || 0;\n  leadsPorAsesor[uid] = (leadsPorAsesor[uid] || 0) + 1;\n}\n\nconst leadsPorEmbudo = {};\nfor (const [key, acc] of Object.entries(resultado)) {\n  leadsPorEmbudo[key] = acc.total;\n}\n\nconst pipelineIdToGanadoStatus = {};\nfor (const [key, mcfg] of Object.entries(mapeo)) pipelineIdToGanadoStatus[mcfg.pipeline_id] = mcfg.ganado;\n\nconst leadsGanados = allLeads.filter(l => l.status_id === pipelineIdToGanadoStatus[l.pipeline_id]);\n\nconst contactIdsGanados = new Set();\nconst companyIdsGanados = new Set();\nfor (const lead of leadsGanados) {\n  const contactos = (lead._embedded && lead._embedded.contacts) || [];\n  const principal = contactos.find(c => c.is_main) || contactos[0];\n  if (principal) contactIdsGanados.add(principal.id);\n  const companias = (lead._embedded && lead._embedded.companies) || [];\n  if (companias[0]) companyIdsGanados.add(companias[0].id);\n}\n\nasync function fetchNombresPorId(entityTypePlural, idsSet) {\n  const ids = [...idsSet];\n  const out = {};\n  if (!ids.length) return out;\n  const BATCH = 100;\n  for (let i = 0; i < ids.length; i += BATCH) {\n    const batch = ids.slice(i, i + BATCH);\n    const qp = batch.map((id, idx) => `filter%5Bid%5D%5B${idx}%5D=${id}`).join('&');\n    const url = `https://${cfg.kommo_subdomain}.kommo.com/api/v4/${entityTypePlural}?${qp}&limit=250`;\n    let resp = await this.helpers.httpRequest({\n      method: 'GET', url,\n      headers: { Authorization: `Bearer ${cfg.kommo_token}`, 'Content-Type': 'application/json' },\n      json: true,\n    });\n    if (!resp || typeof resp !== 'object') resp = {};\n    const items = (resp._embedded && resp._embedded[entityTypePlural]) || [];\n    for (const it of items) out[it.id] = it.name;\n  }\n  return out;\n}\n\nconst [nombresContactos, nombresCompanias] = await Promise.all([\n  fetchNombresPorId.call(this, 'contacts', contactIdsGanados),\n  fetchNombresPorId.call(this, 'companies', companyIdsGanados),\n]);\n\nconst ganadosDetalle = leadsGanados.map(lead => {\n  const contactos = (lead._embedded && lead._embedded.contacts) || [];\n  const principal = contactos.find(c => c.is_main) || contactos[0];\n  const companias = (lead._embedded && lead._embedded.companies) || [];\n  const tags = ((lead._embedded && lead._embedded.tags) || []).map(t => t.name);\n  return {\n    lead_id: lead.id,\n    nombre_lead: lead.name || `Lead ${lead.id}`,\n    nombre_contacto: principal ? (nombresContactos[principal.id] || null) : null,\n    monto: lead.price || 0,\n    compania: companias[0] ? (nombresCompanias[companias[0].id] || null) : null,\n    responsible_user_id: lead.responsible_user_id || null,\n    etiquetas: tags,\n  };\n}).sort((a, b) => b.monto - a.monto);\n\nreturn [{ json: {\n  periodo: { from: body.date_from, to: body.date_to, filtrado_por: filterBy },\n  total_leads_extraidos: allLeads.length,\n  por_embudo: resultado,\n  ganados_detalle: ganadosDetalle,\n  leads_por_asesor: leadsPorAsesor,\n  leads_por_embudo: leadsPorEmbudo\n}}];"
+      },
+      "id": "d81dfd59-1884-4580-90ae-4fdaddcb4821",
+      "name": "Calcular Reporte Performance_Sojeda",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-2352, 16000]
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "id": "6eb64b58-b271-4b69-a8b0-b1d067bef2a9",
+      "name": "Respond Leads_Sojeda",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [-2112, 16064]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 1 },
+                "conditions": [
+                  {
+                    "id": "cond-perf-001",
+                    "leftValue": "={{ $('Webhook_Sojeda').first().json.body.view }}",
+                    "rightValue": "performance",
+                    "operator": { "type": "string", "operation": "equals", "name": "filter.operator.equals" }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "performance"
+            },
+            {
+              "conditions": {
+                "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 1 },
+                "conditions": [
+                  {
+                    "id": "cond-cross-002",
+                    "leftValue": "={{ $('Webhook_Sojeda').first().json.body.view }}",
+                    "rightValue": "qualified_crosstab",
+                    "operator": { "type": "string", "operation": "equals", "name": "filter.operator.equals" }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "qualified_crosstab"
+            },
+            {
+              "conditions": {
+                "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 1 },
+                "conditions": [
+                  {
+                    "id": "cond-resptime-003",
+                    "leftValue": "={{ $('Webhook_Sojeda').first().json.body.view }}",
+                    "rightValue": "response_times",
+                    "operator": { "type": "string", "operation": "equals", "name": "filter.operator.equals" }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "response_times"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "85e81064-8e6f-4ec6-b817-2cc0caf27ab6",
+      "name": "Switch Vista_Sojeda",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [-2592, 16000]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Lee body, config de Kommo y el mapeo de embudos\nconst body = $('Webhook_Sojeda').first().json.body;\nconst cfg = $('Config_Sojeda').first().json;\nconst mapeo = $('Config Mapeo_Sojeda').first().json.embudos;\n\nif (!body || body.type !== 'leads' || body.view !== 'qualified_crosstab') {\n  throw new Error(`Se esperaba type=\"leads\" y view=\"qualified_crosstab\" pero llego type=\"${body && body.type}\", view=\"${body && body.view}\".`);\n}\n\nfunction toUnixStart(dateStr) { return Math.floor(new Date(`${dateStr}T00:00:00-06:00`).getTime() / 1000); }\nfunction toUnixEnd(dateStr) { return Math.floor(new Date(`${dateStr}T23:59:59-06:00`).getTime() / 1000); }\n\n// Redefinicion 02-sep-2026 (iteracion cliente ISTONE): \"calificado\" ya no son\n// solo cotizacion+negociacion -- ahora son 3 etapas: Zoom agendado, cotizacion\n// y negociacion (cualquier lead que haya avanzado de \"Llamada de Zoom\" en\n// adelante). Confirmado en vivo contra la API (2-sep-2026, embudo Leads de\n// Sergio) que faltaban 10 leads en la etapa Zoom que antes no se contaban.\n// Zoom es opcional por embudo (leads_istone no tiene esa etapa, va directo a\n// cotizacion), asi que se agrega solo cuando existe -- cotizacion+negociacion\n// siguen siendo el requisito minimo para que un embudo entre a este calculo.\n// El filtro filter[statuses][N] de Kommo SI funciona como OR/union entre\n// entradas -- confirmado en vivo: 3 queries por separado (10+2+5=17 leads) dan\n// el mismo total que 1 query combinada con las 3 entradas (17 leads), sin\n// duplicados ni perdidas.\nconst embudosCalificables = Object.entries(mapeo).filter(([k, m]) => m.cotizacion != null && m.negociacion != null);\nconst embudosExcluidos = Object.entries(mapeo).filter(([k, m]) => !(m.cotizacion != null && m.negociacion != null)).map(([k]) => k);\n\nconst tagFilterSet = (body.tag_ids && body.tag_ids.length) ? new Set(body.tag_ids.map(Number)) : null;\n\nconst resultado = {};\nlet todosLosLeadsCalificados = [];\n\nfor (const [key, mcfg] of embudosCalificables) {\n  const etapasCalificado = [];\n  if (mcfg.zoom != null) etapasCalificado.push({ status_id: mcfg.zoom, label: 'zoom' });\n  etapasCalificado.push({ status_id: mcfg.cotizacion, label: 'cotizacion' });\n  etapasCalificado.push({ status_id: mcfg.negociacion, label: 'negociacion' });\n  const labelPorStatus = {};\n  etapasCalificado.forEach(e => { labelPorStatus[e.status_id] = e.label; });\n\n  const qp = [];\n  function addParam(k, v) { qp.push(encodeURIComponent(k) + '=' + encodeURIComponent(v)); }\n  addParam('limit', '250');\n  addParam('with', 'tags,contacts,company');\n  etapasCalificado.forEach((etapa, idx) => {\n    addParam(`filter[statuses][${idx}][pipeline_id]`, mcfg.pipeline_id);\n    addParam(`filter[statuses][${idx}][status_id]`, etapa.status_id);\n  });\n  if (body.date_from && body.date_to) {\n    addParam('filter[created_at][from]', toUnixStart(body.date_from));\n    addParam('filter[created_at][to]', toUnixEnd(body.date_to));\n  }\n\n  let nextUrl = `https://${cfg.kommo_subdomain}.kommo.com/api/v4/leads?${qp.join('&')}`;\n  let leadsEmbudo = [];\n  let guard = 0;\n  while (nextUrl && guard < 50) {\n    let resp = await this.helpers.httpRequest({\n      method: 'GET',\n      url: nextUrl,\n      headers: { Authorization: `Bearer ${cfg.kommo_token}`, 'Content-Type': 'application/json' },\n      json: true,\n    });\n    if (!resp || typeof resp !== 'object') resp = {};\n    const pageLeads = (resp._embedded && resp._embedded.leads) || [];\n    leadsEmbudo = leadsEmbudo.concat(pageLeads);\n    nextUrl = (resp._links && resp._links.next && resp._links.next.href) || null;\n    guard++;\n  }\n\n  if (tagFilterSet) {\n    leadsEmbudo = leadsEmbudo.filter(l => {\n      const tags = (l._embedded && l._embedded.tags) || [];\n      return tags.some(t => tagFilterSet.has(Number(t.id)));\n    });\n  }\n\n  resultado[key] = {\n    embudo: key,\n    pipeline_id: mcfg.pipeline_id,\n    leads_calificados: leadsEmbudo.length,\n    monto_calificado: leadsEmbudo.reduce((sum, l) => sum + (l.price || 0), 0),\n  };\n\n  for (const lead of leadsEmbudo) {\n    todosLosLeadsCalificados.push({ lead, embudo: key, etapa_actual: labelPorStatus[lead.status_id] || 'cotizacion' });\n  }\n}\n\nconst totales = Object.values(resultado).reduce((acc, e) => {\n  acc.leads_calificados += e.leads_calificados;\n  acc.monto_calificado += e.monto_calificado;\n  return acc;\n}, { leads_calificados: 0, monto_calificado: 0 });\n\n// ---------------------------------------------------------------------------\n// Desglose/listado de calificados actuales: junto con \"ganados del periodo\",\n// no en vez de. Mismo patron de resolucion de nombres que ya usa Calcular\n// Reporte Performance para ganados_detalle.\n// ---------------------------------------------------------------------------\nconst contactIdsCalificados = new Set();\nconst companyIdsCalificados = new Set();\nfor (const { lead } of todosLosLeadsCalificados) {\n  const contactos = (lead._embedded && lead._embedded.contacts) || [];\n  const principal = contactos.find(c => c.is_main) || contactos[0];\n  if (principal) contactIdsCalificados.add(principal.id);\n  const companias = (lead._embedded && lead._embedded.companies) || [];\n  if (companias[0]) companyIdsCalificados.add(companias[0].id);\n}\n\nasync function fetchNombresPorId(entityTypePlural, idsSet) {\n  const ids = [...idsSet];\n  const out = {};\n  if (!ids.length) return out;\n  const BATCH = 100;\n  for (let i = 0; i < ids.length; i += BATCH) {\n    const batch = ids.slice(i, i + BATCH);\n    const qp = batch.map((id, idx) => `filter%5Bid%5D%5B${idx}%5D=${id}`).join('&');\n    const url = `https://${cfg.kommo_subdomain}.kommo.com/api/v4/${entityTypePlural}?${qp}&limit=250`;\n    let resp = await this.helpers.httpRequest({\n      method: 'GET', url,\n      headers: { Authorization: `Bearer ${cfg.kommo_token}`, 'Content-Type': 'application/json' },\n      json: true,\n    });\n    if (!resp || typeof resp !== 'object') resp = {};\n    const items = (resp._embedded && resp._embedded[entityTypePlural]) || [];\n    for (const it of items) out[it.id] = it.name;\n  }\n  return out;\n}\n\nconst [nombresContactos, nombresCompanias] = await Promise.all([\n  fetchNombresPorId.call(this, 'contacts', contactIdsCalificados),\n  fetchNombresPorId.call(this, 'companies', companyIdsCalificados),\n]);\n\nconst calificadosDetalle = todosLosLeadsCalificados.map(({ lead, embudo, etapa_actual }) => {\n  const contactos = (lead._embedded && lead._embedded.contacts) || [];\n  const principal = contactos.find(c => c.is_main) || contactos[0];\n  const companias = (lead._embedded && lead._embedded.companies) || [];\n  const tags = ((lead._embedded && lead._embedded.tags) || []).map(t => t.name);\n  return {\n    lead_id: lead.id,\n    nombre_lead: lead.name || `Lead ${lead.id}`,\n    embudo,\n    etapa_actual,\n    nombre_contacto: principal ? (nombresContactos[principal.id] || null) : null,\n    monto: lead.price || 0,\n    compania: companias[0] ? (nombresCompanias[companias[0].id] || null) : null,\n    responsible_user_id: lead.responsible_user_id || null,\n    etiquetas: tags,\n  };\n}).sort((a, b) => b.monto - a.monto);\n\nreturn [{ json: {\n  periodo: (body.date_from && body.date_to) ? { from: body.date_from, to: body.date_to } : 'snapshot_actual_sin_filtro_de_fecha',\n  por_embudo: resultado,\n  totales,\n  calificados_detalle: calificadosDetalle,\n  embudos_excluidos_sin_cotizacion_o_negociacion: embudosExcluidos,\n}}];"
+      },
+      "id": "81d599a8-8270-4d43-95e4-a1024c8e3269",
+      "name": "Calcular Cross-tab Calificados_Sojeda",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-2352, 16144]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Lee body, config de Kommo\nconst body = $('Webhook_Sojeda').first().json.body;\nconst cfg = $('Config_Sojeda').first().json;\n\nif (!body || body.type !== 'calls') {\n  throw new Error(`Se esperaba type=\"calls\" pero llego type=\"${body && body.type}\". Revisa el cableado de Switch Tipo_Sojeda: su salida 'calls' debe ir a este nodo.`);\n}\nif (!body.date_from || !body.date_to) {\n  throw new Error('Faltan date_from/date_to en la solicitud.');\n}\n\nfunction toUnixStart(dateStr) { return Math.floor(new Date(`${dateStr}T00:00:00-06:00`).getTime() / 1000); }\nfunction toUnixEnd(dateStr)   { return Math.floor(new Date(`${dateStr}T23:59:59-06:00`).getTime() / 1000); }\n\nconst fromTs = toUnixStart(body.date_from);\nconst toTs   = toUnixEnd(body.date_to);\n\nfunction buildHeaders() {\n  return { Authorization: `Bearer ${cfg.kommo_token}`, 'Content-Type': 'application/json' };\n}\n\n// NOTA (cuenta sojeda): no hay ningun proveedor de telefonia conectado -- el\n// historial completo de eventos de esta cuenta no tiene ni un solo\n// incoming_call/outgoing_call. Este nodo se deja igual que en Digital Crew\n// (misma fuente de verdad, /api/v4/events) para cuando se conecte algo --\n// hoy simplemente va a regresar total_llamadas: 0 y por_creador: {}. El\n// dashboard es el que debe mostrar un mensaje explicando esto en vez de una\n// tabla vacia sin contexto.\nasync function fetchAllEvents() {\n  const qp = [];\n  function addParam(k, v) { qp.push(encodeURIComponent(k) + '=' + encodeURIComponent(v)); }\n  addParam('filter[type][0]', 'incoming_call');\n  addParam('filter[type][1]', 'outgoing_call');\n  addParam('filter[created_at][from]', fromTs);\n  addParam('filter[created_at][to]', toTs);\n  addParam('order[id]', 'asc');\n  addParam('limit', '250');\n\n  let nextUrl = `https://${cfg.kommo_subdomain}.kommo.com/api/v4/events?${qp.join('&')}`;\n  let all = [];\n  let guard = 0;\n  while (nextUrl && guard < 80) {\n    let resp = await this.helpers.httpRequest({ method: 'GET', url: nextUrl, headers: buildHeaders(), json: true });\n    if (!resp || typeof resp !== 'object') resp = {};\n    const page = (resp._embedded && resp._embedded.events) || [];\n    all = all.concat(page);\n    nextUrl = (resp._links && resp._links.next && resp._links.next.href) || null;\n    guard++;\n  }\n  return all;\n}\n\nconst events = await fetchAllEvents.call(this);\n\nconst noteIdsPorTipo = { contact: new Set(), lead: new Set(), company: new Set() };\nfor (const ev of events) {\n  const noteRef = ev.value_after && ev.value_after[0] && ev.value_after[0].note;\n  if (!noteRef || !noteRef.id) continue;\n  const tipo = ev.entity_type;\n  if (noteIdsPorTipo[tipo]) noteIdsPorTipo[tipo].add(noteRef.id);\n}\n\nasync function fetchNotesByIds(entityTypePlural, idsSet) {\n  const ids = [...idsSet];\n  const out = [];\n  const BATCH = 100;\n  for (let i = 0; i < ids.length; i += BATCH) {\n    const batch = ids.slice(i, i + BATCH);\n    const qp = batch.map((id, idx) => `filter%5Bid%5D%5B${idx}%5D=${id}`).join('&');\n    const url = `https://${cfg.kommo_subdomain}.kommo.com/api/v4/${entityTypePlural}/notes?${qp}&limit=250`;\n    let resp = await this.helpers.httpRequest({ method: 'GET', url, headers: buildHeaders(), json: true });\n    if (!resp || typeof resp !== 'object') resp = {};\n    const notes = (resp._embedded && resp._embedded.notes) || [];\n    out.push(...notes);\n  }\n  return out;\n}\n\nconst [contactNotes, leadNotes, companyNotes] = await Promise.all([\n  fetchNotesByIds.call(this, 'contacts', noteIdsPorTipo.contact),\n  fetchNotesByIds.call(this, 'leads', noteIdsPorTipo.lead),\n  fetchNotesByIds.call(this, 'companies', noteIdsPorTipo.company),\n]);\n\nconst vistos = new Set();\nconst todasLasNotas = [];\nfor (const n of [...contactNotes, ...leadNotes, ...companyNotes]) {\n  if (vistos.has(n.id)) continue;\n  vistos.add(n.id);\n  todasLasNotas.push(n);\n}\n\nlet agentFilter = null;\nif (body.agent_ids && body.agent_ids.length) {\n  agentFilter = new Set(body.agent_ids.map(Number));\n}\n\nconst porCreador = {};\nlet totalSegundos = 0;\nlet totalLlamadas = 0;\n\nfor (const n of todasLasNotas) {\n  const creadorId = n.created_by || n.responsible_user_id || 0;\n  if (agentFilter && !agentFilter.has(creadorId)) continue;\n\n  if (!porCreador[creadorId]) {\n    porCreador[creadorId] = { agent_id: creadorId, entrantes: 0, salientes: 0, total: 0, duracion_segundos: 0 };\n  }\n  const acc = porCreador[creadorId];\n  const dur = (n.params && n.params.duration) || 0;\n  if (n.note_type === 'call_in') acc.entrantes++;\n  else acc.salientes++;\n  acc.total++;\n  acc.duracion_segundos += dur;\n\n  totalSegundos += dur;\n  totalLlamadas++;\n}\n\nreturn [{ json: {\n  periodo: { from: body.date_from, to: body.date_to },\n  total_eventos_llamada: events.length,\n  total_llamadas: totalLlamadas,\n  total_duracion_segundos: totalSegundos,\n  por_creador: porCreador,\n  integracion_telefonia_detectada: events.length > 0,\n  nota_metodologica: 'Llamadas (call_in/call_out) obtenidas via /api/v4/events, completando el detalle de cada llamada (duracion, quien la registro) via lookup por id contra las notas de Kommo en contactos/leads/companies. Se agrupa por created_by. En esta cuenta (sojeda) no hay ningun proveedor de telefonia conectado -- este panel siempre va a regresar vacio hasta que se conecte uno.'\n}}];"
+      },
+      "id": "61af159d-c9b1-49c7-b2c7-334c61db63ce",
+      "name": "Calcular Volumen Llamadas_Sojeda",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-2352, 16304]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Lee body, config de Kommo y el mapeo de embudos\nconst body = $('Webhook_Sojeda').first().json.body;\nconst cfg = $('Config_Sojeda').first().json;\nconst mapeo = $('Config Mapeo_Sojeda').first().json.embudos;\n\nif (!body || body.type !== 'leads' || body.view !== 'response_times') {\n  throw new Error(`Se esperaba type='leads' y view='response_times' pero llego type='${body && body.type}', view='${body && body.view}'.`);\n}\nif (!body.date_from || !body.date_to) {\n  throw new Error('Faltan date_from/date_to en la solicitud.');\n}\n\nfunction toUnixStart(dateStr) { return Math.floor(new Date(`${dateStr}T00:00:00-06:00`).getTime() / 1000); }\nfunction toUnixEnd(dateStr)   { return Math.floor(new Date(`${dateStr}T23:59:59-06:00`).getTime() / 1000); }\n\nconst fromTs = toUnixStart(body.date_from);\nconst toTs   = toUnixEnd(body.date_to);\n\nfunction buildHeaders() {\n  return { Authorization: `Bearer ${cfg.kommo_token}`, 'Content-Type': 'application/json' };\n}\n\nconst TZ_OFFSET_SECONDS = -6 * 3600;\nconst DAY_SECONDS = 86400;\nconst BIZ_START_HOUR = 9;\nconst BIZ_END_HOUR = 18;\n\nfunction businessSecondsBetween(startTs, endTs) {\n  if (endTs == null || startTs == null || endTs <= startTs) return 0;\n  const localStart = startTs + TZ_OFFSET_SECONDS;\n  const localEnd = endTs + TZ_OFFSET_SECONDS;\n  let dayCursor = Math.floor(localStart / DAY_SECONDS) * DAY_SECONDS;\n  let total = 0;\n  let guard = 0;\n  while (dayCursor < localEnd && guard < 3660) {\n    const dow = new Date(dayCursor * 1000).getUTCDay();\n    if (dow >= 1 && dow <= 5) {\n      const bizOpen = dayCursor + BIZ_START_HOUR * 3600;\n      const bizClose = dayCursor + BIZ_END_HOUR * 3600;\n      const overlapStart = Math.max(localStart, bizOpen);\n      const overlapEnd = Math.min(localEnd, bizClose);\n      if (overlapEnd > overlapStart) total += (overlapEnd - overlapStart);\n    }\n    dayCursor += DAY_SECONDS;\n    guard++;\n  }\n  return total;\n}\n\nconst qp = [];\nfunction addParam(k, v) { qp.push(encodeURIComponent(k) + '=' + encodeURIComponent(v)); }\naddParam('limit', '250');\naddParam('with', 'contacts');\naddParam('filter[created_at][from]', fromTs);\naddParam('filter[created_at][to]', toTs);\nif (body.pipeline_ids && body.pipeline_ids.length) {\n  body.pipeline_ids.forEach(id => addParam('filter[pipeline_id][]', id));\n}\n\nlet nextUrl = `https://${cfg.kommo_subdomain}.kommo.com/api/v4/leads?${qp.join('&')}`;\nlet allLeads = [];\nlet guard = 0;\nwhile (nextUrl && guard < 50) {\n  let resp = await this.helpers.httpRequest({ method: 'GET', url: nextUrl, headers: buildHeaders(), json: true });\n  if (!resp || typeof resp !== 'object') resp = {};\n  const page = (resp._embedded && resp._embedded.leads) || [];\n  allLeads = allLeads.concat(page);\n  nextUrl = (resp._links && resp._links.next && resp._links.next.href) || null;\n  guard++;\n}\n\nconst leadsPorContacto = {};\nconst contactIdsUnicos = new Set();\nfor (const lead of allLeads) {\n  const contactos = (lead._embedded && lead._embedded.contacts) || [];\n  if (!contactos.length) continue;\n  const cid = contactos[0].id;\n  contactIdsUnicos.add(cid);\n  (leadsPorContacto[cid] = leadsPorContacto[cid] || []).push(lead);\n}\n\nasync function fetchPrimerContacto(contactIds) {\n  const ids = [...contactIds];\n  if (!ids.length) return [];\n  const out = [];\n  const BATCH = 10;\n  for (let i = 0; i < ids.length; i += BATCH) {\n    const batch = ids.slice(i, i + BATCH);\n    const eqp = [];\n    function addE(k, v) { eqp.push(encodeURIComponent(k) + '=' + encodeURIComponent(v)); }\n    addE('filter[type][0]', 'outgoing_chat_message');\n    addE('filter[type][1]', 'outgoing_call');\n    addE('filter[entity]', 'contact');\n    addE('filter[entity_id]', batch.join(','));\n    addE('limit', '250');\n    let url = `https://${cfg.kommo_subdomain}.kommo.com/api/v4/events?${eqp.join('&')}`;\n    let guard2 = 0;\n    while (url && guard2 < 50) {\n      let resp = await this.helpers.httpRequest({ method: 'GET', url, headers: buildHeaders(), json: true });\n      if (!resp || typeof resp !== 'object') resp = {};\n      const page = (resp._embedded && resp._embedded.events) || [];\n      out.push(...page);\n      url = (resp._links && resp._links.next && resp._links.next.href) || null;\n      guard2++;\n    }\n  }\n  return out;\n}\n\nconst eventosContacto = await fetchPrimerContacto.call(this, contactIdsUnicos);\n\n// ---------------------------------------------------------------------------\n// La \"primera actividad real\" tambien cuenta una nota manual (no solo\n// WhatsApp/llamada) -- Istone no tiene Gmail conectado, asi que correo nunca\n// fue ni sera una senal aqui. Notas vienen como evento entity_type='lead' con\n// entity_id=el lead directo (no hay que resolver via contacto, a diferencia\n// de las llamadas). No se cuenta el simple cambio de etapa como respuesta --\n// por eso se filtra especificamente 'common_note_added' (nota de texto libre)\n// y se exige created_by>0 (una persona real la escribio, no una\n// automatizacion/sistema).\n// ---------------------------------------------------------------------------\nasync function fetchNotasManuales(leadIds) {\n  const ids = [...leadIds];\n  if (!ids.length) return [];\n  const out = [];\n  const BATCH = 10;\n  for (let i = 0; i < ids.length; i += BATCH) {\n    const batch = ids.slice(i, i + BATCH);\n    const eqp = [];\n    function addE(k, v) { eqp.push(encodeURIComponent(k) + '=' + encodeURIComponent(v)); }\n    addE('filter[type]', 'common_note_added');\n    addE('filter[entity]', 'lead');\n    addE('filter[entity_id]', batch.join(','));\n    addE('limit', '250');\n    let url = `https://${cfg.kommo_subdomain}.kommo.com/api/v4/events?${eqp.join('&')}`;\n    let guardNotas = 0;\n    while (url && guardNotas < 50) {\n      let resp = await this.helpers.httpRequest({ method: 'GET', url, headers: buildHeaders(), json: true });\n      if (!resp || typeof resp !== 'object') resp = {};\n      const page = (resp._embedded && resp._embedded.events) || [];\n      out.push(...page);\n      url = (resp._links && resp._links.next && resp._links.next.href) || null;\n      guardNotas++;\n    }\n  }\n  return out;\n}\n\nconst eventosNotas = await fetchNotasManuales.call(this, allLeads.map(l => l.id));\n\nconst primeraSalidaPorLead = {};\nfunction considerar(leadId, ts) {\n  if (ts == null || leadId == null) return;\n  if (primeraSalidaPorLead[leadId] == null || ts < primeraSalidaPorLead[leadId]) {\n    primeraSalidaPorLead[leadId] = ts;\n  }\n}\n\nfor (const ev of eventosContacto) {\n  const ts = ev.created_at;\n  if (ts == null) continue;\n  if (ev.entity_type === 'lead' && ev.entity_id != null) {\n    considerar(ev.entity_id, ts);\n  } else if (ev.entity_type === 'contact' && ev.entity_id != null) {\n    const candidatos = (leadsPorContacto[ev.entity_id] || []).filter(l => l.created_at <= ts);\n    if (!candidatos.length) continue;\n    candidatos.sort((a, b) => b.created_at - a.created_at);\n    considerar(candidatos[0].id, ts);\n  }\n}\n\nfor (const ev of eventosNotas) {\n  if (!ev.created_by) continue;\n  if (ev.entity_type === 'lead' && ev.entity_id != null) {\n    considerar(ev.entity_id, ev.created_at);\n  }\n}\n\nconst pipelineIdToKey = {};\nfor (const [key, mcfg] of Object.entries(mapeo)) pipelineIdToKey[mcfg.pipeline_id] = key;\n\nconst resultado = {};\nfor (const [key, mcfg] of Object.entries(mapeo)) {\n  if (body.pipeline_ids && body.pipeline_ids.length && !body.pipeline_ids.includes(mcfg.pipeline_id)) continue;\n  resultado[key] = {\n    embudo: key,\n    pipeline_id: mcfg.pipeline_id,\n    leads_entrantes: 0,\n    leads_con_respuesta: 0,\n    leads_pendientes: 0,\n    promedio_segundos_habiles: 0,\n    promedio_segundos_real: 0,\n  };\n}\n\nconst sumaHabilesPorEmbudo = {};\nconst sumaRealPorEmbudo = {};\nfor (const lead of allLeads) {\n  const key = pipelineIdToKey[lead.pipeline_id];\n  const entry = key && resultado[key];\n  if (!entry) continue;\n  entry.leads_entrantes++;\n\n  const primeraTs = primeraSalidaPorLead[lead.id];\n  if (primeraTs == null) { entry.leads_pendientes++; continue; }\n\n  const deltaReal = Math.max(0, primeraTs - lead.created_at);\n  const deltaHabil = businessSecondsBetween(lead.created_at, primeraTs);\n\n  entry.leads_con_respuesta++;\n  sumaRealPorEmbudo[key] = (sumaRealPorEmbudo[key] || 0) + deltaReal;\n  sumaHabilesPorEmbudo[key] = (sumaHabilesPorEmbudo[key] || 0) + deltaHabil;\n}\n\nfor (const [key, entry] of Object.entries(resultado)) {\n  entry.promedio_segundos_real = entry.leads_con_respuesta ? Math.round(sumaRealPorEmbudo[key] / entry.leads_con_respuesta) : 0;\n  entry.promedio_segundos_habiles = entry.leads_con_respuesta ? Math.round(sumaHabilesPorEmbudo[key] / entry.leads_con_respuesta) : 0;\n}\n\nreturn [{ json: {\n  periodo: { from: body.date_from, to: body.date_to },\n  por_embudo: resultado,\n  nota_metodologica: 'Hora entrante = created_at nativo del lead. Primera actividad real = la mas temprana entre: primer outgoing_chat_message, primera outgoing_call, o primera nota manual (common_note_added, escrita por una persona real) asociados a ese lead. No cuenta correo ni el simple cambio de etapa del lead. leads_con_respuesta / leads_entrantes de cada embudo ES el KPI \"Entrante -> Contacto efectivo\" del Tablero de Desempeno. El promedio principal (promedio_segundos_habiles) solo cuenta segundos dentro de horario laboral lunes a viernes 9:00-18:00 hora local (UTC-6 fijo); promedio_segundos_real es el tiempo de reloj sin ajustar, de referencia.'\n}}];"
+      },
+      "id": "40324d72-de2f-4dee-af53-9990f6dbface",
+      "name": "Calcular Tiempos de Respuesta_Sojeda",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-2352, 16464]
     }
-
-    inpMeta.addEventListener('input', () => { recalcularPct(); recalcularTotales(container); guardarConDebounce(); });
-    inpInv.addEventListener('input', () => { recalcularTotales(container); guardarConDebounce(); });
-  });
+  ],
+  "connections": {
+    "Webhook_Sojeda": {
+      "main": [[{ "node": "Config_Sojeda", "type": "main", "index": 0 }]]
+    },
+    "Config_Sojeda": {
+      "main": [[{ "node": "Switch Tipo_Sojeda", "type": "main", "index": 0 }]]
+    },
+    "Switch Tipo_Sojeda": {
+      "main": [
+        [{ "node": "HTTP Pipelines_Sojeda", "type": "main", "index": 0 }],
+        [{ "node": "Config Mapeo_Sojeda", "type": "main", "index": 0 }],
+        [{ "node": "Calcular Volumen Llamadas_Sojeda", "type": "main", "index": 0 }]
+      ]
+    },
+    "HTTP Pipelines_Sojeda": {
+      "main": [[{ "node": "HTTP Tags_Sojeda", "type": "main", "index": 0 }]]
+    },
+    "HTTP Tags_Sojeda": {
+      "main": [[{ "node": "HTTP Users_Sojeda", "type": "main", "index": 0 }]]
+    },
+    "HTTP Users_Sojeda": {
+      "main": [[{ "node": "Code Format Scan_Sojeda", "type": "main", "index": 0 }]]
+    },
+    "Code Format Scan_Sojeda": {
+      "main": [[{ "node": "Respond Scan_Sojeda", "type": "main", "index": 0 }]]
+    },
+    "Config Mapeo_Sojeda": {
+      "main": [[{ "node": "Switch Vista_Sojeda", "type": "main", "index": 0 }]]
+    },
+    "Calcular Reporte Performance_Sojeda": {
+      "main": [[{ "node": "Respond Leads_Sojeda", "type": "main", "index": 0 }]]
+    },
+    "Switch Vista_Sojeda": {
+      "main": [
+        [{ "node": "Calcular Reporte Performance_Sojeda", "type": "main", "index": 0 }],
+        [{ "node": "Calcular Cross-tab Calificados_Sojeda", "type": "main", "index": 0 }],
+        [{ "node": "Calcular Tiempos de Respuesta_Sojeda", "type": "main", "index": 0 }]
+      ]
+    },
+    "Calcular Cross-tab Calificados_Sojeda": {
+      "main": [[{ "node": "Respond Leads_Sojeda", "type": "main", "index": 0 }]]
+    },
+    "Calcular Volumen Llamadas_Sojeda": {
+      "main": [[{ "node": "Respond Leads_Sojeda", "type": "main", "index": 0 }]]
+    },
+    "Calcular Tiempos de Respuesta_Sojeda": {
+      "main": [[{ "node": "Respond Leads_Sojeda", "type": "main", "index": 0 }]]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true
+  }
 }
-
-/* ============================== RENDER: Ganados ============================== */
-async function renderGanados(payload) {
-  const embudos = Object.values(payload.por_embudo || {}).filter(e => e.ganado > 0);
-  renderGanadosDetalle(payload.ganados_detalle || []);
-  if (!embudos.length) { els.ganadosStats.innerHTML = ''; els.ganadosTable.innerHTML = '<div class="empty">Sin ganados en este periodo con estos filtros.</div>'; return; }
-  const totalProyectos = embudos.reduce((s, e) => s + e.ganado, 0);
-  const totalMonto = embudos.reduce((s, e) => s + e.monto_ganado, 0);
-  const ticketTotal = totalProyectos ? (totalMonto / totalProyectos) : 0;
-
-  els.ganadosStats.innerHTML = '<div class="stats-row">' +
-    statCard('checkCircle', 'var(--c-positive)', 'Proyectos', totalProyectos) +
-    statCard('dollar', 'var(--ink-soft)', 'Monto total', '$' + totalMonto.toLocaleString('es-MX', {maximumFractionDigits:0})) +
-    statCard('barChart', 'var(--ink-soft)', 'Ticket promedio', '$' + ticketTotal.toLocaleString('es-MX', {maximumFractionDigits:0})) +
-    '</div>';
-
-  await cargarMetas();
-  const totalMeta = embudos.reduce((s, e) => s + (Number((metasCache[e.embudo] || {}).meta_venta) || 0), 0);
-  const totalInversion = embudos.reduce((s, e) => s + (Number((metasCache[e.embudo] || {}).inversion_pauta) || 0), 0);
-  const pctTotal = totalMeta > 0 ? (totalMonto / totalMeta * 100) : 0;
-
-  const rows = embudos.map(e => {
-    const ticket = e.ganado ? (e.monto_ganado / e.ganado) : 0;
-    const guardado = metasCache[e.embudo] || {};
-    const metaVal = guardado.meta_venta || 0;
-    const invVal = guardado.inversion_pauta || 0;
-    const tieneMeta = metaVal > 0;
-    const pct = tieneMeta ? (e.monto_ganado / metaVal * 100) : 0;
-    return `
-    <tr data-embudo-row="${e.embudo}" data-monto-ganado="${e.monto_ganado}">
-      <td>${e.embudo}</td>
-      <td class="num"><span class="numval">${e.ganado}</span></td>
-      <td class="num"><div class="editable-cell-wrap"><input type="number" class="editable-cell meta-venta" placeholder="—" value="${metaVal || ''}"><span class="save-indicator meta-ind"></span></div></td>
-      <td class="num"><div class="editable-cell-wrap"><input type="number" class="editable-cell inv-pauta" placeholder="—" value="${invVal || ''}"><span class="save-indicator inv-ind"></span></div></td>
-      <td class="num"><span class="numval">$${e.monto_ganado.toLocaleString('es-MX', {maximumFractionDigits:0})}</span></td>
-      <td class="num"><span class="numval">$${ticket.toLocaleString('es-MX', {maximumFractionDigits:0})}</span></td>
-      <td class="num"><span class="pct-meta ${pctMetaClass(pct, tieneMeta)}">${tieneMeta ? pct.toFixed(1) + '%' : '—'}</span></td>
-    </tr>`;
-  }).join('');
-  els.ganadosTable.innerHTML = `
-    <div class="table-scroll">
-    <table>
-      <thead><tr><th>Embudo</th><th class="num">Proyectos</th><th class="num">Meta de venta</th><th class="num">Inversión en pauta</th><th class="num">Monto (MXN)</th><th class="num">Ticket promedio</th><th class="num">% alcanzado de venta</th></tr></thead>
-      <tbody>${rows}
-        <tr class="totales" data-total-row data-monto-ganado="${totalMonto}">
-          <td>Total</td>
-          <td class="num"><span class="numval">${totalProyectos}</span></td>
-          <td class="num"><span class="numval total-meta-val">$${totalMeta.toLocaleString('es-MX', {maximumFractionDigits:0})}</span></td>
-          <td class="num"><span class="numval total-inv-val">$${totalInversion.toLocaleString('es-MX', {maximumFractionDigits:0})}</span></td>
-          <td class="num"><span class="numval">$${totalMonto.toLocaleString('es-MX', {maximumFractionDigits:0})}</span></td>
-          <td class="num"><span class="numval">$${ticketTotal.toLocaleString('es-MX', {maximumFractionDigits:0})}</span></td>
-          <td class="num"><span class="pct-meta total-pct-val ${pctMetaClass(pctTotal, totalMeta > 0)}">${totalMeta > 0 ? pctTotal.toFixed(1) + '%' : '—'}</span></td>
-        </tr>
-      </tbody>
-    </table>
-    </div>`;
-  attachMetaHandlers(els.ganadosTable);
-}
-
-function renderGanadosDetalle(detalle) {
-  if (!detalle.length) { els.ganadosDetalleTable.innerHTML = '<div class="empty">Sin ganados en este periodo con estos filtros.</div>'; return; }
-  const rows = detalle.map(g => `
-    <tr>
-      <td>${g.nombre_lead}</td>
-      <td>${g.nombre_contacto || '—'}</td>
-      <td class="num"><span class="numval">$${(g.monto || 0).toLocaleString('es-MX')}</span></td>
-      <td>${g.compania || '—'}</td>
-      <td><span class="person-cell">${avatarHtml(nombreAgente(g.responsible_user_id))}${nombreAgente(g.responsible_user_id)}</span></td>
-      <td>${(g.etiquetas && g.etiquetas.length) ? g.etiquetas.join(', ') : '—'}</td>
-    </tr>`).join('');
-  els.ganadosDetalleTable.innerHTML = `
-    <div class="table-scroll">
-    <table>
-      <thead><tr><th>Nombre lead</th><th>Contacto</th><th class="num">Monto</th><th>Compañía</th><th>Responsable</th><th>Etiquetas</th></tr></thead>
-      <tbody>${rows}</tbody>
-    </table>
-    </div>`;
-}
-
-
-function nombreAgente(id) {
-  const found = agentsCatalog.find(a => String(a.id) === String(id));
-  return found ? found.name : `Usuario ${id}`;
-}
-function fmtDuracion(segundos) {
-  const h = Math.floor(segundos / 3600);
-  const m = Math.floor((segundos % 3600) / 60);
-  if (h > 0) return `${h}h ${m}m`;
-  return `${m}m`;
-}
-function tablaAgentes(agentes) {
-  if (!agentes.length) return '<div class="empty">Sin llamadas en este periodo.</div>';
-  agentes = [...agentes].sort((a, b) => b.total - a.total);
-  const totales = agentes.reduce((acc, a) => {
-    acc.salientes += a.salientes; acc.entrantes += a.entrantes; acc.total += a.total; acc.duracion_segundos += a.duracion_segundos;
-    return acc;
-  }, { salientes: 0, entrantes: 0, total: 0, duracion_segundos: 0 });
-  const rows = agentes.map(a => `
-    <tr>
-      <td><span class="person-cell">${avatarHtml(nombreAgente(a.agent_id))}${nombreAgente(a.agent_id)}</span></td>
-      <td class="num">${a.salientes}</td>
-      <td class="num">${a.entrantes}</td>
-      <td class="num">${a.total}</td>
-      <td class="num">${fmtDuracion(a.duracion_segundos)}</td>
-    </tr>`).join('');
-  return `
-    <div class="table-scroll">
-    <table>
-      <thead><tr><th>Asesor</th><th class="num">Salientes</th><th class="num">Entrantes</th><th class="num">Total</th><th class="num">Duración</th></tr></thead>
-      <tbody>${rows}
-        <tr class="totales">
-          <td>Total</td>
-          <td class="num">${totales.salientes}</td>
-          <td class="num">${totales.entrantes}</td>
-          <td class="num">${totales.total}</td>
-          <td class="num">${fmtDuracion(totales.duracion_segundos)}</td>
-        </tr>
-      </tbody>
-    </table>
-    </div>`;
-}
-function renderLlamadas(payload) {
-  const agentes = Object.values(payload.por_creador || {});
-  const totales = agentes.reduce((acc, a) => {
-    acc.salientes += a.salientes; acc.entrantes += a.entrantes; acc.total += a.total; acc.duracion_segundos += a.duracion_segundos;
-    return acc;
-  }, { salientes: 0, entrantes: 0, total: 0, duracion_segundos: 0 });
-
-  els.callsStats.innerHTML = '<div class="stats-row">' +
-    statCard('users', 'var(--ink-soft)', 'Asesores', agentes.length, 'Activos en el periodo') +
-    statCard('arrowUpRight', 'var(--ink-soft)', 'Salientes', totales.salientes) +
-    statCard('arrowDownLeft', 'var(--ink-soft)', 'Entrantes', totales.entrantes) +
-    statCard('phone', 'var(--ink-soft)', 'Total llamadas', totales.total) +
-    statCard('clock', 'var(--ink-soft)', 'Tiempo total', fmtDuracion(totales.duracion_segundos)) +
-    '</div>';
-
-  els.callsTableCreador.innerHTML = tablaAgentes(agentes);
-  els.callsNota.textContent = payload.nota_metodologica || '';
-}
-
-/* ============================== RENDER: Tiempos de respuesta ============================== */
-function fmtDuracionCorta(segundos) {
-  if (segundos == null) return '—';
-  const h = Math.floor(segundos / 3600);
-  const m = Math.round((segundos % 3600) / 60);
-  if (h > 0) return `${h}h ${m}m`;
-  return `${m}m`;
-}
-function renderTiemposRespuesta(payload) {
-  const embudos = Object.values(payload.por_embudo || {});
-  if (!embudos.length) { els.respTimesStats.innerHTML = ''; els.respTimesTable.innerHTML = '<div class="empty">Sin datos en este periodo.</div>'; return; }
-
-  const totalEntrantes = embudos.reduce((s, e) => s + e.leads_entrantes, 0);
-  const totalContactados = embudos.reduce((s, e) => s + e.leads_con_respuesta, 0);
-  const sumaHabiles = embudos.reduce((s, e) => s + e.promedio_segundos_habiles * e.leads_con_respuesta, 0);
-  const promGeneralHabil = totalContactados ? Math.round(sumaHabiles / totalContactados) : 0;
-
-  els.respTimesStats.innerHTML = '<div class="stats-row">' +
-    statCard('layers', 'var(--ink-soft)', 'Entrantes', totalEntrantes) +
-    statCard('checkCircle', 'var(--c-positive)', 'Contactados', totalContactados) +
-    statCard('zap', 'var(--ink-soft)', 'Promedio (horario laboral)', fmtDuracionCorta(promGeneralHabil)) +
-    '</div>';
-
-  const rows = embudos.map(e => `
-    <tr>
-      <td>${e.embudo}</td>
-      <td class="num">${e.leads_entrantes}</td>
-      <td class="num">${e.leads_con_respuesta}</td>
-      <td class="num">${fmtDuracionCorta(e.promedio_segundos_habiles)}</td>
-      <td class="num">${fmtDuracionCorta(e.promedio_segundos_real)}</td>
-    </tr>`).join('');
-  els.respTimesTable.innerHTML = `
-    <div class="table-scroll">
-    <table>
-      <thead><tr><th>Embudo</th><th class="num">Entrantes</th><th class="num">Contactados</th><th class="num">Promedio (horario laboral)</th><th class="num">Promedio (real)</th></tr></thead>
-      <tbody>${rows}</tbody>
-    </table>
-    </div>`;
-  els.respTimesNota.textContent = payload.nota_metodologica || '';
-}
-</script>
-</body>
-</html>
