@@ -188,35 +188,12 @@
   tr.totales td:first-child { font-family: var(--body); }
   .numval { display: block; }
   .pct { display: block; color: var(--c-positive); font-size: 10.5px; margin-top: 1px; font-family: var(--mono); }
+  .meta-progress { display: flex; align-items: center; justify-content: flex-end; gap: 10px; }
+  .meta-progress-pct { font-family: var(--mono); font-size: 12px; color: var(--ink); min-width: 52px; text-align: right; }
+  .meta-progress-pct--empty { color: var(--ink-faint); }
+  .meta-progress-track { width: 90px; height: 6px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--border-soft); overflow: hidden; flex-shrink: 0; }
+  .meta-progress-fill { display: block; height: 100%; border-radius: 999px; background: var(--c-positive); }
   .motivos { font-size: 11px; color: var(--c-loss); max-width: 170px; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: help; }
-
-  input.editable-cell {
-    width: 100%; max-width: 130px; padding: 7px 9px; border: 1px solid var(--border);
-    border-radius: var(--radius-sm); font-family: var(--mono); font-size: 12.5px;
-    background: var(--surface); color: var(--ink); text-align: right;
-  }
-  input.editable-cell:focus-visible { outline: 2px solid var(--ink-soft); outline-offset: 1px; }
-  input.editable-cell.saving { border-color: var(--c-positive); }
-  input.editable-cell.error { border-color: var(--c-loss); }
-  input.editable-cell::-webkit-outer-spin-button, input.editable-cell::-webkit-inner-spin-button { opacity: .5; }
-  .editable-cell-wrap { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; }
-  .save-indicator { font-size: 9.5px; font-family: var(--mono); color: var(--ink-faint); height: 12px; letter-spacing: .01em; }
-  .save-indicator.pending { color: var(--ink-faint); }
-  .save-indicator.ok { color: var(--c-positive); }
-  .save-indicator.err { color: var(--c-loss); }
-  .meta-leads-cell { display: flex; align-items: center; justify-content: flex-end; gap: 10px; }
-  .meta-leads-pct { font-family: var(--mono); font-size: 12.5px; color: var(--ink); white-space: nowrap; }
-  .meta-leads-pct.vacio { color: var(--ink-faint); }
-  .meta-leads-bar {
-    width: 140px; height: 7px; border-radius: 999px; background: var(--surface-hover);
-    overflow: hidden; flex-shrink: 0;
-  }
-  .meta-leads-bar span { display: block; height: 100%; border-radius: 999px; background: #4ec06f; }
-  .pct-meta { font-family: var(--mono); font-weight: 600; }
-  .pct-meta.alto { color: var(--c-positive); }
-  .pct-meta.medio { color: #d6a24a; }
-  .pct-meta.bajo { color: var(--c-loss); }
-  .pct-meta.sinmeta { color: var(--ink-faint); font-weight: 400; }
 
   .avatar {
     display: inline-flex; align-items: center; justify-content: center; border-radius: 50%;
@@ -238,6 +215,37 @@
   .empty { color: var(--ink-faint); font-size: 13px; padding: 28px 0; text-align: center; }
   .resultsRow { display: block; }
   .resultsRow > .panel { width: 100%; }
+
+  /* ---------- Calificados: fila de dos columnas ---------- */
+  .calif-row { display: flex; gap: 18px; flex-wrap: wrap; margin-bottom: 18px; }
+  .calif-row > .panel { flex: 1; min-width: 340px; margin-bottom: 0; }
+  .period-badge {
+    margin-left: auto; font-size: 11.5px; font-family: var(--mono); color: var(--ink-soft);
+    background: var(--surface-2); border: 1px solid var(--border); border-radius: 999px;
+    padding: 6px 13px; white-space: nowrap;
+  }
+  .export-btn {
+    margin-left: auto; display: inline-flex; align-items: center; gap: 7px;
+    background: var(--surface-2); color: var(--ink); border: 1px solid var(--border);
+    font-weight: 600; padding: 8px 15px; font-size: 12.5px; border-radius: 999px; cursor: pointer;
+    font-family: var(--body);
+  }
+  .export-btn:hover { border-color: var(--ink-soft); }
+  .embudo-pill { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+  .person-email { display: block; font-size: 11px; color: var(--ink-faint); margin-top: 1px; }
+  .pager { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 12px; flex-wrap: wrap; }
+  .pager-info { font-size: 12px; color: var(--ink-faint); }
+  .pager-controls { display: flex; align-items: center; gap: 8px; }
+  .pager-btn {
+    width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface-2);
+    color: var(--ink-soft); cursor: pointer; font-size: 15px; display: inline-flex; align-items: center; justify-content: center;
+  }
+  .pager-btn:hover:not(:disabled) { color: var(--ink); border-color: var(--ink-soft); }
+  .pager-btn:disabled { opacity: .35; cursor: not-allowed; }
+  .pager-page {
+    min-width: 28px; height: 28px; border-radius: 7px; background: var(--ink); color: #101114;
+    font-family: var(--mono); font-weight: 700; font-size: 12.5px; display: inline-flex; align-items: center; justify-content: center;
+  }
 
   @media (max-width: 640px) {
     body { padding: 18px 12px 70px; }
@@ -358,16 +366,29 @@
       <div id="resultsTable"></div>
       <details><summary>JSON crudo</summary><pre id="rawJson"></pre></details>
     </div>
-    <div class="panel">
-      <div class="panel-head">
-        <div class="panel-icon" id="iconCalificados"></div>
-        <h2>Calificados por embudo</h2>
+    <div class="calif-row">
+      <div class="panel">
+        <div class="panel-head">
+          <div class="panel-icon" id="iconCalificados"></div>
+          <h2>Calificados por embudo</h2>
+          <span class="period-badge" id="crosstabPeriodBadge"></span>
+        </div>
+        <p class="help">Quién está parado en la etapa "Calificado" ahora mismo, en cada embudo, y a cuánto suma en pesos.</p>
+        <div id="crosstabStats"></div>
+        <div id="crosstabTable"></div>
+        <div class="help" id="crosstabExcluidos" style="margin-top:10px;"></div>
+        <details><summary>JSON crudo</summary><pre id="rawJsonCrosstab"></pre></details>
       </div>
-      <p class="help">Quién está parado en la etapa "Calificado" ahora mismo, en cada embudo, y a cuánto suma en pesos.</p>
-      <div id="crosstabStats"></div>
-      <div id="crosstabTable"></div>
-      <div class="help" id="crosstabExcluidos" style="margin-top:10px;"></div>
-      <details><summary>JSON crudo</summary><pre id="rawJsonCrosstab"></pre></details>
+      <div class="panel">
+        <div class="panel-head">
+          <div class="panel-icon" id="iconLeadsCalifLista"></div>
+          <h2 id="calificadosListaTitulo">Leads calificados</h2>
+          <button type="button" id="btnExportarCalificados" class="export-btn"><span id="iconExportar"></span><span>Exportar</span></button>
+        </div>
+        <p class="help">Listado de leads que están en la etapa "Calificado".</p>
+        <div id="calificadosListaTable"></div>
+        <div id="calificadosListaPaginacion"></div>
+      </div>
     </div>
     <div class="panel">
       <div class="panel-head">
@@ -426,6 +447,7 @@ const ICONS = {
   trendingUp: '<polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>',
   zap: '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>',
   barChart: '<line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/>',
+  download: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>',
 };
 function icon(name, color, size) {
   size = size || 18;
@@ -461,6 +483,8 @@ paintIcon('iconCalificados', 'target', 'var(--c-positive)');
 paintIcon('iconGanados', 'dollar', 'var(--ink-soft)');
 paintIcon('iconLlamadas', 'phone', 'var(--ink-soft)');
 paintIcon('iconTiempos', 'zap', 'var(--ink-soft)');
+paintIcon('iconLeadsCalifLista', 'users', 'var(--c-positive)');
+paintIcon('iconExportar', 'download', 'var(--ink)');
 
 /* ============================== DATOS (sin cambios de lógica) ============================== */
 const WEBHOOK_URL = "https://digital-crew-n8n.xrzfaj.easypanel.host/webhook/AI-AUDITORIA-COMERCIAL";
@@ -486,6 +510,11 @@ const els = {
   crosstabTable: document.getElementById('crosstabTable'),
   crosstabExcluidos: document.getElementById('crosstabExcluidos'),
   rawJsonCrosstab: document.getElementById('rawJsonCrosstab'),
+  crosstabPeriodBadge: document.getElementById('crosstabPeriodBadge'),
+  calificadosListaTitulo: document.getElementById('calificadosListaTitulo'),
+  calificadosListaTable: document.getElementById('calificadosListaTable'),
+  calificadosListaPaginacion: document.getElementById('calificadosListaPaginacion'),
+  btnExportarCalificados: document.getElementById('btnExportarCalificados'),
   ganadosStats: document.getElementById('ganadosStats'),
   ganadosTable: document.getElementById('ganadosTable'),
   ganadosDetalleTable: document.getElementById('ganadosDetalleTable'),
@@ -520,6 +549,8 @@ els.filterByToggle.addEventListener('click', (e) => {
   label.classList.add('active');
   filterBy = label.dataset.value;
 });
+
+els.btnExportarCalificados.addEventListener('click', descargarCsvCalificados);
 
 function fmt(d) { return d.toISOString().slice(0, 10); }
 
@@ -628,7 +659,7 @@ els.btnGenerar.addEventListener('click', async () => {
     const perfPayload = extractPayload(perfData, 'por_embudo');
     renderLeadsPorPeriodo(perfPayload);
     renderResultados(perfPayload);
-    await renderGanados(perfPayload);
+    renderGanados(perfPayload);
     els.rawJson.textContent = JSON.stringify(perfData, null, 2);
 
     const crossPayload = extractPayload(crossData, 'totales');
@@ -675,35 +706,41 @@ function miniTabla(rows, labelCol) {
     </div>`;
 }
 
-// Meta mensual de leads entrantes por embudo. Valores fijos, definidos por
-// direccion -- los embudos que no aparecen aqui no tienen meta y se muestran
-// con "—" (no se inventa una meta ni se cuenta en el total).
-const META_LEADS_POR_EMBUDO = {
+// Metas mensuales fijas por embudo (pendiente moverlas a un config editable);
+// el % y la barra se recalculan solos cada vez que cambian los leads.
+const METAS_MENSUALES = {
   web_edu_dc: 80,
   campanas_publicitarias: 29,
   talleres_venta: 22,
   agentes_venta: 33,
 };
 
-function tablaEmbudosConMeta(rows) {
+function metaProgressHtml(valor, meta) {
+  if (!meta) {
+    return '<div class="meta-progress">' +
+      '<span class="meta-progress-pct meta-progress-pct--empty">–</span>' +
+      '<span class="meta-progress-track"><span class="meta-progress-fill" style="width:0%"></span></span>' +
+      '</div>';
+  }
+  const pctNum = (valor / meta) * 100;
+  const fillWidth = Math.min(pctNum, 100);
+  return '<div class="meta-progress">' +
+    '<span class="meta-progress-pct">' + pctNum.toFixed(1) + '%</span>' +
+    '<span class="meta-progress-track"><span class="meta-progress-fill" style="width:' + fillWidth + '%"></span></span>' +
+    '</div>';
+}
+
+function tablaLeadsPorEmbudo(rows) {
   if (!rows.length) return '<div class="empty">Sin datos.</div>';
-  const totalLeads = rows.reduce((s, r) => s + r.valor, 0);
+  const total = rows.reduce((s, r) => s + r.valor, 0);
   const filas = rows.map(r => {
-    const meta = META_LEADS_POR_EMBUDO[r.etiqueta];
-    const tieneMeta = meta != null && meta > 0;
-    const pct = tieneMeta ? (r.valor / meta * 100) : 0;
-    const anchoBarra = tieneMeta ? Math.min(100, pct) : 0;
+    const meta = METAS_MENSUALES[r.etiqueta] || null;
     return `
     <tr>
       <td>${r.etiqueta}</td>
-      <td class="num"><span class="numval">${tieneMeta ? meta : '—'}</span></td>
+      <td class="num">${meta || '–'}</td>
       <td class="num"><span class="numval">${r.valor}</span></td>
-      <td class="num">
-        <div class="meta-leads-cell">
-          <span class="meta-leads-pct${tieneMeta ? '' : ' vacio'}">${tieneMeta ? pct.toFixed(1) + '%' : '—'}</span>
-          <div class="meta-leads-bar"><span style="width:${anchoBarra}%"></span></div>
-        </div>
-      </td>
+      <td class="num">${metaProgressHtml(r.valor, meta)}</td>
     </tr>`;
   }).join('');
   return `
@@ -711,12 +748,7 @@ function tablaEmbudosConMeta(rows) {
     <table>
       <thead><tr><th>Embudo</th><th class="num">Meta mensual</th><th class="num">Leads</th><th class="num">% Meta cumplida</th></tr></thead>
       <tbody>${filas}
-        <tr class="totales">
-          <td>Total</td>
-          <td class="num"><span class="numval">—</span></td>
-          <td class="num"><span class="numval">${totalLeads}</span></td>
-          <td class="num"><span class="numval">—</span></td>
-        </tr>
+        <tr class="totales"><td>Total</td><td class="num">–</td><td class="num"><span class="numval">${total}</span></td><td class="num">–</td></tr>
       </tbody>
     </table>
     </div>`;
@@ -738,7 +770,7 @@ function renderLeadsPorPeriodo(payload) {
   const totalEmbudo = filasEmbudo.reduce((s, r) => s + r.valor, 0);
 
   els.leadsPeriodoStats.innerHTML = '<div class="stats-row">' +
-    statCard('layers', 'var(--ink-soft)', 'Total de leads recibidos del periodo', totalAsesor) +
+    statCard('layers', 'var(--ink-soft)', 'Total leads del periodo', totalAsesor) +
     statCard('users', 'var(--ink-soft)', 'Asesores con leads', filasAsesor.length) +
     (totalAsesor !== totalEmbudo
       ? statCard('xCircle', 'var(--c-loss)', 'Revisar', 'sumas no coinciden (' + totalAsesor + ' vs ' + totalEmbudo + ')')
@@ -746,7 +778,7 @@ function renderLeadsPorPeriodo(payload) {
     '</div>';
 
   els.leadsPorAsesorTable.innerHTML = miniTabla(filasAsesor, 'Asesor');
-  els.leadsPorEmbudoTable.innerHTML = tablaEmbudosConMeta(filasEmbudo);
+  els.leadsPorEmbudoTable.innerHTML = tablaLeadsPorEmbudo(filasEmbudo);
 }
 
 /* ============================== RENDER: Desempeño ============================== */
@@ -808,13 +840,105 @@ function renderResultados(payload) {
 }
 
 /* ============================== RENDER: Calificados ============================== */
+let leadsCalificadosDetalleData = [];
+let calificadosListaPage = 1;
+const CALIFICADOS_PAGE_SIZE = 10;
+
+function actualizarBadgePeriodoCrosstab() {
+  if (calificadosMode === 'actual') {
+    els.crosstabPeriodBadge.textContent = 'Todos los actuales';
+  } else {
+    els.crosstabPeriodBadge.textContent = `${els.dateFrom.value} → ${els.dateTo.value}`;
+  }
+}
+
+function embudoPillHtml(key) {
+  const hue = hashHue(key);
+  return '<span class="embudo-pill" style="background:hsl(' + hue + ' 35% 18%); color:hsl(' + hue + ' 70% 75%); border:1px solid hsl(' + hue + ' 35% 30%)">' + key + '</span>';
+}
+
+function personConCorreoHtml(nombre, correo) {
+  return '<span class="person-cell">' + avatarHtml(nombre) +
+    '<span><span>' + nombre + '</span>' + (correo ? '<span class="person-email">' + correo + '</span>' : '') + '</span></span>';
+}
+
+function renderLeadsCalificadosListado() {
+  const total = leadsCalificadosDetalleData.length;
+  els.calificadosListaTitulo.textContent = `Leads calificados (${total})`;
+
+  if (!total) {
+    els.calificadosListaTable.innerHTML = '<div class="empty">Sin leads calificados con estos filtros.</div>';
+    els.calificadosListaPaginacion.innerHTML = '';
+    return;
+  }
+
+  const totalPages = Math.max(1, Math.ceil(total / CALIFICADOS_PAGE_SIZE));
+  if (calificadosListaPage > totalPages) calificadosListaPage = totalPages;
+  const startIdx = (calificadosListaPage - 1) * CALIFICADOS_PAGE_SIZE;
+  const pageItems = leadsCalificadosDetalleData.slice(startIdx, startIdx + CALIFICADOS_PAGE_SIZE);
+
+  const rows = pageItems.map(l => `
+    <tr>
+      <td>${personConCorreoHtml(l.nombre, l.correo)}</td>
+      <td>${embudoPillHtml(l.embudo)}</td>
+      <td class="num"><span class="numval">$${(l.monto || 0).toLocaleString('es-MX')}</span></td>
+    </tr>`).join('');
+
+  els.calificadosListaTable.innerHTML = `
+    <div class="table-scroll">
+    <table>
+      <thead><tr><th>Nombre</th><th>Embudo</th><th class="num">Monto</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    </div>`;
+
+  els.calificadosListaPaginacion.innerHTML = `
+    <div class="pager">
+      <span class="pager-info">Mostrando ${pageItems.length} de ${total} leads</span>
+      <div class="pager-controls">
+        <button type="button" class="pager-btn" id="calificadosListaPrev" ${calificadosListaPage <= 1 ? 'disabled' : ''} aria-label="Anterior">‹</button>
+        <span class="pager-page">${calificadosListaPage}</span>
+        <button type="button" class="pager-btn" id="calificadosListaNext" ${calificadosListaPage >= totalPages ? 'disabled' : ''} aria-label="Siguiente">›</button>
+      </div>
+    </div>`;
+
+  const prevBtn = document.getElementById('calificadosListaPrev');
+  const nextBtn = document.getElementById('calificadosListaNext');
+  if (prevBtn) prevBtn.addEventListener('click', () => { calificadosListaPage--; renderLeadsCalificadosListado(); });
+  if (nextBtn) nextBtn.addEventListener('click', () => { calificadosListaPage++; renderLeadsCalificadosListado(); });
+}
+
+function descargarCsvCalificados() {
+  if (!leadsCalificadosDetalleData.length) return;
+  const filas = [['Nombre', 'Correo', 'Embudo', 'Monto']];
+  leadsCalificadosDetalleData.forEach(l => filas.push([l.nombre, l.correo || '', l.embudo, l.monto || 0]));
+  const csv = filas.map(f => f.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\r\n');
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `leads_calificados_${els.dateFrom.value || 'actual'}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 function renderCrosstab(payload) {
+  actualizarBadgePeriodoCrosstab();
   const embudos = Object.values(payload.por_embudo || {});
-  if (!embudos.length) { els.crosstabStats.innerHTML = ''; els.crosstabTable.innerHTML = '<div class="empty">Sin resultados.</div>'; return; }
+  if (!embudos.length) {
+    els.crosstabStats.innerHTML = '';
+    els.crosstabTable.innerHTML = '<div class="empty">Sin resultados.</div>';
+    leadsCalificadosDetalleData = [];
+    calificadosListaPage = 1;
+    renderLeadsCalificadosListado();
+    return;
+  }
 
   els.crosstabStats.innerHTML = '<div class="stats-row">' +
     statCard('target', 'var(--c-positive)', 'Leads calificados', payload.totales.leads_calificados) +
-    statCard('dollar', 'var(--ink-soft)', 'Monto calificado', '$' + payload.totales.monto_calificado.toLocaleString('es-MX')) +
+    statCard('dollar', 'var(--ink-soft)', 'Monto calificados', '$' + payload.totales.monto_calificado.toLocaleString('es-MX')) +
     '</div>';
 
   const rows = embudos.map(e => `<tr><td>${e.embudo}</td><td class="num">${e.leads_calificados}</td><td class="num">$${e.monto_calificado.toLocaleString('es-MX')}</td></tr>`).join('');
@@ -829,116 +953,14 @@ function renderCrosstab(payload) {
     </div>`;
   const excluidos = payload.embudos_excluidos_sin_etapa_calificado || [];
   els.crosstabExcluidos.textContent = excluidos.length ? `No incluidos (sin etapa "Calificado"): ${excluidos.join(', ')}` : '';
-}
 
-/* ============================== Metas y pauta (persistente en Postgres vía n8n) ============================== */
-let metasCache = {};
-
-async function cargarMetas() {
-  try {
-    const data = await callWebhook({ type: 'metas', action: 'get' });
-    const payload = extractPayload(data, 'por_embudo');
-    metasCache = payload.por_embudo || {};
-  } catch (err) {
-    console.error('No se pudieron cargar metas/inversión:', err);
-    metasCache = {};
-  }
-  return metasCache;
-}
-
-async function guardarMeta(embudoKey, metaVenta, inversionPauta) {
-  metasCache[embudoKey] = { meta_venta: metaVenta, inversion_pauta: inversionPauta };
-  try {
-    await callWebhook({ type: 'metas', action: 'set', embudo: embudoKey, meta_venta: metaVenta, inversion_pauta: inversionPauta });
-    return true;
-  } catch (err) {
-    console.error('No se pudo guardar meta/inversión:', err);
-    return false;
-  }
-}
-
-function pctMetaClass(pct, tieneMeta) {
-  if (!tieneMeta) return 'sinmeta';
-  if (pct >= 100) return 'alto';
-  if (pct >= 50) return 'medio';
-  return 'bajo';
-}
-
-function recalcularTotales(container) {
-  const totalRow = container.querySelector('tr[data-total-row]');
-  if (!totalRow) return;
-  const totalMontoGanado = Number(totalRow.dataset.montoGanado) || 0;
-
-  let totalMeta = 0, totalInv = 0;
-  container.querySelectorAll('tr[data-embudo-row]').forEach(row => {
-    totalMeta += Number(row.querySelector('input.meta-venta').value) || 0;
-    totalInv += Number(row.querySelector('input.inv-pauta').value) || 0;
-  });
-
-  const tieneMeta = totalMeta > 0;
-  const pct = tieneMeta ? (totalMontoGanado / totalMeta * 100) : 0;
-
-  totalRow.querySelector('.total-meta-val').textContent = '$' + totalMeta.toLocaleString('es-MX', {maximumFractionDigits:0});
-  totalRow.querySelector('.total-inv-val').textContent = '$' + totalInv.toLocaleString('es-MX', {maximumFractionDigits:0});
-  const pctEl = totalRow.querySelector('.total-pct-val');
-  pctEl.textContent = tieneMeta ? pct.toFixed(1) + '%' : '—';
-  pctEl.className = 'pct-meta total-pct-val ' + pctMetaClass(pct, tieneMeta);
-}
-
-function attachMetaHandlers(container) {
-  container.querySelectorAll('tr[data-embudo-row]').forEach(row => {
-    const embudoKey = row.dataset.embudoRow;
-    const inpMeta = row.querySelector('input.meta-venta');
-    const inpInv = row.querySelector('input.inv-pauta');
-    const pctCell = row.querySelector('.pct-meta');
-    const indMeta = row.querySelector('.save-indicator.meta-ind');
-    const indInv = row.querySelector('.save-indicator.inv-ind');
-    const montoGanado = Number(row.dataset.montoGanado) || 0;
-    let debounceTimer = null;
-
-    function recalcularPct() {
-      const metaVal = Number(inpMeta.value) || 0;
-      const tieneMeta = metaVal > 0;
-      const pct = tieneMeta ? (montoGanado / metaVal * 100) : 0;
-      pctCell.textContent = tieneMeta ? pct.toFixed(1) + '%' : '—';
-      pctCell.className = 'pct-meta ' + pctMetaClass(pct, tieneMeta);
-    }
-
-    function setIndicador(el, texto, clase) {
-      el.textContent = texto;
-      el.className = 'save-indicator ' + clase;
-    }
-
-    function guardarConDebounce() {
-      clearTimeout(debounceTimer);
-      setIndicador(indMeta, 'Editando…', 'pending');
-      setIndicador(indInv, 'Editando…', 'pending');
-      debounceTimer = setTimeout(async () => {
-        const metaVal = inpMeta.value === '' ? 0 : Number(inpMeta.value);
-        const invVal = inpInv.value === '' ? 0 : Number(inpInv.value);
-        setIndicador(indMeta, 'Guardando…', 'pending');
-        setIndicador(indInv, 'Guardando…', 'pending');
-        inpMeta.classList.remove('error'); inpInv.classList.remove('error');
-        const ok = await guardarMeta(embudoKey, metaVal, invVal);
-        if (ok) {
-          setIndicador(indMeta, 'Guardado ✓', 'ok');
-          setIndicador(indInv, 'Guardado ✓', 'ok');
-          setTimeout(() => { setIndicador(indMeta, '', ''); setIndicador(indInv, '', ''); }, 2000);
-        } else {
-          setIndicador(indMeta, 'Error al guardar', 'err');
-          setIndicador(indInv, 'Error al guardar', 'err');
-          inpMeta.classList.add('error'); inpInv.classList.add('error');
-        }
-      }, 600);
-    }
-
-    inpMeta.addEventListener('input', () => { recalcularPct(); recalcularTotales(container); guardarConDebounce(); });
-    inpInv.addEventListener('input', () => { recalcularTotales(container); guardarConDebounce(); });
-  });
+  leadsCalificadosDetalleData = payload.leads_calificados_detalle || [];
+  calificadosListaPage = 1;
+  renderLeadsCalificadosListado();
 }
 
 /* ============================== RENDER: Ganados ============================== */
-async function renderGanados(payload) {
+function renderGanados(payload) {
   const embudos = Object.values(payload.por_embudo || {}).filter(e => e.ganado > 0);
   renderGanadosDetalle(payload.ganados_detalle || []);
   if (!embudos.length) { els.ganadosStats.innerHTML = ''; els.ganadosTable.innerHTML = '<div class="empty">Sin ganados en este periodo con estos filtros.</div>'; return; }
@@ -952,47 +974,30 @@ async function renderGanados(payload) {
     statCard('barChart', 'var(--ink-soft)', 'Ticket promedio', '$' + ticketTotal.toLocaleString('es-MX', {maximumFractionDigits:0})) +
     '</div>';
 
-  await cargarMetas();
-  const totalMeta = embudos.reduce((s, e) => s + (Number((metasCache[e.embudo] || {}).meta_venta) || 0), 0);
-  const totalInversion = embudos.reduce((s, e) => s + (Number((metasCache[e.embudo] || {}).inversion_pauta) || 0), 0);
-  const pctTotal = totalMeta > 0 ? (totalMonto / totalMeta * 100) : 0;
-
   const rows = embudos.map(e => {
     const ticket = e.ganado ? (e.monto_ganado / e.ganado) : 0;
-    const guardado = metasCache[e.embudo] || {};
-    const metaVal = guardado.meta_venta || 0;
-    const invVal = guardado.inversion_pauta || 0;
-    const tieneMeta = metaVal > 0;
-    const pct = tieneMeta ? (e.monto_ganado / metaVal * 100) : 0;
     return `
-    <tr data-embudo-row="${e.embudo}" data-monto-ganado="${e.monto_ganado}">
+    <tr>
       <td>${e.embudo}</td>
       <td class="num"><span class="numval">${e.ganado}</span></td>
-      <td class="num"><div class="editable-cell-wrap"><input type="number" class="editable-cell meta-venta" placeholder="—" value="${metaVal || ''}"><span class="save-indicator meta-ind"></span></div></td>
-      <td class="num"><div class="editable-cell-wrap"><input type="number" class="editable-cell inv-pauta" placeholder="—" value="${invVal || ''}"><span class="save-indicator inv-ind"></span></div></td>
       <td class="num"><span class="numval">$${e.monto_ganado.toLocaleString('es-MX', {maximumFractionDigits:0})}</span></td>
       <td class="num"><span class="numval">$${ticket.toLocaleString('es-MX', {maximumFractionDigits:0})}</span></td>
-      <td class="num"><span class="pct-meta ${pctMetaClass(pct, tieneMeta)}">${tieneMeta ? pct.toFixed(1) + '%' : '—'}</span></td>
     </tr>`;
   }).join('');
   els.ganadosTable.innerHTML = `
     <div class="table-scroll">
     <table>
-      <thead><tr><th>Embudo</th><th class="num">Proyectos</th><th class="num">Meta de venta</th><th class="num">Inversión en pauta</th><th class="num">Monto (MXN)</th><th class="num">Ticket promedio</th><th class="num">% alcanzado de venta</th></tr></thead>
+      <thead><tr><th>Embudo</th><th class="num">Proyectos</th><th class="num">Monto (MXN)</th><th class="num">Ticket promedio</th></tr></thead>
       <tbody>${rows}
-        <tr class="totales" data-total-row data-monto-ganado="${totalMonto}">
+        <tr class="totales">
           <td>Total</td>
           <td class="num"><span class="numval">${totalProyectos}</span></td>
-          <td class="num"><span class="numval total-meta-val">$${totalMeta.toLocaleString('es-MX', {maximumFractionDigits:0})}</span></td>
-          <td class="num"><span class="numval total-inv-val">$${totalInversion.toLocaleString('es-MX', {maximumFractionDigits:0})}</span></td>
           <td class="num"><span class="numval">$${totalMonto.toLocaleString('es-MX', {maximumFractionDigits:0})}</span></td>
           <td class="num"><span class="numval">$${ticketTotal.toLocaleString('es-MX', {maximumFractionDigits:0})}</span></td>
-          <td class="num"><span class="pct-meta total-pct-val ${pctMetaClass(pctTotal, totalMeta > 0)}">${totalMeta > 0 ? pctTotal.toFixed(1) + '%' : '—'}</span></td>
         </tr>
       </tbody>
     </table>
     </div>`;
-  attachMetaHandlers(els.ganadosTable);
 }
 
 function renderGanadosDetalle(detalle) {
