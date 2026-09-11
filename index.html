@@ -247,6 +247,14 @@
     min-width: 28px; height: 28px; border-radius: 7px; background: var(--ink); color: var(--pill-ink);
     font-family: var(--mono); font-weight: 700; font-size: 12.5px; display: inline-flex; align-items: center; justify-content: center;
   }
+  .lead-link { color: inherit; text-decoration: none; border-bottom: 1px dotted var(--ink-faint); }
+  .lead-link:hover { color: var(--c-positive); border-bottom-color: var(--c-positive); }
+  .embudo-filter-row { display: flex; align-items: center; gap: 9px; margin-bottom: 12px; flex-wrap: wrap; }
+  .embudo-filter-row label { font-size: 12px; color: var(--ink-soft); font-weight: 500; }
+  .embudo-filter-row select {
+    background: var(--surface-2); color: var(--ink); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); padding: 7px 10px; font-size: 12.5px; font-family: var(--body); cursor: pointer;
+  }
 
   @media (max-width: 640px) {
     body { padding: 18px 12px 70px; }
@@ -387,6 +395,10 @@
           <button type="button" id="btnExportarCalificados" class="export-btn"><span id="iconExportar"></span><span>Exportar</span></button>
         </div>
         <p class="help">Listado de leads que están en la etapa "Calificado".</p>
+        <div class="embudo-filter-row">
+          <label for="calificadosEmbudoFiltro">Embudo</label>
+          <select id="calificadosEmbudoFiltro"><option value="">Todos los embudos</option></select>
+        </div>
         <div id="calificadosListaTable"></div>
         <div id="calificadosListaPaginacion"></div>
       </div>
@@ -400,7 +412,11 @@
       <div id="ganadosStats"></div>
       <div id="ganadosTable"></div>
       <h3 style="font-family:var(--display); font-size:13px; color:var(--ink-soft); font-weight:600; margin:22px 0 4px; letter-spacing:-.005em;">Desglose de leads ganados</h3>
-      <p class="help" style="margin-bottom:12px;">Cada venta cerrada en el periodo, con contacto, compañía, responsable y etiquetas. Ordenado de mayor a menor monto.</p>
+      <p class="help" style="margin-bottom:12px;">Cada venta cerrada en el periodo, con contacto, compañía, responsable y etiquetas. Ordenado por embudo (alfabético) y luego de mayor a menor monto.</p>
+      <div class="embudo-filter-row">
+        <label for="ganadosEmbudoFiltro">Embudo</label>
+        <select id="ganadosEmbudoFiltro"><option value="">Todos los embudos</option></select>
+      </div>
       <div id="ganadosDetalleTable"></div>
     </div>
   </div>
@@ -489,6 +505,12 @@ paintIcon('iconExportar', 'download', 'var(--ink)');
 
 /* ============================== DATOS (sin cambios de lógica) ============================== */
 const WEBHOOK_URL = "https://digital-crew-n8n.xrzfaj.easypanel.host/webhook/AI-AUDITORIA-COMERCIAL";
+const KOMMO_SUBDOMAIN = "digitalcrewmarketing";
+function kommoLeadUrl(leadId) { return `https://${KOMMO_SUBDOMAIN}.kommo.com/leads/detail/${leadId}`; }
+function leadLinkHtml(leadId, texto) {
+  if (leadId == null) return texto;
+  return `<a class="lead-link" href="${kommoLeadUrl(leadId)}" target="_blank" rel="noopener noreferrer">${texto}</a>`;
+}
 
 const els = {
   dateFrom: document.getElementById('dateFrom'),
@@ -516,9 +538,11 @@ const els = {
   calificadosListaTable: document.getElementById('calificadosListaTable'),
   calificadosListaPaginacion: document.getElementById('calificadosListaPaginacion'),
   btnExportarCalificados: document.getElementById('btnExportarCalificados'),
+  calificadosEmbudoFiltro: document.getElementById('calificadosEmbudoFiltro'),
   ganadosStats: document.getElementById('ganadosStats'),
   ganadosTable: document.getElementById('ganadosTable'),
   ganadosDetalleTable: document.getElementById('ganadosDetalleTable'),
+  ganadosEmbudoFiltro: document.getElementById('ganadosEmbudoFiltro'),
   callsPanel: document.getElementById('callsPanel'),
   callsStats: document.getElementById('callsStats'),
   callsTableCreador: document.getElementById('callsTableCreador'),
@@ -552,6 +576,17 @@ els.filterByToggle.addEventListener('click', (e) => {
 });
 
 els.btnExportarCalificados.addEventListener('click', descargarCsvCalificados);
+
+els.calificadosEmbudoFiltro.addEventListener('change', () => {
+  calificadosEmbudoFiltro = els.calificadosEmbudoFiltro.value;
+  calificadosListaPage = 1;
+  renderLeadsCalificadosListado();
+});
+
+els.ganadosEmbudoFiltro.addEventListener('change', () => {
+  ganadosEmbudoFiltro = els.ganadosEmbudoFiltro.value;
+  renderGanadosDetalleTabla();
+});
 
 function fmt(d) { return d.toISOString().slice(0, 10); }
 
@@ -843,6 +878,7 @@ function renderResultados(payload) {
 /* ============================== RENDER: Calificados ============================== */
 let leadsCalificadosDetalleData = [];
 let calificadosListaPage = 1;
+let calificadosEmbudoFiltro = '';
 const CALIFICADOS_PAGE_SIZE = 10;
 
 function actualizarBadgePeriodoCrosstab() {
@@ -858,12 +894,30 @@ function embudoPillHtml(key) {
   return '<span class="embudo-pill" style="background:hsl(' + hue + ' 35% 18%); color:hsl(' + hue + ' 70% 75%); border:1px solid hsl(' + hue + ' 35% 30%)">' + key + '</span>';
 }
 
-function personConCorreoHtml(nombre, correo) {
+function personConCorreoHtml(nombre, correo, leadId) {
   return '<span class="person-cell">' + avatarHtml(nombre) +
-    '<span><span>' + nombre + '</span>' + (correo ? '<span class="person-email">' + correo + '</span>' : '') + '</span></span>';
+    '<span><span>' + leadLinkHtml(leadId, nombre) + '</span>' + (correo ? '<span class="person-email">' + correo + '</span>' : '') + '</span></span>';
+}
+
+// Ordenados por embudo (alfabético) y luego por monto descendente dentro de cada
+// embudo -- antes salian revueltos (solo por monto), dificil de leer por grupo.
+function getLeadsCalificadosVista() {
+  let datos = leadsCalificadosDetalleData;
+  if (calificadosEmbudoFiltro) datos = datos.filter(l => l.embudo === calificadosEmbudoFiltro);
+  return [...datos].sort((a, b) => a.embudo.localeCompare(b.embudo, 'es') || (b.monto - a.monto));
+}
+
+function actualizarFiltroEmbudoCalificados() {
+  const embudos = [...new Set(leadsCalificadosDetalleData.map(l => l.embudo))].sort((a, b) => a.localeCompare(b, 'es'));
+  const sel = els.calificadosEmbudoFiltro;
+  const valorPrevio = sel.value;
+  sel.innerHTML = '<option value="">Todos los embudos</option>' + embudos.map(e => `<option value="${e}">${e}</option>`).join('');
+  sel.value = embudos.includes(valorPrevio) ? valorPrevio : '';
+  calificadosEmbudoFiltro = sel.value;
 }
 
 function renderLeadsCalificadosListado() {
+  const vista = getLeadsCalificadosVista();
   const total = leadsCalificadosDetalleData.length;
   els.calificadosListaTitulo.textContent = `Leads calificados (${total})`;
 
@@ -872,15 +926,20 @@ function renderLeadsCalificadosListado() {
     els.calificadosListaPaginacion.innerHTML = '';
     return;
   }
+  if (!vista.length) {
+    els.calificadosListaTable.innerHTML = '<div class="empty">Ningún lead calificado en ese embudo.</div>';
+    els.calificadosListaPaginacion.innerHTML = '';
+    return;
+  }
 
-  const totalPages = Math.max(1, Math.ceil(total / CALIFICADOS_PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(vista.length / CALIFICADOS_PAGE_SIZE));
   if (calificadosListaPage > totalPages) calificadosListaPage = totalPages;
   const startIdx = (calificadosListaPage - 1) * CALIFICADOS_PAGE_SIZE;
-  const pageItems = leadsCalificadosDetalleData.slice(startIdx, startIdx + CALIFICADOS_PAGE_SIZE);
+  const pageItems = vista.slice(startIdx, startIdx + CALIFICADOS_PAGE_SIZE);
 
   const rows = pageItems.map(l => `
     <tr>
-      <td>${personConCorreoHtml(l.nombre, l.correo)}</td>
+      <td>${personConCorreoHtml(l.nombre, l.correo, l.lead_id)}</td>
       <td>${embudoPillHtml(l.embudo)}</td>
       <td class="num"><span class="numval">$${(l.monto || 0).toLocaleString('es-MX')}</span></td>
     </tr>`).join('');
@@ -895,7 +954,7 @@ function renderLeadsCalificadosListado() {
 
   els.calificadosListaPaginacion.innerHTML = `
     <div class="pager">
-      <span class="pager-info">Mostrando ${pageItems.length} de ${total} leads</span>
+      <span class="pager-info">Mostrando ${pageItems.length} de ${vista.length} leads${calificadosEmbudoFiltro ? ' (' + total + ' en total)' : ''}</span>
       <div class="pager-controls">
         <button type="button" class="pager-btn" id="calificadosListaPrev" ${calificadosListaPage <= 1 ? 'disabled' : ''} aria-label="Anterior">‹</button>
         <span class="pager-page">${calificadosListaPage}</span>
@@ -933,6 +992,8 @@ function renderCrosstab(payload) {
     els.crosstabTable.innerHTML = '<div class="empty">Sin resultados.</div>';
     leadsCalificadosDetalleData = [];
     calificadosListaPage = 1;
+    calificadosEmbudoFiltro = '';
+    actualizarFiltroEmbudoCalificados();
     renderLeadsCalificadosListado();
     return;
   }
@@ -957,6 +1018,8 @@ function renderCrosstab(payload) {
 
   leadsCalificadosDetalleData = payload.leads_calificados_detalle || [];
   calificadosListaPage = 1;
+  calificadosEmbudoFiltro = '';
+  actualizarFiltroEmbudoCalificados();
   renderLeadsCalificadosListado();
 }
 
@@ -1001,12 +1064,42 @@ function renderGanados(payload) {
     </div>`;
 }
 
+let ganadosDetalleData = [];
+let ganadosEmbudoFiltro = '';
+
+// Mismo criterio que calificados: agrupado por embudo (alfabético) y luego por
+// monto descendente dentro de cada embudo, en vez de solo monto descendente.
+function getGanadosDetalleVista() {
+  let datos = ganadosDetalleData;
+  if (ganadosEmbudoFiltro) datos = datos.filter(g => g.embudo === ganadosEmbudoFiltro);
+  return [...datos].sort((a, b) => (a.embudo || '').localeCompare(b.embudo || '', 'es') || (b.monto - a.monto));
+}
+
+function actualizarFiltroEmbudoGanados() {
+  const embudos = [...new Set(ganadosDetalleData.map(g => g.embudo).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'es'));
+  const sel = els.ganadosEmbudoFiltro;
+  const valorPrevio = sel.value;
+  sel.innerHTML = '<option value="">Todos los embudos</option>' + embudos.map(e => `<option value="${e}">${e}</option>`).join('');
+  sel.value = embudos.includes(valorPrevio) ? valorPrevio : '';
+  ganadosEmbudoFiltro = sel.value;
+}
+
 function renderGanadosDetalle(detalle) {
-  if (!detalle.length) { els.ganadosDetalleTable.innerHTML = '<div class="empty">Sin ganados en este periodo con estos filtros.</div>'; return; }
-  const rows = detalle.map(g => `
+  ganadosDetalleData = detalle;
+  ganadosEmbudoFiltro = '';
+  actualizarFiltroEmbudoGanados();
+  renderGanadosDetalleTabla();
+}
+
+function renderGanadosDetalleTabla() {
+  if (!ganadosDetalleData.length) { els.ganadosDetalleTable.innerHTML = '<div class="empty">Sin ganados en este periodo con estos filtros.</div>'; return; }
+  const vista = getGanadosDetalleVista();
+  if (!vista.length) { els.ganadosDetalleTable.innerHTML = '<div class="empty">Ningún ganado en ese embudo.</div>'; return; }
+  const rows = vista.map(g => `
     <tr>
-      <td>${g.nombre_lead}</td>
-      <td>${g.nombre_contacto || '—'}</td>
+      <td>${leadLinkHtml(g.lead_id, g.nombre_lead)}</td>
+      <td>${g.nombre_contacto ? leadLinkHtml(g.lead_id, g.nombre_contacto) : '—'}</td>
+      <td>${g.embudo ? embudoPillHtml(g.embudo) : '—'}</td>
       <td class="num"><span class="numval">$${(g.monto || 0).toLocaleString('es-MX')}</span></td>
       <td>${g.compania || '—'}</td>
       <td><span class="person-cell">${avatarHtml(nombreAgente(g.responsible_user_id))}${nombreAgente(g.responsible_user_id)}</span></td>
@@ -1015,7 +1108,7 @@ function renderGanadosDetalle(detalle) {
   els.ganadosDetalleTable.innerHTML = `
     <div class="table-scroll">
     <table>
-      <thead><tr><th>Nombre lead</th><th>Contacto</th><th class="num">Monto</th><th>Compañía</th><th>Responsable</th><th>Etiquetas</th></tr></thead>
+      <thead><tr><th>Nombre lead</th><th>Contacto</th><th>Embudo</th><th class="num">Monto</th><th>Compañía</th><th>Responsable</th><th>Etiquetas</th></tr></thead>
       <tbody>${rows}</tbody>
     </table>
     </div>`;
