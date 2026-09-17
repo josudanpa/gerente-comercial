@@ -425,7 +425,7 @@
           <div class="panel-icon" id="iconVentasSemestre"></div>
           <h2>Comparativo de ventas — últimos 6 meses</h2>
         </div>
-        <p class="help">Monto de leads ganados en Kommo por mes (fecha de cierre), de los últimos 6 meses incluyendo el mes en curso. Independiente del rango de fechas de arriba.</p>
+        <p class="help">Monto de leads ganados en Kommo por mes (fecha de cierre), de los últimos 6 meses incluyendo el mes en curso. Respeta los filtros de embudos, agentes y etiquetas de arriba; el rango de fechas de arriba no le aplica (siempre son los últimos 6 meses).</p>
         <div id="ventasSemestreStats"></div>
         <div id="ventasSemestreChart"></div>
         <details><summary>JSON crudo</summary><pre id="rawJsonVentasSemestre"></pre></details>
@@ -435,7 +435,7 @@
           <div class="panel-icon" id="iconLeadsEntrantesSemestre"></div>
           <h2>Leads entrantes - últimos 6 meses</h2>
         </div>
-        <p class="help">Cantidad de leads que entraron en Kommo por mes (fecha de creación), de los últimos 6 meses incluyendo el mes en curso. Independiente del rango de fechas de arriba.</p>
+        <p class="help">Cantidad de leads que entraron en Kommo por mes (fecha de creación), de los últimos 6 meses incluyendo el mes en curso. Respeta los filtros de embudos, agentes y etiquetas de arriba; el rango de fechas de arriba no le aplica (siempre son los últimos 6 meses).</p>
         <div id="leadsEntrantesSemestreStats"></div>
         <div id="leadsEntrantesSemestreChart"></div>
         <details><summary>JSON crudo</summary><pre id="rawJsonLeadsEntrantesSemestre"></pre></details>
@@ -740,7 +740,8 @@ els.btnGenerar.addEventListener('click', async () => {
     renderTiemposRespuesta(respTimesPayload);
     els.rawJsonRespTimes.textContent = JSON.stringify(respTimesData, null, 2);
 
-    await Promise.all([cargarVentasSemestre(), cargarLeadsEntrantesSemestre()]);
+    const filtrosSemestre = { pipelineIds, agentIds, tagIds };
+    await Promise.all([cargarVentasSemestre(filtrosSemestre), cargarLeadsEntrantesSemestre(filtrosSemestre)]);
 
     els.resultsRow.style.display = 'block';
     els.callsPanel.style.display = 'block';
@@ -1176,7 +1177,7 @@ function fmtMontoCorto(monto) {
 // concurrentes por separado sí funcionan). Uno a la vez dentro de cada comparativo evita
 // el problema sin tocar el workflow; los dos comparativos mensuales se disparan en
 // paralelo entre sí (máximo ~2 llamadas simultáneas en total), muy por debajo de ese límite.
-async function fetchMesesPerformance(filterBy) {
+async function fetchMesesPerformance(filterBy, filtros) {
   const meses = ultimosSemestreMeses();
   const resultados = [];
   for (const m of meses) {
@@ -1184,7 +1185,7 @@ async function fetchMesesPerformance(filterBy) {
       type: 'leads', view: 'performance',
       date_from: m.date_from, date_to: m.date_to,
       filter_by: filterBy,
-      pipeline_ids: [], agent_ids: [], tag_ids: [],
+      pipeline_ids: filtros.pipelineIds, agent_ids: filtros.agentIds, tag_ids: filtros.tagIds,
     });
     resultados.push({ ...m, payload: extractPayload(respuesta, 'por_embudo') });
   }
@@ -1221,10 +1222,10 @@ function renderBarChartMensual(container, datos, { valor, color, fmtValor }) {
     </svg>`;
 }
 
-async function cargarVentasSemestre() {
+async function cargarVentasSemestre(filtros) {
   els.ventasSemestreChart.innerHTML = '<div class="empty">Cargando…</div>';
   try {
-    const resultados = await fetchMesesPerformance('closed_at');
+    const resultados = await fetchMesesPerformance('closed_at', filtros);
     const datos = resultados.map(r => {
       const embudos = Object.values(r.payload.por_embudo || {});
       const monto = embudos.reduce((s, e) => s + e.monto_ganado, 0);
@@ -1258,10 +1259,10 @@ function renderVentasSemestre(datos) {
   renderBarChartMensual(els.ventasSemestreChart, datos, { valor: d => d.monto, color: 'var(--c-positive)', fmtValor: fmtMontoCorto });
 }
 
-async function cargarLeadsEntrantesSemestre() {
+async function cargarLeadsEntrantesSemestre(filtros) {
   els.leadsEntrantesSemestreChart.innerHTML = '<div class="empty">Cargando…</div>';
   try {
-    const resultados = await fetchMesesPerformance('created_at');
+    const resultados = await fetchMesesPerformance('created_at', filtros);
     const datos = resultados.map(r => ({ label: r.label, leads: r.payload.total_leads_extraidos || 0 }));
     renderLeadsEntrantesSemestre(datos);
     els.rawJsonLeadsEntrantesSemestre.textContent = JSON.stringify(datos, null, 2);
