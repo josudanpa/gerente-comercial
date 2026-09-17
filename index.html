@@ -702,7 +702,6 @@ els.btnGenerar.addEventListener('click', async () => {
       pipeline_ids: pipelineIds,
     };
 
-    const semestrePromise = cargarVentasSemestre();
     const [perfData, crossData, callsData, respTimesData] = await Promise.all([
       callWebhook(perfBody), callWebhook(crossBody), callWebhook(callsBody), callWebhook(respTimesBody)
     ]);
@@ -725,7 +724,7 @@ els.btnGenerar.addEventListener('click', async () => {
     renderTiemposRespuesta(respTimesPayload);
     els.rawJsonRespTimes.textContent = JSON.stringify(respTimesData, null, 2);
 
-    await semestrePromise;
+    await cargarVentasSemestre();
 
     els.resultsRow.style.display = 'block';
     els.callsPanel.style.display = 'block';
@@ -1159,19 +1158,25 @@ async function cargarVentasSemestre() {
   const meses = ultimosSemestreMeses();
   els.ventasSemestreChart.innerHTML = '<div class="empty">Cargando…</div>';
   try {
-    const respuestas = await Promise.all(meses.map(m => callWebhook({
-      type: 'leads', view: 'performance',
-      date_from: m.date_from, date_to: m.date_to,
-      filter_by: 'closed_at',
-      pipeline_ids: [], agent_ids: [], tag_ids: [],
-    })));
-    const datos = meses.map((m, i) => {
-      const payload = extractPayload(respuestas[i], 'por_embudo');
+    // Secuencial a propósito: el webhook de n8n devuelve 200 con cuerpo vacío cuando
+    // recibe demasiadas invocaciones simultáneas (visto con 10 llamadas en paralelo al
+    // sumar este tablero a las 4 que ya disparaba "Generar reporte completo"; 4 y 3
+    // concurrentes por separado sí funcionan). Uno a la vez evita el problema sin tocar
+    // el workflow.
+    const datos = [];
+    for (const m of meses) {
+      const respuesta = await callWebhook({
+        type: 'leads', view: 'performance',
+        date_from: m.date_from, date_to: m.date_to,
+        filter_by: 'closed_at',
+        pipeline_ids: [], agent_ids: [], tag_ids: [],
+      });
+      const payload = extractPayload(respuesta, 'por_embudo');
       const embudos = Object.values(payload.por_embudo || {});
       const monto = embudos.reduce((s, e) => s + e.monto_ganado, 0);
       const ganados = embudos.reduce((s, e) => s + e.ganado, 0);
-      return { ...m, monto, ganados };
-    });
+      datos.push({ ...m, monto, ganados });
+    }
     renderVentasSemestre(datos);
     els.rawJsonVentasSemestre.textContent = JSON.stringify(datos, null, 2);
   } catch (err) {
