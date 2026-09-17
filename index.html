@@ -393,6 +393,17 @@
         <div id="calificadosListaPaginacion"></div>
       </div>
     </div>
+    <div class="panel" id="callsPanel" style="display:none;">
+      <div class="panel-head">
+        <div class="panel-icon" id="iconLlamadas"></div>
+        <h2>Volumen de llamadas por asesor</h2>
+      </div>
+      <p class="help"><b style="color:var(--ink-soft)">Objetivo: 800 mensuales</b><br>Llamadas entrantes y salientes registradas en Kommo en el rango de fechas, agrupadas por quién realizó/registró la llamada vía Twilio.</p>
+      <div id="callsStats"></div>
+      <div id="callsTableCreador"></div>
+      <div class="help" id="callsNota" style="margin-top:10px;"></div>
+      <details><summary>JSON crudo</summary><pre id="rawJsonCalls"></pre></details>
+    </div>
     <div class="panel">
       <div class="panel-head">
         <div class="panel-icon" id="iconDesempeno"></div>
@@ -441,18 +452,6 @@
         <details><summary>JSON crudo</summary><pre id="rawJsonLeadsEntrantesSemestre"></pre></details>
       </div>
     </div>
-  </div>
-
-  <div class="panel" id="callsPanel" style="display:none;">
-    <div class="panel-head">
-      <div class="panel-icon" id="iconLlamadas"></div>
-      <h2>Volumen de llamadas por asesor</h2>
-    </div>
-    <p class="help"><b style="color:var(--ink-soft)">Objetivo: 800 mensuales</b><br>Llamadas entrantes y salientes registradas en Kommo en el rango de fechas, agrupadas por quién realizó/registró la llamada vía Twilio.</p>
-    <div id="callsStats"></div>
-    <div id="callsTableCreador"></div>
-    <div class="help" id="callsNota" style="margin-top:10px;"></div>
-    <details><summary>JSON crudo</summary><pre id="rawJsonCalls"></pre></details>
   </div>
 
   <div class="panel" id="respTimesPanel" style="display:none;">
