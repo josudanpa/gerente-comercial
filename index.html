@@ -419,6 +419,16 @@
       </div>
       <div id="ganadosDetalleTable"></div>
     </div>
+    <div class="panel">
+      <div class="panel-head">
+        <div class="panel-icon" id="iconVentasSemestre"></div>
+        <h2>Comparativo de ventas — últimos 6 meses</h2>
+      </div>
+      <p class="help">Monto de leads ganados en Kommo por mes (fecha de cierre), de los últimos 6 meses incluyendo el mes en curso. Independiente del rango de fechas de arriba.</p>
+      <div id="ventasSemestreStats"></div>
+      <div id="ventasSemestreChart"></div>
+      <details><summary>JSON crudo</summary><pre id="rawJsonVentasSemestre"></pre></details>
+    </div>
   </div>
 
   <div class="panel" id="callsPanel" style="display:none;">
@@ -498,6 +508,7 @@ paintIcon('iconLeadsPeriodo', 'layers', 'var(--ink-soft)');
 paintIcon('iconDesempeno', 'layers', 'var(--ink-soft)');
 paintIcon('iconCalificados', 'target', 'var(--c-positive)');
 paintIcon('iconGanados', 'dollar', 'var(--ink-soft)');
+paintIcon('iconVentasSemestre', 'barChart', 'var(--c-positive)');
 paintIcon('iconLlamadas', 'phone', 'var(--ink-soft)');
 paintIcon('iconTiempos', 'zap', 'var(--ink-soft)');
 paintIcon('iconLeadsCalifLista', 'users', 'var(--c-positive)');
@@ -543,6 +554,9 @@ const els = {
   ganadosTable: document.getElementById('ganadosTable'),
   ganadosDetalleTable: document.getElementById('ganadosDetalleTable'),
   ganadosEmbudoFiltro: document.getElementById('ganadosEmbudoFiltro'),
+  ventasSemestreStats: document.getElementById('ventasSemestreStats'),
+  ventasSemestreChart: document.getElementById('ventasSemestreChart'),
+  rawJsonVentasSemestre: document.getElementById('rawJsonVentasSemestre'),
   callsPanel: document.getElementById('callsPanel'),
   callsStats: document.getElementById('callsStats'),
   callsTableCreador: document.getElementById('callsTableCreador'),
@@ -688,6 +702,7 @@ els.btnGenerar.addEventListener('click', async () => {
       pipeline_ids: pipelineIds,
     };
 
+    const semestrePromise = cargarVentasSemestre();
     const [perfData, crossData, callsData, respTimesData] = await Promise.all([
       callWebhook(perfBody), callWebhook(crossBody), callWebhook(callsBody), callWebhook(respTimesBody)
     ]);
@@ -709,6 +724,8 @@ els.btnGenerar.addEventListener('click', async () => {
     const respTimesPayload = extractPayload(respTimesData, 'por_embudo');
     renderTiemposRespuesta(respTimesPayload);
     els.rawJsonRespTimes.textContent = JSON.stringify(respTimesData, null, 2);
+
+    await semestrePromise;
 
     els.resultsRow.style.display = 'block';
     els.callsPanel.style.display = 'block';
@@ -1114,6 +1131,99 @@ function renderGanadosDetalleTabla() {
     </div>`;
 }
 
+/* ============================== RENDER: Comparativo de ventas (últimos 6 meses) ============================== */
+function ultimosSemestreMeses() {
+  const hoy = new Date();
+  const meses = [];
+  for (let i = 5; i >= 0; i--) {
+    const from = new Date(hoy.getFullYear(), hoy.getMonth() - i, 1);
+    const finDeMes = new Date(hoy.getFullYear(), hoy.getMonth() - i + 1, 0);
+    const to = finDeMes > hoy ? hoy : finDeMes;
+    const etiqueta = from.toLocaleDateString('es-MX', { month: 'short', year: '2-digit' }).replace('.', '');
+    meses.push({
+      label: etiqueta.charAt(0).toUpperCase() + etiqueta.slice(1),
+      date_from: fmt(from),
+      date_to: fmt(to),
+    });
+  }
+  return meses;
+}
+
+function fmtMontoCorto(monto) {
+  if (monto >= 1000000) return '$' + (monto / 1000000).toFixed(monto % 1000000 === 0 ? 0 : 1) + 'M';
+  if (monto >= 1000) return '$' + Math.round(monto / 1000) + 'K';
+  return '$' + Math.round(monto).toLocaleString('es-MX');
+}
+
+async function cargarVentasSemestre() {
+  const meses = ultimosSemestreMeses();
+  els.ventasSemestreChart.innerHTML = '<div class="empty">Cargando…</div>';
+  try {
+    const respuestas = await Promise.all(meses.map(m => callWebhook({
+      type: 'leads', view: 'performance',
+      date_from: m.date_from, date_to: m.date_to,
+      filter_by: 'closed_at',
+      pipeline_ids: [], agent_ids: [], tag_ids: [],
+    })));
+    const datos = meses.map((m, i) => {
+      const payload = extractPayload(respuestas[i], 'por_embudo');
+      const embudos = Object.values(payload.por_embudo || {});
+      const monto = embudos.reduce((s, e) => s + e.monto_ganado, 0);
+      const ganados = embudos.reduce((s, e) => s + e.ganado, 0);
+      return { ...m, monto, ganados };
+    });
+    renderVentasSemestre(datos);
+    els.rawJsonVentasSemestre.textContent = JSON.stringify(datos, null, 2);
+  } catch (err) {
+    els.ventasSemestreChart.innerHTML = '<div class="empty">No se pudo cargar el comparativo: ' + err.message + '</div>';
+    els.ventasSemestreStats.innerHTML = '';
+    console.error(err);
+  }
+}
+
+function renderVentasSemestre(datos) {
+  const total = datos.reduce((s, d) => s + d.monto, 0);
+  const promedio = total / datos.length;
+  const mejor = datos.reduce((a, b) => (b.monto > a.monto ? b : a), datos[0]);
+
+  els.ventasSemestreStats.innerHTML = '<div class="stats-row">' +
+    statCard('dollar', 'var(--c-positive)', 'Total del semestre', '$' + total.toLocaleString('es-MX', {maximumFractionDigits:0})) +
+    statCard('barChart', 'var(--ink-soft)', 'Promedio mensual', '$' + Math.round(promedio).toLocaleString('es-MX')) +
+    statCard('trendingUp', 'var(--c-positive)', 'Mejor mes', mejor.label, '$' + mejor.monto.toLocaleString('es-MX')) +
+    '</div>';
+
+  if (!total) {
+    els.ventasSemestreChart.innerHTML = '<div class="empty">Sin ventas ganadas en los últimos 6 meses.</div>';
+    return;
+  }
+
+  const max = Math.max(1, ...datos.map(d => d.monto));
+  const w = 640, h = 260, padL = 8, padR = 8, padT = 30, padB = 40;
+  const chartW = w - padL - padR;
+  const chartH = h - padT - padB;
+  const gap = 18;
+  const barW = (chartW - gap * (datos.length - 1)) / datos.length;
+  const baseline = padT + chartH;
+
+  const bars = datos.map((d, i) => {
+    const barH = (d.monto / max) * chartH;
+    const x = padL + i * (barW + gap);
+    const y = baseline - barH;
+    const esMejor = d.monto === max;
+    return `
+      <g>
+        <rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${Math.max(barH, 1).toFixed(1)}" rx="6" style="fill:var(--c-positive); opacity:${esMejor ? 1 : 0.6}"/>
+        <text x="${(x + barW / 2).toFixed(1)}" y="${(y - 8).toFixed(1)}" text-anchor="middle" style="font-family:var(--mono); font-size:11px; fill:var(--ink-soft)">${fmtMontoCorto(d.monto)}</text>
+        <text x="${(x + barW / 2).toFixed(1)}" y="${(h - padB + 18).toFixed(1)}" text-anchor="middle" style="font-family:var(--display); font-size:12px; font-weight:600; fill:var(--ink)">${d.label}</text>
+      </g>`;
+  }).join('');
+
+  els.ventasSemestreChart.innerHTML = `
+    <svg viewBox="0 0 ${w} ${h}" style="width:100%; height:auto; max-width:640px; display:block; margin:6px auto 0;">
+      <line x1="${padL}" y1="${baseline}" x2="${w - padR}" y2="${baseline}" style="stroke:var(--border); stroke-width:1"/>
+      ${bars}
+    </svg>`;
+}
 
 function nombreAgente(id) {
   const found = agentsCatalog.find(a => String(a.id) === String(id));
