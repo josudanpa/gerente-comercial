@@ -419,15 +419,27 @@
       </div>
       <div id="ganadosDetalleTable"></div>
     </div>
-    <div class="panel">
-      <div class="panel-head">
-        <div class="panel-icon" id="iconVentasSemestre"></div>
-        <h2>Comparativo de ventas — últimos 6 meses</h2>
+    <div class="calif-row">
+      <div class="panel">
+        <div class="panel-head">
+          <div class="panel-icon" id="iconVentasSemestre"></div>
+          <h2>Comparativo de ventas — últimos 6 meses</h2>
+        </div>
+        <p class="help">Monto de leads ganados en Kommo por mes (fecha de cierre), de los últimos 6 meses incluyendo el mes en curso. Independiente del rango de fechas de arriba.</p>
+        <div id="ventasSemestreStats"></div>
+        <div id="ventasSemestreChart"></div>
+        <details><summary>JSON crudo</summary><pre id="rawJsonVentasSemestre"></pre></details>
       </div>
-      <p class="help">Monto de leads ganados en Kommo por mes (fecha de cierre), de los últimos 6 meses incluyendo el mes en curso. Independiente del rango de fechas de arriba.</p>
-      <div id="ventasSemestreStats"></div>
-      <div id="ventasSemestreChart"></div>
-      <details><summary>JSON crudo</summary><pre id="rawJsonVentasSemestre"></pre></details>
+      <div class="panel">
+        <div class="panel-head">
+          <div class="panel-icon" id="iconLeadsEntrantesSemestre"></div>
+          <h2>Leads entrantes - últimos 6 meses</h2>
+        </div>
+        <p class="help">Cantidad de leads que entraron en Kommo por mes (fecha de creación), de los últimos 6 meses incluyendo el mes en curso. Independiente del rango de fechas de arriba.</p>
+        <div id="leadsEntrantesSemestreStats"></div>
+        <div id="leadsEntrantesSemestreChart"></div>
+        <details><summary>JSON crudo</summary><pre id="rawJsonLeadsEntrantesSemestre"></pre></details>
+      </div>
     </div>
   </div>
 
@@ -509,6 +521,7 @@ paintIcon('iconDesempeno', 'layers', 'var(--ink-soft)');
 paintIcon('iconCalificados', 'target', 'var(--c-positive)');
 paintIcon('iconGanados', 'dollar', 'var(--ink-soft)');
 paintIcon('iconVentasSemestre', 'barChart', 'var(--c-positive)');
+paintIcon('iconLeadsEntrantesSemestre', 'layers', 'var(--c-neutral)');
 paintIcon('iconLlamadas', 'phone', 'var(--ink-soft)');
 paintIcon('iconTiempos', 'zap', 'var(--ink-soft)');
 paintIcon('iconLeadsCalifLista', 'users', 'var(--c-positive)');
@@ -557,6 +570,9 @@ const els = {
   ventasSemestreStats: document.getElementById('ventasSemestreStats'),
   ventasSemestreChart: document.getElementById('ventasSemestreChart'),
   rawJsonVentasSemestre: document.getElementById('rawJsonVentasSemestre'),
+  leadsEntrantesSemestreStats: document.getElementById('leadsEntrantesSemestreStats'),
+  leadsEntrantesSemestreChart: document.getElementById('leadsEntrantesSemestreChart'),
+  rawJsonLeadsEntrantesSemestre: document.getElementById('rawJsonLeadsEntrantesSemestre'),
   callsPanel: document.getElementById('callsPanel'),
   callsStats: document.getElementById('callsStats'),
   callsTableCreador: document.getElementById('callsTableCreador'),
@@ -724,7 +740,7 @@ els.btnGenerar.addEventListener('click', async () => {
     renderTiemposRespuesta(respTimesPayload);
     els.rawJsonRespTimes.textContent = JSON.stringify(respTimesData, null, 2);
 
-    await cargarVentasSemestre();
+    await Promise.all([cargarVentasSemestre(), cargarLeadsEntrantesSemestre()]);
 
     els.resultsRow.style.display = 'block';
     els.callsPanel.style.display = 'block';
@@ -1154,29 +1170,67 @@ function fmtMontoCorto(monto) {
   return '$' + Math.round(monto).toLocaleString('es-MX');
 }
 
-async function cargarVentasSemestre() {
+// Secuencial a propósito: el webhook de n8n devuelve 200 con cuerpo vacío cuando recibe
+// demasiadas invocaciones simultáneas (visto con 10 llamadas en paralelo al sumar el
+// primer tablero mensual a las 4 que ya disparaba "Generar reporte completo"; 4 y 3
+// concurrentes por separado sí funcionan). Uno a la vez dentro de cada comparativo evita
+// el problema sin tocar el workflow; los dos comparativos mensuales se disparan en
+// paralelo entre sí (máximo ~2 llamadas simultáneas en total), muy por debajo de ese límite.
+async function fetchMesesPerformance(filterBy) {
   const meses = ultimosSemestreMeses();
+  const resultados = [];
+  for (const m of meses) {
+    const respuesta = await callWebhook({
+      type: 'leads', view: 'performance',
+      date_from: m.date_from, date_to: m.date_to,
+      filter_by: filterBy,
+      pipeline_ids: [], agent_ids: [], tag_ids: [],
+    });
+    resultados.push({ ...m, payload: extractPayload(respuesta, 'por_embudo') });
+  }
+  return resultados;
+}
+
+function renderBarChartMensual(container, datos, { valor, color, fmtValor }) {
+  const max = Math.max(1, ...datos.map(valor));
+  const w = 640, h = 260, padL = 8, padR = 8, padT = 30, padB = 40;
+  const chartW = w - padL - padR;
+  const chartH = h - padT - padB;
+  const gap = 18;
+  const barW = (chartW - gap * (datos.length - 1)) / datos.length;
+  const baseline = padT + chartH;
+
+  const bars = datos.map((d, i) => {
+    const v = valor(d);
+    const barH = (v / max) * chartH;
+    const x = padL + i * (barW + gap);
+    const y = baseline - barH;
+    const esMejor = v === max;
+    return `
+      <g>
+        <rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${Math.max(barH, 1).toFixed(1)}" rx="6" style="fill:${color}; opacity:${esMejor ? 1 : 0.6}"/>
+        <text x="${(x + barW / 2).toFixed(1)}" y="${(y - 8).toFixed(1)}" text-anchor="middle" style="font-family:var(--mono); font-size:11px; fill:var(--ink-soft)">${fmtValor(v)}</text>
+        <text x="${(x + barW / 2).toFixed(1)}" y="${(h - padB + 18).toFixed(1)}" text-anchor="middle" style="font-family:var(--display); font-size:12px; font-weight:600; fill:var(--ink)">${d.label}</text>
+      </g>`;
+  }).join('');
+
+  container.innerHTML = `
+    <svg viewBox="0 0 ${w} ${h}" style="width:100%; height:auto; max-width:640px; display:block; margin:6px auto 0;">
+      <line x1="${padL}" y1="${baseline}" x2="${w - padR}" y2="${baseline}" style="stroke:var(--border); stroke-width:1"/>
+      ${bars}
+    </svg>`;
+}
+
+async function cargarVentasSemestre() {
   els.ventasSemestreChart.innerHTML = '<div class="empty">Cargando…</div>';
   try {
-    // Secuencial a propósito: el webhook de n8n devuelve 200 con cuerpo vacío cuando
-    // recibe demasiadas invocaciones simultáneas (visto con 10 llamadas en paralelo al
-    // sumar este tablero a las 4 que ya disparaba "Generar reporte completo"; 4 y 3
-    // concurrentes por separado sí funcionan). Uno a la vez evita el problema sin tocar
-    // el workflow.
-    const datos = [];
-    for (const m of meses) {
-      const respuesta = await callWebhook({
-        type: 'leads', view: 'performance',
-        date_from: m.date_from, date_to: m.date_to,
-        filter_by: 'closed_at',
-        pipeline_ids: [], agent_ids: [], tag_ids: [],
-      });
-      const payload = extractPayload(respuesta, 'por_embudo');
-      const embudos = Object.values(payload.por_embudo || {});
+    const resultados = await fetchMesesPerformance('closed_at');
+    const datos = resultados.map(r => {
+      const embudos = Object.values(r.payload.por_embudo || {});
       const monto = embudos.reduce((s, e) => s + e.monto_ganado, 0);
       const ganados = embudos.reduce((s, e) => s + e.ganado, 0);
-      datos.push({ ...m, monto, ganados });
-    }
+      return { label: r.label, monto, ganados };
+    });
     renderVentasSemestre(datos);
     els.rawJsonVentasSemestre.textContent = JSON.stringify(datos, null, 2);
   } catch (err) {
@@ -1201,33 +1255,39 @@ function renderVentasSemestre(datos) {
     els.ventasSemestreChart.innerHTML = '<div class="empty">Sin ventas ganadas en los últimos 6 meses.</div>';
     return;
   }
+  renderBarChartMensual(els.ventasSemestreChart, datos, { valor: d => d.monto, color: 'var(--c-positive)', fmtValor: fmtMontoCorto });
+}
 
-  const max = Math.max(1, ...datos.map(d => d.monto));
-  const w = 640, h = 260, padL = 8, padR = 8, padT = 30, padB = 40;
-  const chartW = w - padL - padR;
-  const chartH = h - padT - padB;
-  const gap = 18;
-  const barW = (chartW - gap * (datos.length - 1)) / datos.length;
-  const baseline = padT + chartH;
+async function cargarLeadsEntrantesSemestre() {
+  els.leadsEntrantesSemestreChart.innerHTML = '<div class="empty">Cargando…</div>';
+  try {
+    const resultados = await fetchMesesPerformance('created_at');
+    const datos = resultados.map(r => ({ label: r.label, leads: r.payload.total_leads_extraidos || 0 }));
+    renderLeadsEntrantesSemestre(datos);
+    els.rawJsonLeadsEntrantesSemestre.textContent = JSON.stringify(datos, null, 2);
+  } catch (err) {
+    els.leadsEntrantesSemestreChart.innerHTML = '<div class="empty">No se pudo cargar el comparativo: ' + err.message + '</div>';
+    els.leadsEntrantesSemestreStats.innerHTML = '';
+    console.error(err);
+  }
+}
 
-  const bars = datos.map((d, i) => {
-    const barH = (d.monto / max) * chartH;
-    const x = padL + i * (barW + gap);
-    const y = baseline - barH;
-    const esMejor = d.monto === max;
-    return `
-      <g>
-        <rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${Math.max(barH, 1).toFixed(1)}" rx="6" style="fill:var(--c-positive); opacity:${esMejor ? 1 : 0.6}"/>
-        <text x="${(x + barW / 2).toFixed(1)}" y="${(y - 8).toFixed(1)}" text-anchor="middle" style="font-family:var(--mono); font-size:11px; fill:var(--ink-soft)">${fmtMontoCorto(d.monto)}</text>
-        <text x="${(x + barW / 2).toFixed(1)}" y="${(h - padB + 18).toFixed(1)}" text-anchor="middle" style="font-family:var(--display); font-size:12px; font-weight:600; fill:var(--ink)">${d.label}</text>
-      </g>`;
-  }).join('');
+function renderLeadsEntrantesSemestre(datos) {
+  const total = datos.reduce((s, d) => s + d.leads, 0);
+  const promedio = total / datos.length;
+  const mejor = datos.reduce((a, b) => (b.leads > a.leads ? b : a), datos[0]);
 
-  els.ventasSemestreChart.innerHTML = `
-    <svg viewBox="0 0 ${w} ${h}" style="width:100%; height:auto; max-width:640px; display:block; margin:6px auto 0;">
-      <line x1="${padL}" y1="${baseline}" x2="${w - padR}" y2="${baseline}" style="stroke:var(--border); stroke-width:1"/>
-      ${bars}
-    </svg>`;
+  els.leadsEntrantesSemestreStats.innerHTML = '<div class="stats-row">' +
+    statCard('layers', 'var(--c-neutral)', 'Total del semestre', total.toLocaleString('es-MX')) +
+    statCard('barChart', 'var(--ink-soft)', 'Promedio mensual', Math.round(promedio).toLocaleString('es-MX')) +
+    statCard('trendingUp', 'var(--c-neutral)', 'Mejor mes', mejor.label, mejor.leads.toLocaleString('es-MX') + ' leads') +
+    '</div>';
+
+  if (!total) {
+    els.leadsEntrantesSemestreChart.innerHTML = '<div class="empty">Sin leads entrantes en los últimos 6 meses.</div>';
+    return;
+  }
+  renderBarChartMensual(els.leadsEntrantesSemestreChart, datos, { valor: d => d.leads, color: 'var(--c-neutral)', fmtValor: v => v.toLocaleString('es-MX') });
 }
 
 function nombreAgente(id) {
