@@ -1304,13 +1304,14 @@ function tablaAgentes(agentes) {
   if (!agentes.length) return '<div class="empty">Sin llamadas en este periodo.</div>';
   agentes = [...agentes].sort((a, b) => b.total - a.total);
   const totales = agentes.reduce((acc, a) => {
-    acc.salientes += a.salientes; acc.entrantes += a.entrantes; acc.total += a.total; acc.duracion_segundos += a.duracion_segundos;
+    acc.salientes += a.salientes; acc.efectivas += (a.efectivas || 0); acc.entrantes += a.entrantes; acc.total += a.total; acc.duracion_segundos += a.duracion_segundos;
     return acc;
-  }, { salientes: 0, entrantes: 0, total: 0, duracion_segundos: 0 });
+  }, { salientes: 0, efectivas: 0, entrantes: 0, total: 0, duracion_segundos: 0 });
   const rows = agentes.map(a => `
     <tr>
       <td><span class="person-cell">${avatarHtml(nombreAgente(a.agent_id))}${nombreAgente(a.agent_id)}</span></td>
       <td class="num">${a.salientes}</td>
+      <td class="num">${a.efectivas || 0}</td>
       <td class="num">${a.entrantes}</td>
       <td class="num">${a.total}</td>
       <td class="num">${fmtDuracion(a.duracion_segundos)}</td>
@@ -1318,11 +1319,12 @@ function tablaAgentes(agentes) {
   return `
     <div class="table-scroll">
     <table>
-      <thead><tr><th>Asesor</th><th class="num">Salientes</th><th class="num">Entrantes</th><th class="num">Total</th><th class="num">Duración</th></tr></thead>
+      <thead><tr><th>Asesor</th><th class="num">Salientes</th><th class="num">Efectivas</th><th class="num">Entrantes</th><th class="num">Total</th><th class="num">Duración</th></tr></thead>
       <tbody>${rows}
         <tr class="totales">
           <td>Total</td>
           <td class="num">${totales.salientes}</td>
+          <td class="num">${totales.efectivas}</td>
           <td class="num">${totales.entrantes}</td>
           <td class="num">${totales.total}</td>
           <td class="num">${fmtDuracion(totales.duracion_segundos)}</td>
@@ -1334,13 +1336,15 @@ function tablaAgentes(agentes) {
 function renderLlamadas(payload) {
   const agentes = Object.values(payload.por_creador || {});
   const totales = agentes.reduce((acc, a) => {
-    acc.salientes += a.salientes; acc.entrantes += a.entrantes; acc.total += a.total; acc.duracion_segundos += a.duracion_segundos;
+    acc.salientes += a.salientes; acc.efectivas += (a.efectivas || 0); acc.entrantes += a.entrantes; acc.total += a.total; acc.duracion_segundos += a.duracion_segundos;
     return acc;
-  }, { salientes: 0, entrantes: 0, total: 0, duracion_segundos: 0 });
+  }, { salientes: 0, efectivas: 0, entrantes: 0, total: 0, duracion_segundos: 0 });
+  const pctEfectivo = totales.salientes > 0 ? Math.round((totales.efectivas / totales.salientes) * 100) : 0;
 
   els.callsStats.innerHTML = '<div class="stats-row">' +
     statCard('users', 'var(--ink-soft)', 'Asesores', agentes.length, 'Activos en el periodo') +
     statCard('arrowUpRight', 'var(--ink-soft)', 'Salientes', totales.salientes) +
+    statCard('checkCircle', 'var(--c-positive)', 'Contacto efectivo', pctEfectivo + '%', totales.efectivas + ' de ' + totales.salientes + ' salientes contestadas') +
     statCard('arrowDownLeft', 'var(--ink-soft)', 'Entrantes', totales.entrantes) +
     statCard('phone', 'var(--ink-soft)', 'Total llamadas', totales.total) +
     statCard('clock', 'var(--ink-soft)', 'Tiempo total', fmtDuracion(totales.duracion_segundos)) +
