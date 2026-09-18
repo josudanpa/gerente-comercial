@@ -441,10 +441,10 @@
     <div class="panel">
       <div class="panel-head">
         <div class="panel-icon" id="iconComparativaParcial"></div>
-        <h2>Comparativa mes a mes — mismo corte de días</h2>
+        <h2>Comparativa mes a mes — mismo tramo de días</h2>
         <span class="period-badge" id="comparativaParcialBadge"></span>
       </div>
-      <p class="help">Compara el mismo tramo de días en los últimos 3 meses: si hoy es día 18, compara <b>1&ndash;18 de cada mes</b>. Así la comparación es pareja sin importar en qué día se corra el reporte (el mes en curso siempre va incompleto y contra meses completos siempre se ve peor de lo que es). Por fecha de creación del lead. Respeta los filtros de embudos, agentes y etiquetas de arriba; el rango de fechas de arriba no le aplica (siempre son los últimos 3 meses).</p>
+      <p class="help">Toma el <b>rango de fechas que elegiste arriba</b> y lo compara contra el mismo tramo de días en los 2 meses anteriores: si arriba pones <b>del 1 al 20 de septiembre</b>, compara 1&ndash;20 jul, 1&ndash;20 ago y 1&ndash;20 sep. Así la comparación es pareja (mismo número de días en cada mes) sin importar en qué día se corra el reporte. Por fecha de creación del lead. Respeta también los filtros de embudos, agentes y etiquetas de arriba.</p>
       <div id="comparativaParcialStats"></div>
       <div id="comparativaParcialTable"></div>
       <details><summary>JSON crudo</summary><pre id="rawJsonComparativaParcial"></pre></details>
@@ -455,7 +455,7 @@
           <div class="panel-icon" id="iconVentasSemestre"></div>
           <h2>Comparativo de ventas — últimos 6 meses</h2>
         </div>
-        <p class="help">Monto de leads ganados en Kommo por mes (fecha de cierre), de los últimos 6 meses incluyendo el mes en curso. Respeta los filtros de embudos, agentes y etiquetas de arriba; el rango de fechas de arriba no le aplica (siempre son los últimos 6 meses).<br><b style="color:var(--ink-soft)">El mes marcado con * va incompleto</b> (cortado al día de hoy): se dibuja punteado y no entra en el promedio ni en el "mejor mes". Para comparar peras con peras, usa la comparativa de arriba.</p>
+        <p class="help">Monto de leads ganados en Kommo por mes (fecha de cierre), de los últimos 6 meses incluyendo el mes en curso. Respeta los filtros de embudos, agentes y etiquetas de arriba; el rango de fechas de arriba no le aplica (siempre son los últimos 6 meses).<br><b style="color:var(--ink-soft)">El mes marcado con * va incompleto</b> (cortado al día de hoy): se dibuja punteado y no entra en el promedio ni en el "mejor mes". Para comparar tramos parejos, usa la comparativa mes a mes de arriba.</p>
         <div id="ventasSemestreStats"></div>
         <div id="ventasSemestreChart"></div>
         <details><summary>JSON crudo</summary><pre id="rawJsonVentasSemestre"></pre></details>
@@ -689,10 +689,55 @@ function extractPayload(data, requiredKey) {
   throw new Error(`La respuesta no tiene la forma esperada (busqué "${requiredKey}"). Respuesta cruda:\n` + JSON.stringify(data, null, 2).slice(0, 1500));
 }
 
+// ---------------------------------------------------------------------------
+// El webhook de n8n regresa 200 con el cuerpo VACÍO cuando le llegan demasiadas
+// llamadas al mismo tiempo. Eso revienta al parsear con un error inútil
+// ("Failed to execute 'json' on 'Response': Unexpected end of JSON input").
+//
+// Antes esto se evitaba pidiéndole a cada tablero que llamara de uno en uno y
+// que no hubiera más de dos tableros en paralelo, pero era un acuerdo de
+// palabra entre funciones: el 18-sep-2026 bastó con agregar un tercer
+// comparativo al Promise.all para romperlo (de 3 llamadas simultáneas, 2
+// volvieron con 0 bytes). Ahora el límite se aplica aquí, así que no importa
+// cómo las dispare quien llama.
+//
+// Además se reintenta: son consultas de solo lectura, así que repetirlas es
+// seguro, y una respuesta vacía es transitoria (n8n saturado en ese instante).
+// ---------------------------------------------------------------------------
+const MAX_LLAMADAS_SIMULTANEAS = 2;
+const REINTENTOS_WEBHOOK = 3;
+let llamadasEnVuelo = 0;
+const llamadasEnEspera = [];
+
+function tomarTurnoWebhook() {
+  if (llamadasEnVuelo < MAX_LLAMADAS_SIMULTANEAS) { llamadasEnVuelo++; return Promise.resolve(); }
+  return new Promise(resolve => llamadasEnEspera.push(resolve));
+}
+function soltarTurnoWebhook() {
+  const siguiente = llamadasEnEspera.shift();
+  if (siguiente) siguiente(); else llamadasEnVuelo--;
+}
+
 async function callWebhook(body) {
-  const res = await fetch(WEBHOOK_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-  if (!res.ok) throw new Error(`El webhook respondió ${res.status}. Revisa que el workflow esté activo en n8n.`);
-  return res.json();
+  await tomarTurnoWebhook();
+  try {
+    let ultimoMotivo = '';
+    for (let intento = 1; intento <= REINTENTOS_WEBHOOK; intento++) {
+      const res = await fetch(WEBHOOK_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      if (!res.ok) throw new Error(`El webhook respondió ${res.status}. Revisa que el workflow esté activo en n8n.`);
+      const texto = await res.text();
+      if (texto.trim()) {
+        try { return JSON.parse(texto); }
+        catch (err) { ultimoMotivo = 'la respuesta no venía en JSON'; }
+      } else {
+        ultimoMotivo = 'el webhook respondió vacío';
+      }
+      if (intento < REINTENTOS_WEBHOOK) await new Promise(r => setTimeout(r, 1500 * intento));
+    }
+    throw new Error(`El webhook falló ${REINTENTOS_WEBHOOK} veces seguidas (${ultimoMotivo}). Suele ser n8n saturado: vuelve a generar el reporte en un minuto.`);
+  } finally {
+    soltarTurnoWebhook();
+  }
 }
 
 function pct(n, total) { return total ? Math.round((n / total) * 100) + '%' : '0%'; }
@@ -772,7 +817,11 @@ els.btnGenerar.addEventListener('click', async () => {
     els.rawJsonRespTimes.textContent = JSON.stringify(respTimesData, null, 2);
 
     const filtrosSemestre = { pipelineIds, agentIds, tagIds };
-    await Promise.all([cargarComparativaParcial(filtrosSemestre), cargarVentasSemestre(filtrosSemestre), cargarLeadsEntrantesSemestre(filtrosSemestre)]);
+    await Promise.all([
+      cargarComparativaParcial(filtrosSemestre, els.dateFrom.value, els.dateTo.value),
+      cargarVentasSemestre(filtrosSemestre),
+      cargarLeadsEntrantesSemestre(filtrosSemestre),
+    ]);
 
     els.resultsRow.style.display = 'block';
     els.callsPanel.style.display = 'block';
@@ -1209,23 +1258,56 @@ function ultimosSemestreMeses() {
   return meses;
 }
 
-// Compara el MISMO tramo de días en los últimos N meses: si hoy es 18 de sep,
-// compara 1-18 jul, 1-18 ago y 1-18 sep. Es la comparativa pareja que pidió
-// Manu (audio del 17-sep-2026): el mes en curso siempre va incompleto, así que
-// medirlo contra meses completos lo subestima siempre.
-function periodosParciales(nMeses) {
-  const hoy = new Date();
-  const diaCorte = hoy.getDate();
+// Ojo: new Date('2026-09-01') se interpreta como medianoche UTC, que en México
+// (UTC-6) cae el 31 de agosto a las 18:00 -- getDate() devolvería 31. Los
+// valores de los inputs de fecha se parsean a mano para que sean locales.
+function parseFechaLocal(str) {
+  const [y, m, d] = str.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+
+// Recorre una fecha N meses hacia atrás conservando el día. Si el mes destino
+// es más corto (31 de marzo restando un mes), se topa a su último día real;
+// sin ese tope, new Date(2026, 1, 31) se desbordaría al 3 de marzo.
+function restarMeses(fecha, meses) {
+  const y = fecha.getFullYear();
+  const m = fecha.getMonth() - meses;
+  const ultimoDiaDelMes = new Date(y, m + 1, 0).getDate();
+  return new Date(y, m, Math.min(fecha.getDate(), ultimoDiaDelMes));
+}
+
+function etiquetaPeriodo(from, to) {
+  const mismoMes = from.getFullYear() === to.getFullYear() && from.getMonth() === to.getMonth();
+  if (mismoMes) {
+    if (from.getDate() === to.getDate()) return from.getDate() + ' ' + mesCorto(from).toLowerCase();
+    return from.getDate() + '–' + to.getDate() + ' ' + mesCorto(from).toLowerCase();
+  }
+  return from.getDate() + ' ' + mesCorto(from).toLowerCase() + ' – ' + to.getDate() + ' ' + mesCorto(to).toLowerCase();
+}
+
+function tituloPeriodo(from, to) {
+  const mismoMes = from.getFullYear() === to.getFullYear() && from.getMonth() === to.getMonth();
+  if (mismoMes) return mesLargo(from) + ' ' + from.getFullYear();
+  return mesCorto(from) + '–' + mesCorto(to) + ' ' + to.getFullYear();
+}
+
+// Toma el rango de fechas elegido arriba y lo compara contra el MISMO tramo de
+// días en los N-1 meses anteriores: si arriba pones del 1 al 20 de septiembre,
+// salen 1-20 jul, 1-20 ago y 1-20 sep. Así la comparación es pareja (mismo
+// número de días en cada mes) sin importar qué rango se elija ni en qué día se
+// corra el reporte. El rango se recorre completo hacia atrás, así que un rango
+// que cruza meses (15 ago - 10 sep) también funciona: compara contra 15 jul -
+// 10 ago y 15 jun - 10 jul.
+function periodosComparables(desdeStr, hastaStr, nMeses) {
+  const desde = parseFechaLocal(desdeStr);
+  const hasta = parseFechaLocal(hastaStr);
   const periodos = [];
   for (let i = nMeses - 1; i >= 0; i--) {
-    const from = new Date(hoy.getFullYear(), hoy.getMonth() - i, 1);
-    // Si el mes comparado es más corto que el día de corte (corte 31 contra
-    // febrero, por ejemplo), se topa al último día real de ese mes.
-    const ultimoDiaDelMes = new Date(from.getFullYear(), from.getMonth() + 1, 0).getDate();
-    const to = new Date(from.getFullYear(), from.getMonth(), Math.min(diaCorte, ultimoDiaDelMes));
+    const from = restarMeses(desde, i);
+    const to = restarMeses(hasta, i);
     periodos.push({
-      label: '1–' + to.getDate() + ' ' + mesCorto(from).toLowerCase(),
-      titulo: mesLargo(from) + ' ' + from.getFullYear(),
+      label: etiquetaPeriodo(from, to),
+      titulo: tituloPeriodo(from, to),
       date_from: fmt(from),
       date_to: fmt(to),
     });
@@ -1239,12 +1321,9 @@ function fmtMontoCorto(monto) {
   return '$' + Math.round(monto).toLocaleString('es-MX');
 }
 
-// Secuencial a propósito: el webhook de n8n devuelve 200 con cuerpo vacío cuando recibe
-// demasiadas invocaciones simultáneas (visto con 10 llamadas en paralelo al sumar el
-// primer tablero mensual a las 4 que ya disparaba "Generar reporte completo"; 4 y 3
-// concurrentes por separado sí funcionan). Uno a la vez dentro de cada comparativo evita
-// el problema sin tocar el workflow; los dos comparativos mensuales se disparan en
-// paralelo entre sí (máximo ~2 llamadas simultáneas en total), muy por debajo de ese límite.
+// Se recorre mes por mes en serie. El tope real de llamadas simultáneas ya no
+// depende de esto: lo aplica callWebhook (ver MAX_LLAMADAS_SIMULTANEAS), que es
+// donde sí se sostiene aunque alguien agregue otro tablero en paralelo.
 async function fetchPeriodosPerformance(periodos, filterBy, filtros) {
   const resultados = [];
   for (const p of periodos) {
@@ -1325,8 +1404,8 @@ function deltaHtml(actual, previo) {
   return '<span class="delta ' + (cambio > 0 ? 'up' : 'down') + '">' + signo + Math.abs(Math.round(cambio)) + '%</span>';
 }
 
-async function cargarComparativaParcial(filtros) {
-  const periodos = periodosParciales(COMPARATIVA_PARCIAL_MESES);
+async function cargarComparativaParcial(filtros, desdeStr, hastaStr) {
+  const periodos = periodosComparables(desdeStr, hastaStr, COMPARATIVA_PARCIAL_MESES);
   els.comparativaParcialBadge.textContent = periodos[0].date_from + ' → ' + periodos[periodos.length - 1].date_to;
   els.comparativaParcialTable.innerHTML = '<div class="empty">Cargando…</div>';
   try {
