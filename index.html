@@ -220,6 +220,14 @@
   /* ---------- Calificados: fila de dos columnas ---------- */
   .calif-row { display: flex; gap: 18px; flex-wrap: wrap; margin-bottom: 18px; }
   .calif-row > .panel { flex: 1; min-width: 340px; margin-bottom: 0; }
+  .comparativa-parcial th .col-mes { display: block; font-family: var(--display); font-weight: 600; }
+  .comparativa-parcial th .col-rango { display: block; font-family: var(--mono); font-size: 11px; color: var(--ink-faint); font-weight: 400; margin-top: 2px; }
+  .comparativa-parcial tbody td:first-child { font-weight: 500; }
+  .comparativa-parcial tbody td:nth-last-child(2) .numval { color: var(--ink); font-weight: 600; }
+  .delta { font-family: var(--mono); font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: 999px; white-space: nowrap; }
+  .delta.up { color: var(--c-positive); background: rgba(21, 128, 61, .10); }
+  .delta.down { color: var(--c-loss); background: rgba(182, 85, 47, .10); }
+  .delta.na { color: var(--ink-faint); background: var(--surface-2); }
   .period-badge {
     margin-left: auto; font-size: 11.5px; font-family: var(--mono); color: var(--ink-soft);
     background: var(--surface-2); border: 1px solid var(--border); border-radius: 999px;
@@ -430,13 +438,24 @@
       </div>
       <div id="ganadosDetalleTable"></div>
     </div>
+    <div class="panel">
+      <div class="panel-head">
+        <div class="panel-icon" id="iconComparativaParcial"></div>
+        <h2>Comparativa mes a mes — mismo corte de días</h2>
+        <span class="period-badge" id="comparativaParcialBadge"></span>
+      </div>
+      <p class="help">Compara el mismo tramo de días en los últimos 3 meses: si hoy es día 18, compara <b>1&ndash;18 de cada mes</b>. Así la comparación es pareja sin importar en qué día se corra el reporte (el mes en curso siempre va incompleto y contra meses completos siempre se ve peor de lo que es). Por fecha de creación del lead. Respeta los filtros de embudos, agentes y etiquetas de arriba; el rango de fechas de arriba no le aplica (siempre son los últimos 3 meses).</p>
+      <div id="comparativaParcialStats"></div>
+      <div id="comparativaParcialTable"></div>
+      <details><summary>JSON crudo</summary><pre id="rawJsonComparativaParcial"></pre></details>
+    </div>
     <div class="calif-row">
       <div class="panel">
         <div class="panel-head">
           <div class="panel-icon" id="iconVentasSemestre"></div>
           <h2>Comparativo de ventas — últimos 6 meses</h2>
         </div>
-        <p class="help">Monto de leads ganados en Kommo por mes (fecha de cierre), de los últimos 6 meses incluyendo el mes en curso. Respeta los filtros de embudos, agentes y etiquetas de arriba; el rango de fechas de arriba no le aplica (siempre son los últimos 6 meses).</p>
+        <p class="help">Monto de leads ganados en Kommo por mes (fecha de cierre), de los últimos 6 meses incluyendo el mes en curso. Respeta los filtros de embudos, agentes y etiquetas de arriba; el rango de fechas de arriba no le aplica (siempre son los últimos 6 meses).<br><b style="color:var(--ink-soft)">El mes marcado con * va incompleto</b> (cortado al día de hoy): se dibuja punteado y no entra en el promedio ni en el "mejor mes". Para comparar peras con peras, usa la comparativa de arriba.</p>
         <div id="ventasSemestreStats"></div>
         <div id="ventasSemestreChart"></div>
         <details><summary>JSON crudo</summary><pre id="rawJsonVentasSemestre"></pre></details>
@@ -446,7 +465,7 @@
           <div class="panel-icon" id="iconLeadsEntrantesSemestre"></div>
           <h2>Leads entrantes - últimos 6 meses</h2>
         </div>
-        <p class="help">Cantidad de leads que entraron en Kommo por mes (fecha de creación), de los últimos 6 meses incluyendo el mes en curso. Respeta los filtros de embudos, agentes y etiquetas de arriba; el rango de fechas de arriba no le aplica (siempre son los últimos 6 meses).</p>
+        <p class="help">Cantidad de leads que entraron en Kommo por mes (fecha de creación), de los últimos 6 meses incluyendo el mes en curso. Cuenta solo los embudos del mapeo del reporte, los mismos que salen en "Leads por periodo". Respeta los filtros de embudos, agentes y etiquetas de arriba; el rango de fechas de arriba no le aplica (siempre son los últimos 6 meses).<br><b style="color:var(--ink-soft)">El mes marcado con * va incompleto</b> (cortado al día de hoy): se dibuja punteado y no entra en el promedio ni en el "mejor mes".</p>
         <div id="leadsEntrantesSemestreStats"></div>
         <div id="leadsEntrantesSemestreChart"></div>
         <details><summary>JSON crudo</summary><pre id="rawJsonLeadsEntrantesSemestre"></pre></details>
@@ -519,6 +538,7 @@ paintIcon('iconLeadsPeriodo', 'layers', 'var(--ink-soft)');
 paintIcon('iconDesempeno', 'layers', 'var(--ink-soft)');
 paintIcon('iconCalificados', 'target', 'var(--c-positive)');
 paintIcon('iconGanados', 'dollar', 'var(--ink-soft)');
+paintIcon('iconComparativaParcial', 'trendingUp', 'var(--c-neutral)');
 paintIcon('iconVentasSemestre', 'barChart', 'var(--c-positive)');
 paintIcon('iconLeadsEntrantesSemestre', 'layers', 'var(--c-neutral)');
 paintIcon('iconLlamadas', 'phone', 'var(--ink-soft)');
@@ -566,6 +586,10 @@ const els = {
   ganadosTable: document.getElementById('ganadosTable'),
   ganadosDetalleTable: document.getElementById('ganadosDetalleTable'),
   ganadosEmbudoFiltro: document.getElementById('ganadosEmbudoFiltro'),
+  comparativaParcialBadge: document.getElementById('comparativaParcialBadge'),
+  comparativaParcialStats: document.getElementById('comparativaParcialStats'),
+  comparativaParcialTable: document.getElementById('comparativaParcialTable'),
+  rawJsonComparativaParcial: document.getElementById('rawJsonComparativaParcial'),
   ventasSemestreStats: document.getElementById('ventasSemestreStats'),
   ventasSemestreChart: document.getElementById('ventasSemestreChart'),
   rawJsonVentasSemestre: document.getElementById('rawJsonVentasSemestre'),
@@ -617,7 +641,15 @@ els.ganadosEmbudoFiltro.addEventListener('change', () => {
   renderGanadosDetalleTabla();
 });
 
-function fmt(d) { return d.toISOString().slice(0, 10); }
+// Formatea una fecha LOCAL como YYYY-MM-DD. Ojo: no usar toISOString(), que
+// convierte a UTC -- en México (UTC-6) eso adelantaba "hoy" al día siguiente a
+// partir de las 18:00, así que un reporte corrido en la tarde pedía a Kommo un
+// rango que terminaba mañana.
+function fmt(d) {
+  return d.getFullYear() + '-' +
+    String(d.getMonth() + 1).padStart(2, '0') + '-' +
+    String(d.getDate()).padStart(2, '0');
+}
 
 document.querySelectorAll('[data-preset]').forEach(btn => {
   btn.addEventListener('click', () => {
@@ -740,7 +772,7 @@ els.btnGenerar.addEventListener('click', async () => {
     els.rawJsonRespTimes.textContent = JSON.stringify(respTimesData, null, 2);
 
     const filtrosSemestre = { pipelineIds, agentIds, tagIds };
-    await Promise.all([cargarVentasSemestre(filtrosSemestre), cargarLeadsEntrantesSemestre(filtrosSemestre)]);
+    await Promise.all([cargarComparativaParcial(filtrosSemestre), cargarVentasSemestre(filtrosSemestre), cargarLeadsEntrantesSemestre(filtrosSemestre)]);
 
     els.resultsRow.style.display = 'block';
     els.callsPanel.style.display = 'block';
@@ -1147,21 +1179,58 @@ function renderGanadosDetalleTabla() {
 }
 
 /* ============================== RENDER: Comparativo de ventas (últimos 6 meses) ============================== */
+function mesCorto(d) {
+  const s = d.toLocaleDateString('es-MX', { month: 'short' }).replace('.', '');
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+function mesLargo(d) {
+  const s = d.toLocaleDateString('es-MX', { month: 'long' });
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
 function ultimosSemestreMeses() {
   const hoy = new Date();
   const meses = [];
   for (let i = 5; i >= 0; i--) {
     const from = new Date(hoy.getFullYear(), hoy.getMonth() - i, 1);
     const finDeMes = new Date(hoy.getFullYear(), hoy.getMonth() - i + 1, 0);
-    const to = finDeMes > hoy ? hoy : finDeMes;
-    const etiqueta = from.toLocaleDateString('es-MX', { month: 'short', year: '2-digit' }).replace('.', '');
+    const parcial = finDeMes > hoy;
+    const to = parcial ? hoy : finDeMes;
+    const etiqueta = mesCorto(from) + ' ' + String(from.getFullYear()).slice(2);
     meses.push({
-      label: etiqueta.charAt(0).toUpperCase() + etiqueta.slice(1),
+      // El mes en curso va cortado al día de hoy: se marca como parcial para
+      // que el promedio y el "mejor mes" no lo comparen contra meses completos.
+      label: parcial ? etiqueta + '*' : etiqueta,
+      parcial,
       date_from: fmt(from),
       date_to: fmt(to),
     });
   }
   return meses;
+}
+
+// Compara el MISMO tramo de días en los últimos N meses: si hoy es 18 de sep,
+// compara 1-18 jul, 1-18 ago y 1-18 sep. Es la comparativa pareja que pidió
+// Manu (audio del 17-sep-2026): el mes en curso siempre va incompleto, así que
+// medirlo contra meses completos lo subestima siempre.
+function periodosParciales(nMeses) {
+  const hoy = new Date();
+  const diaCorte = hoy.getDate();
+  const periodos = [];
+  for (let i = nMeses - 1; i >= 0; i--) {
+    const from = new Date(hoy.getFullYear(), hoy.getMonth() - i, 1);
+    // Si el mes comparado es más corto que el día de corte (corte 31 contra
+    // febrero, por ejemplo), se topa al último día real de ese mes.
+    const ultimoDiaDelMes = new Date(from.getFullYear(), from.getMonth() + 1, 0).getDate();
+    const to = new Date(from.getFullYear(), from.getMonth(), Math.min(diaCorte, ultimoDiaDelMes));
+    periodos.push({
+      label: '1–' + to.getDate() + ' ' + mesCorto(from).toLowerCase(),
+      titulo: mesLargo(from) + ' ' + from.getFullYear(),
+      date_from: fmt(from),
+      date_to: fmt(to),
+    });
+  }
+  return periodos;
 }
 
 function fmtMontoCorto(monto) {
@@ -1176,19 +1245,39 @@ function fmtMontoCorto(monto) {
 // concurrentes por separado sí funcionan). Uno a la vez dentro de cada comparativo evita
 // el problema sin tocar el workflow; los dos comparativos mensuales se disparan en
 // paralelo entre sí (máximo ~2 llamadas simultáneas en total), muy por debajo de ese límite.
-async function fetchMesesPerformance(filterBy, filtros) {
-  const meses = ultimosSemestreMeses();
+async function fetchPeriodosPerformance(periodos, filterBy, filtros) {
   const resultados = [];
-  for (const m of meses) {
+  for (const p of periodos) {
     const respuesta = await callWebhook({
       type: 'leads', view: 'performance',
-      date_from: m.date_from, date_to: m.date_to,
+      date_from: p.date_from, date_to: p.date_to,
       filter_by: filterBy,
       pipeline_ids: filtros.pipelineIds, agent_ids: filtros.agentIds, tag_ids: filtros.tagIds,
     });
-    resultados.push({ ...m, payload: extractPayload(respuesta, 'por_embudo') });
+    resultados.push({ ...p, payload: extractPayload(respuesta, 'por_embudo') });
   }
   return resultados;
+}
+
+function fetchMesesPerformance(filterBy, filtros) {
+  return fetchPeriodosPerformance(ultimosSemestreMeses(), filterBy, filtros);
+}
+
+// Suma los embudos mapeados de un payload de "performance". Se usa la
+// población de por_embudo (no total_leads_extraidos) a propósito: ese campo
+// trae TODOS los leads de la cuenta, incluidos embudos que no están en el
+// mapeo -- p. ej. "Remarketing Edu", que en sep-2026 aportaba ~473 de 540
+// leads. Usarlo hacía que el comparativo de leads entrantes mostrara un
+// número 8x más grande que el "Total leads del periodo" del mismo tablero.
+function sumarEmbudos(payload) {
+  const embudos = Object.values((payload && payload.por_embudo) || {});
+  return embudos.reduce((acc, e) => ({
+    leads: acc.leads + (e.total || 0),
+    cotizacion: acc.cotizacion + (e.cotizacion || 0),
+    monto_cotizacion: acc.monto_cotizacion + (e.monto_cotizacion || 0),
+    ganado: acc.ganado + (e.ganado || 0),
+    monto_ganado: acc.monto_ganado + (e.monto_ganado || 0),
+  }), { leads: 0, cotizacion: 0, monto_cotizacion: 0, ganado: 0, monto_ganado: 0 });
 }
 
 function renderBarChartMensual(container, datos, { valor, color, fmtValor }) {
@@ -1206,9 +1295,12 @@ function renderBarChartMensual(container, datos, { valor, color, fmtValor }) {
     const x = padL + i * (barW + gap);
     const y = baseline - barH;
     const esMejor = v === max;
+    // El mes en curso va cortado al día de hoy: se dibuja punteado para que no
+    // se lea como un mes completo que simplemente vendió menos.
+    const trazoParcial = d.parcial ? ` stroke:${color}; stroke-width:1.5; stroke-dasharray:4 3;` : '';
     return `
       <g>
-        <rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${Math.max(barH, 1).toFixed(1)}" rx="6" style="fill:${color}; opacity:${esMejor ? 1 : 0.6}"/>
+        <rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${Math.max(barH, 1).toFixed(1)}" rx="6" style="fill:${color}; opacity:${d.parcial ? 0.35 : (esMejor ? 1 : 0.6)};${trazoParcial}"/>
         <text x="${(x + barW / 2).toFixed(1)}" y="${(y - 8).toFixed(1)}" text-anchor="middle" style="font-family:var(--mono); font-size:11px; fill:var(--ink-soft)">${fmtValor(v)}</text>
         <text x="${(x + barW / 2).toFixed(1)}" y="${(h - padB + 18).toFixed(1)}" text-anchor="middle" style="font-family:var(--display); font-size:12px; font-weight:600; fill:var(--ink)">${d.label}</text>
       </g>`;
@@ -1221,15 +1313,89 @@ function renderBarChartMensual(container, datos, { valor, color, fmtValor }) {
     </svg>`;
 }
 
+/* ============================== RENDER: Comparativa mes a mes (mismo corte de días) ============================== */
+const COMPARATIVA_PARCIAL_MESES = 3;
+
+function deltaHtml(actual, previo) {
+  if (previo == null) return '<span class="delta na">—</span>';
+  if (!previo) return actual ? '<span class="delta up">nuevo</span>' : '<span class="delta na">=</span>';
+  const cambio = ((actual - previo) / previo) * 100;
+  if (Math.abs(cambio) < 0.5) return '<span class="delta na">=</span>';
+  const signo = cambio > 0 ? '+' : '−';
+  return '<span class="delta ' + (cambio > 0 ? 'up' : 'down') + '">' + signo + Math.abs(Math.round(cambio)) + '%</span>';
+}
+
+async function cargarComparativaParcial(filtros) {
+  const periodos = periodosParciales(COMPARATIVA_PARCIAL_MESES);
+  els.comparativaParcialBadge.textContent = periodos[0].date_from + ' → ' + periodos[periodos.length - 1].date_to;
+  els.comparativaParcialTable.innerHTML = '<div class="empty">Cargando…</div>';
+  try {
+    const resultados = await fetchPeriodosPerformance(periodos, 'created_at', filtros);
+    const datos = resultados.map(r => ({ label: r.label, titulo: r.titulo, ...sumarEmbudos(r.payload) }));
+    renderComparativaParcial(datos);
+    els.rawJsonComparativaParcial.textContent = JSON.stringify(datos, null, 2);
+  } catch (err) {
+    els.comparativaParcialTable.innerHTML = '<div class="empty">No se pudo cargar la comparativa: ' + err.message + '</div>';
+    els.comparativaParcialStats.innerHTML = '';
+    console.error(err);
+  }
+}
+
+function renderComparativaParcial(datos) {
+  const ultimo = datos[datos.length - 1];
+  const previo = datos.length > 1 ? datos[datos.length - 2] : null;
+  const money = v => '$' + Math.round(v).toLocaleString('es-MX');
+
+  els.comparativaParcialStats.innerHTML = '<div class="stats-row">' +
+    statCard('layers', 'var(--c-neutral)', 'Leads · ' + ultimo.label,
+      ultimo.leads.toLocaleString('es-MX'),
+      previo ? 'vs ' + previo.leads.toLocaleString('es-MX') + ' en ' + previo.label : '') +
+    statCard('target', 'var(--c-positive)', 'En cotización · ' + ultimo.label,
+      ultimo.cotizacion.toLocaleString('es-MX'),
+      pct(ultimo.cotizacion, ultimo.leads) + ' de los leads' + (previo ? ' · antes ' + pct(previo.cotizacion, previo.leads) : '')) +
+    statCard('dollar', 'var(--c-positive)', 'Monto cotizado · ' + ultimo.label,
+      money(ultimo.monto_cotizacion),
+      previo ? 'vs ' + money(previo.monto_cotizacion) + ' en ' + previo.label : '') +
+    '</div>';
+
+  const columnas = datos.map(d =>
+    '<th class="num"><span class="col-mes">' + d.titulo + '</span><span class="col-rango">' + d.label + '</span></th>'
+  ).join('');
+
+  const fila = (etiqueta, valor, formato, sub) => {
+    const celdas = datos.map(d => {
+      const v = valor(d);
+      return '<td class="num"><span class="numval">' + formato(v) + '</span>' +
+        (sub ? '<span class="pct">' + sub(d) + '</span>' : '') + '</td>';
+    }).join('');
+    return '<tr><td>' + etiqueta + '</td>' + celdas +
+      '<td class="num">' + deltaHtml(valor(ultimo), previo ? valor(previo) : null) + '</td></tr>';
+  };
+
+  const num = v => v.toLocaleString('es-MX');
+
+  els.comparativaParcialTable.innerHTML = `
+    <div class="table-scroll">
+    <table class="comparativa-parcial">
+      <thead><tr><th>Métrica</th>${columnas}<th class="num">Δ último mes</th></tr></thead>
+      <tbody>
+        ${fila('Leads entrantes', d => d.leads, num)}
+        ${fila('Leads en cotización', d => d.cotizacion, num, d => pct(d.cotizacion, d.leads))}
+        ${fila('Monto cotizado', d => d.monto_cotizacion, money)}
+        ${fila('Ganados', d => d.ganado, num, d => pct(d.ganado, d.leads))}
+        ${fila('Monto ganado', d => d.monto_ganado, money)}
+      </tbody>
+    </table>
+    </div>`;
+}
+
 async function cargarVentasSemestre(filtros) {
   els.ventasSemestreChart.innerHTML = '<div class="empty">Cargando…</div>';
   try {
     const resultados = await fetchMesesPerformance('closed_at', filtros);
     const datos = resultados.map(r => {
-      const embudos = Object.values(r.payload.por_embudo || {});
-      const monto = embudos.reduce((s, e) => s + e.monto_ganado, 0);
-      const ganados = embudos.reduce((s, e) => s + e.ganado, 0);
-      return { label: r.label, monto, ganados };
+      const s = sumarEmbudos(r.payload);
+      return { label: r.label, parcial: r.parcial, monto: s.monto_ganado, ganados: s.ganado };
     });
     renderVentasSemestre(datos);
     els.rawJsonVentasSemestre.textContent = JSON.stringify(datos, null, 2);
@@ -1242,12 +1408,17 @@ async function cargarVentasSemestre(filtros) {
 
 function renderVentasSemestre(datos) {
   const total = datos.reduce((s, d) => s + d.monto, 0);
-  const promedio = total / datos.length;
-  const mejor = datos.reduce((a, b) => (b.monto > a.monto ? b : a), datos[0]);
+  // Promedio y "mejor mes" solo sobre meses COMPLETOS: el mes en curso va
+  // cortado al día de hoy, así que metido en la misma bolsa jalaba el promedio
+  // hacia abajo y nunca podía ganar el "mejor mes".
+  const completos = datos.filter(d => !d.parcial);
+  const base = completos.length ? completos : datos;
+  const promedio = base.reduce((s, d) => s + d.monto, 0) / base.length;
+  const mejor = base.reduce((a, b) => (b.monto > a.monto ? b : a), base[0]);
 
   els.ventasSemestreStats.innerHTML = '<div class="stats-row">' +
     statCard('dollar', 'var(--c-positive)', 'Total del semestre', '$' + total.toLocaleString('es-MX', {maximumFractionDigits:0})) +
-    statCard('barChart', 'var(--ink-soft)', 'Promedio mensual', '$' + Math.round(promedio).toLocaleString('es-MX')) +
+    statCard('barChart', 'var(--ink-soft)', 'Promedio mensual', '$' + Math.round(promedio).toLocaleString('es-MX'), 'solo meses completos') +
     statCard('trendingUp', 'var(--c-positive)', 'Mejor mes', mejor.label, '$' + mejor.monto.toLocaleString('es-MX')) +
     '</div>';
 
@@ -1262,7 +1433,7 @@ async function cargarLeadsEntrantesSemestre(filtros) {
   els.leadsEntrantesSemestreChart.innerHTML = '<div class="empty">Cargando…</div>';
   try {
     const resultados = await fetchMesesPerformance('created_at', filtros);
-    const datos = resultados.map(r => ({ label: r.label, leads: r.payload.total_leads_extraidos || 0 }));
+    const datos = resultados.map(r => ({ label: r.label, parcial: r.parcial, leads: sumarEmbudos(r.payload).leads }));
     renderLeadsEntrantesSemestre(datos);
     els.rawJsonLeadsEntrantesSemestre.textContent = JSON.stringify(datos, null, 2);
   } catch (err) {
@@ -1274,12 +1445,14 @@ async function cargarLeadsEntrantesSemestre(filtros) {
 
 function renderLeadsEntrantesSemestre(datos) {
   const total = datos.reduce((s, d) => s + d.leads, 0);
-  const promedio = total / datos.length;
-  const mejor = datos.reduce((a, b) => (b.leads > a.leads ? b : a), datos[0]);
+  const completos = datos.filter(d => !d.parcial);
+  const base = completos.length ? completos : datos;
+  const promedio = base.reduce((s, d) => s + d.leads, 0) / base.length;
+  const mejor = base.reduce((a, b) => (b.leads > a.leads ? b : a), base[0]);
 
   els.leadsEntrantesSemestreStats.innerHTML = '<div class="stats-row">' +
     statCard('layers', 'var(--c-neutral)', 'Total del semestre', total.toLocaleString('es-MX')) +
-    statCard('barChart', 'var(--ink-soft)', 'Promedio mensual', Math.round(promedio).toLocaleString('es-MX')) +
+    statCard('barChart', 'var(--ink-soft)', 'Promedio mensual', Math.round(promedio).toLocaleString('es-MX'), 'solo meses completos') +
     statCard('trendingUp', 'var(--c-neutral)', 'Mejor mes', mejor.label, mejor.leads.toLocaleString('es-MX') + ' leads') +
     '</div>';
 
