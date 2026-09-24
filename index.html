@@ -373,6 +373,16 @@
         </div>
       </div>
     </div>
+    <div class="panel">
+      <div class="panel-head">
+        <div class="panel-icon" id="iconLeadsVivos"></div>
+        <h2>Leads vivos en el embudo</h2>
+      </div>
+      <p class="help">Leads que están hoy en cualquier etapa activa de cada embudo — el mismo criterio del filtro "Leads activos" de Kommo: no cuenta los que están en Ganado ni en Perdido/Descalificado. Es una foto del momento actual (no depende del rango de fechas) y respeta el filtro de embudos, agentes y etiquetas de arriba.</p>
+      <div id="leadsVivosStats"></div>
+      <div id="leadsVivosTable"></div>
+      <details><summary>JSON crudo</summary><pre id="rawJsonLeadsVivos"></pre></details>
+    </div>
     <div class="calif-row">
       <div class="panel">
         <div class="panel-head">
@@ -535,6 +545,7 @@ function avatarHtml(name) {
 paintIcon('brandIcon', 'layers', '#0f1117');
 paintIcon('iconFiltros', 'sliders', 'var(--c-neutral)');
 paintIcon('iconLeadsPeriodo', 'layers', 'var(--ink-soft)');
+paintIcon('iconLeadsVivos', 'zap', 'var(--c-positive)');
 paintIcon('iconDesempeno', 'layers', 'var(--ink-soft)');
 paintIcon('iconCalificados', 'target', 'var(--c-positive)');
 paintIcon('iconGanados', 'dollar', 'var(--ink-soft)');
@@ -590,6 +601,9 @@ const els = {
   comparativaParcialStats: document.getElementById('comparativaParcialStats'),
   comparativaParcialTable: document.getElementById('comparativaParcialTable'),
   rawJsonComparativaParcial: document.getElementById('rawJsonComparativaParcial'),
+  leadsVivosStats: document.getElementById('leadsVivosStats'),
+  leadsVivosTable: document.getElementById('leadsVivosTable'),
+  rawJsonLeadsVivos: document.getElementById('rawJsonLeadsVivos'),
   ventasSemestreStats: document.getElementById('ventasSemestreStats'),
   ventasSemestreChart: document.getElementById('ventasSemestreChart'),
   rawJsonVentasSemestre: document.getElementById('rawJsonVentasSemestre'),
@@ -828,6 +842,7 @@ els.btnGenerar.addEventListener('click', async () => {
 
     const filtrosSemestre = { pipelineIds, agentIds, tagIds };
     await Promise.all([
+      cargarLeadsVivos(filtrosSemestre),
       cargarComparativaParcial(filtrosSemestre, els.dateFrom.value, els.dateTo.value),
       cargarVentasSemestre(filtrosSemestre),
       cargarLeadsEntrantesSemestre(filtrosSemestre),
@@ -863,6 +878,35 @@ function miniTabla(rows, labelCol) {
       </tbody>
     </table>
     </div>`;
+}
+
+/* ============================== RENDER: Leads vivos en el embudo ============================== */
+async function cargarLeadsVivos(filtros) {
+  els.leadsVivosTable.innerHTML = '<div class="empty">Cargando…</div>';
+  try {
+    const data = await callWebhook({
+      type: 'leads', view: 'live_leads',
+      pipeline_ids: filtros.pipelineIds, agent_ids: filtros.agentIds, tag_ids: filtros.tagIds,
+    });
+    renderLeadsVivos(extractPayload(data, 'por_embudo'));
+    els.rawJsonLeadsVivos.textContent = JSON.stringify(data, null, 2);
+  } catch (err) {
+    els.leadsVivosTable.innerHTML = '<div class="empty">No se pudo cargar leads vivos: ' + err.message + '</div>';
+    els.leadsVivosStats.innerHTML = '';
+    console.error(err);
+  }
+}
+
+function renderLeadsVivos(payload) {
+  const filas = Object.values(payload.por_embudo || {})
+    .map(e => ({ etiqueta: e.embudo, valor: e.leads_vivos }))
+    .sort((a, b) => b.valor - a.valor);
+  const total = filas.reduce((s, r) => s + r.valor, 0);
+  els.leadsVivosStats.innerHTML = '<div class="stats-row">' +
+    statCard('zap', 'var(--c-positive)', 'Leads vivos', total.toLocaleString('es-MX')) +
+    statCard('layers', 'var(--ink-soft)', 'Embudos con leads vivos', filas.filter(r => r.valor > 0).length) +
+    '</div>';
+  els.leadsVivosTable.innerHTML = miniTabla(filas, 'Embudo');
 }
 
 // Metas mensuales fijas por embudo (pendiente moverlas a un config editable);
