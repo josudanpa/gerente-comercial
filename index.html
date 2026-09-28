@@ -1646,11 +1646,14 @@ function renderLlamadas(payload) {
     return acc;
   }, { salientes: 0, efectivas: 0, entrantes: 0, total: 0, duracion_segundos: 0 });
   const pctEfectivo = totales.salientes > 0 ? Math.round((totales.efectivas / totales.salientes) * 100) : 0;
+  const METAS_LLAMADAS_MENSUAL = 800;
+  const pctMetaLlamadas = Math.round((totales.total / METAS_LLAMADAS_MENSUAL) * 100);
 
   els.callsStats.innerHTML = '<div class="stats-row">' +
     statCard('users', 'var(--ink-soft)', 'Asesores', agentes.length, 'Activos en el periodo') +
     statCard('arrowUpRight', 'var(--ink-soft)', 'Salientes', totales.salientes) +
     statCard('checkCircle', 'var(--c-positive)', 'Contacto efectivo', pctEfectivo + '%', totales.efectivas + ' de ' + totales.salientes + ' salientes contestadas') +
+    statCard('target', 'var(--c-positive)', 'Meta de llamadas', pctMetaLlamadas + '%', totales.total + ' de ' + METAS_LLAMADAS_MENSUAL + ' llamadas/mes') +
     statCard('arrowDownLeft', 'var(--ink-soft)', 'Entrantes', totales.entrantes) +
     statCard('phone', 'var(--ink-soft)', 'Total llamadas', totales.total) +
     statCard('clock', 'var(--ink-soft)', 'Tiempo total', fmtDuracion(totales.duracion_segundos)) +
