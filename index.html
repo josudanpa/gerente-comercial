@@ -378,9 +378,18 @@
         <div class="panel-icon" id="iconLeadsVivos"></div>
         <h2>Leads vivos en el embudo</h2>
       </div>
-      <p class="help">Leads que están hoy en cualquier etapa activa de cada embudo — el mismo criterio del filtro "Leads activos" de Kommo: no cuenta los que están en Ganado ni en Perdido/Descalificado. Es una foto del momento actual (no depende del rango de fechas) y respeta el filtro de embudos, agentes y etiquetas de arriba.</p>
+      <p class="help">Leads que están hoy en cualquier etapa activa de cada embudo — el mismo criterio del filtro "Leads activos" de Kommo: no cuenta los que están en Ganado ni en Perdido/Descalificado. Es una foto del momento actual (no depende del rango de fechas) y respeta el filtro de embudos, agentes y etiquetas de arriba. Los embudos Embudo global y Ejercicios de taller están excluidos siempre de este tablero.</p>
       <div id="leadsVivosStats"></div>
-      <div id="leadsVivosTable"></div>
+      <div style="display:flex; gap:20px; flex-wrap:wrap; margin-top:14px;">
+        <div style="flex:1; min-width:260px;">
+          <h3 style="font-family:var(--display); font-size:12.5px; color:var(--ink-soft); font-weight:600; margin:0 0 8px; text-decoration:underline; text-underline-offset:3px;">Leads vivos por embudo</h3>
+          <div id="leadsVivosTable"></div>
+        </div>
+        <div style="flex:1; min-width:260px;">
+          <h3 style="font-family:var(--display); font-size:12.5px; color:var(--ink-soft); font-weight:600; margin:0 0 8px; text-decoration:underline; text-underline-offset:3px;">Leads vivos por asesor</h3>
+          <div id="leadsVivosAsesorTable"></div>
+        </div>
+      </div>
       <details><summary>JSON crudo</summary><pre id="rawJsonLeadsVivos"></pre></details>
     </div>
     <div class="calif-row">
@@ -603,6 +612,7 @@ const els = {
   rawJsonComparativaParcial: document.getElementById('rawJsonComparativaParcial'),
   leadsVivosStats: document.getElementById('leadsVivosStats'),
   leadsVivosTable: document.getElementById('leadsVivosTable'),
+  leadsVivosAsesorTable: document.getElementById('leadsVivosAsesorTable'),
   rawJsonLeadsVivos: document.getElementById('rawJsonLeadsVivos'),
   ventasSemestreStats: document.getElementById('ventasSemestreStats'),
   ventasSemestreChart: document.getElementById('ventasSemestreChart'),
@@ -883,6 +893,7 @@ function miniTabla(rows, labelCol) {
 /* ============================== RENDER: Leads vivos en el embudo ============================== */
 async function cargarLeadsVivos(filtros) {
   els.leadsVivosTable.innerHTML = '<div class="empty">Cargando…</div>';
+  els.leadsVivosAsesorTable.innerHTML = '';
   try {
     const data = await callWebhook({
       type: 'leads', view: 'live_leads',
@@ -892,6 +903,7 @@ async function cargarLeadsVivos(filtros) {
     els.rawJsonLeadsVivos.textContent = JSON.stringify(data, null, 2);
   } catch (err) {
     els.leadsVivosTable.innerHTML = '<div class="empty">No se pudo cargar leads vivos: ' + err.message + '</div>';
+    els.leadsVivosAsesorTable.innerHTML = '';
     els.leadsVivosStats.innerHTML = '';
     console.error(err);
   }
@@ -901,12 +913,17 @@ function renderLeadsVivos(payload) {
   const filas = Object.values(payload.por_embudo || {})
     .map(e => ({ etiqueta: e.embudo, valor: e.leads_vivos }))
     .sort((a, b) => b.valor - a.valor);
+  const filasAsesor = Object.values(payload.por_asesor || {})
+    .map(a => ({ etiqueta: nombreAgente(a.asesor_id), valor: a.leads_vivos }))
+    .sort((a, b) => b.valor - a.valor);
   const total = filas.reduce((s, r) => s + r.valor, 0);
   els.leadsVivosStats.innerHTML = '<div class="stats-row">' +
     statCard('zap', 'var(--c-positive)', 'Leads vivos', total.toLocaleString('es-MX')) +
     statCard('layers', 'var(--ink-soft)', 'Embudos con leads vivos', filas.filter(r => r.valor > 0).length) +
+    statCard('users', 'var(--ink-soft)', 'Asesores con leads vivos', filasAsesor.length) +
     '</div>';
   els.leadsVivosTable.innerHTML = miniTabla(filas, 'Embudo');
+  els.leadsVivosAsesorTable.innerHTML = miniTabla(filasAsesor, 'Asesor');
 }
 
 // Metas mensuales fijas por embudo (pendiente moverlas a un config editable);
