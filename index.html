@@ -408,7 +408,7 @@
         <div class="panel-icon" id="iconTiempos"></div>
         <h2>Tiempos de respuesta a leads entrantes</h2>
       </div>
-      <p class="help"><b style="color:var(--ink-soft)">Objetivo: -5 minutos</b><br>Por cada embudo, el promedio de tiempo entre que el lead entró y recibió el primer contacto real del asesor/bot (mensaje o llamada saliente, lo que haya pasado primero), contando solo horas dentro de horario laboral (lunes a viernes, 9:00-18:00).</p>
+      <p class="help"><b style="color:var(--ink-soft)">Objetivo: -5 minutos</b><br>Por cada embudo, el promedio de tiempo entre la creación del lead y su primera atención: llamada saliente, nota nueva, mensaje saliente o conversación contestada (lo que ocurra primero, sobre el contacto del lead), contando solo horas dentro de horario laboral (lunes a viernes, 9:00-18:00).</p>
       <div id="respTimesStats"></div>
       <div id="respTimesTable"></div>
       <div id="respTimesFueraMeta"></div>
@@ -1732,6 +1732,17 @@ const FUERA_META_PAGE_SIZE = 10;
 function escHtml(t) {
   return String(t == null ? '' : t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
+const ETIQUETA_ACTIVIDAD = {
+  outgoing_call: 'Llamada saliente',
+  common_note_added: 'Nota nueva',
+  outgoing_chat_message: 'Mensaje saliente',
+  conversation_answered: 'Conversación contestada',
+};
+function etiquetaActividad(l) {
+  if (!l.primera_actividad_tipo) return '—';
+  const base = ETIQUETA_ACTIVIDAD[l.primera_actividad_tipo] || l.primera_actividad_tipo;
+  return l.primera_actividad_por === 'automatico' ? base + ' <span style="color:var(--ink-faint);">(automático)</span>' : base;
+}
 function fmtFechaHoraMx(ts) {
   if (ts == null) return '—';
   return new Date(ts * 1000).toLocaleString('es-MX', { timeZone: 'America/Mexico_City', day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false });
@@ -1751,7 +1762,7 @@ function renderLeadsFueraDeMetaPagina() {
   const minutos = Math.round(fueraMetaMeta.metaSeg / 60);
   const pctFuera = fueraMetaMeta.entrantes ? Math.round((total / fueraMetaMeta.entrantes) * 100) : 0;
   const titulo = `<h3 style="font-family:var(--display); font-size:13px; color:var(--ink-soft); font-weight:600; margin:22px 0 4px; letter-spacing:-.005em;">Leads no atendidos en los primeros ${minutos} minutos (${total})</h3>` +
-    `<p class="help" style="margin-bottom:12px;">${total} de ${fueraMetaMeta.entrantes} leads entrantes (${pctFuera}%) tardaron más de ${minutos} minutos de horario laboral en recibir su primer contacto, o todavía no lo reciben. Ordenados de mayor a menor espera.</p>`;
+    `<p class="help" style="margin-bottom:12px;">${total} de ${fueraMetaMeta.entrantes} leads entrantes (${pctFuera}%) no recibieron ninguna atención (llamada saliente, nota, mensaje saliente o conversación contestada) dentro de los primeros ${minutos} minutos de horario laboral: la atención llegó a partir del minuto ${minutos + 1}, o todavía no llega. Ordenados de mayor a menor espera.</p>`;
 
   if (!total) {
     els.respTimesFueraMeta.innerHTML = titulo + '<div class="empty">Todos los leads de este periodo fueron atendidos dentro de la meta.</div>';
@@ -1775,6 +1786,7 @@ function renderLeadsFueraDeMetaPagina() {
       <td><span class="person-cell">${avatarHtml(responsable)}${escHtml(responsable)}</span></td>
       <td>${fmtFechaHoraMx(l.entro_ts)}</td>
       <td>${respuesta}</td>
+      <td>${etiquetaActividad(l)}</td>
       <td class="num"><span class="numval">${fmtDuracionCorta(l.tiempo_habil_seg)}</span></td>
     </tr>`;
   }).join('');
@@ -1782,7 +1794,7 @@ function renderLeadsFueraDeMetaPagina() {
   els.respTimesFueraMeta.innerHTML = titulo + `
     <div class="table-scroll">
     <table>
-      <thead><tr><th>Lead</th><th>Embudo</th><th>Responsable</th><th>Entró</th><th>Primera respuesta</th><th class="num">Espera (horario laboral)</th></tr></thead>
+      <thead><tr><th>Lead</th><th>Embudo</th><th>Responsable</th><th>Entró</th><th>Primera atención</th><th>Actividad</th><th class="num">Espera (horario laboral)</th></tr></thead>
       <tbody>${rows}</tbody>
     </table>
     </div>
