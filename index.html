@@ -403,6 +403,17 @@
       <div class="help" id="callsNota" style="margin-top:10px;"></div>
       <details><summary>JSON crudo</summary><pre id="rawJsonCalls"></pre></details>
     </div>
+    <div class="panel" id="respTimesPanel" style="display:none;">
+      <div class="panel-head">
+        <div class="panel-icon" id="iconTiempos"></div>
+        <h2>Tiempos de respuesta a leads entrantes</h2>
+      </div>
+      <p class="help"><b style="color:var(--ink-soft)">Objetivo: -5 minutos</b><br>Por cada embudo, el promedio de tiempo entre que el lead entró y recibió el primer contacto real del asesor/bot (mensaje o llamada saliente, lo que haya pasado primero), contando solo horas dentro de horario laboral (lunes a viernes, 9:00-18:00).</p>
+      <div id="respTimesStats"></div>
+      <div id="respTimesTable"></div>
+      <div class="help" id="respTimesNota" style="margin-top:10px;"></div>
+      <details><summary>JSON crudo</summary><pre id="rawJsonRespTimes"></pre></details>
+    </div>
     <div class="calif-row">
       <div class="panel">
         <div class="panel-head">
@@ -490,18 +501,6 @@
         <details><summary>JSON crudo</summary><pre id="rawJsonLeadsEntrantesSemestre"></pre></details>
       </div>
     </div>
-  </div>
-
-  <div class="panel" id="respTimesPanel" style="display:none;">
-    <div class="panel-head">
-      <div class="panel-icon" id="iconTiempos"></div>
-      <h2>Tiempos de respuesta a leads entrantes</h2>
-    </div>
-    <p class="help"><b style="color:var(--ink-soft)">Objetivo: -5 minutos</b><br>Por cada embudo, el promedio de tiempo entre que el lead entró y recibió el primer contacto real del asesor/bot (mensaje o llamada saliente, lo que haya pasado primero), contando solo horas dentro de horario laboral (lunes a viernes, 9:00-18:00).</p>
-    <div id="respTimesStats"></div>
-    <div id="respTimesTable"></div>
-    <div class="help" id="respTimesNota" style="margin-top:10px;"></div>
-    <details><summary>JSON crudo</summary><pre id="rawJsonRespTimes"></pre></details>
   </div>
 
 </div>
