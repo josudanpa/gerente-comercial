@@ -411,6 +411,7 @@
       <p class="help"><b style="color:var(--ink-soft)">Objetivo: -5 minutos</b><br>Por cada embudo, el promedio de tiempo entre que el lead entró y recibió el primer contacto real del asesor/bot (mensaje o llamada saliente, lo que haya pasado primero), contando solo horas dentro de horario laboral (lunes a viernes, 9:00-18:00).</p>
       <div id="respTimesStats"></div>
       <div id="respTimesTable"></div>
+      <div id="respTimesFueraMeta"></div>
       <div class="help" id="respTimesNota" style="margin-top:10px;"></div>
       <details><summary>JSON crudo</summary><pre id="rawJsonRespTimes"></pre></details>
     </div>
@@ -627,6 +628,7 @@ const els = {
   respTimesPanel: document.getElementById('respTimesPanel'),
   respTimesStats: document.getElementById('respTimesStats'),
   respTimesTable: document.getElementById('respTimesTable'),
+  respTimesFueraMeta: document.getElementById('respTimesFueraMeta'),
   respTimesNota: document.getElementById('respTimesNota'),
   rawJsonRespTimes: document.getElementById('rawJsonRespTimes'),
 };
@@ -1689,7 +1691,7 @@ function fmtDuracionCorta(segundos) {
 }
 function renderTiemposRespuesta(payload) {
   const embudos = Object.values(payload.por_embudo || {});
-  if (!embudos.length) { els.respTimesStats.innerHTML = ''; els.respTimesTable.innerHTML = '<div class="empty">Sin datos en este periodo.</div>'; return; }
+  if (!embudos.length) { els.respTimesStats.innerHTML = ''; els.respTimesFueraMeta.innerHTML = ''; els.respTimesTable.innerHTML = '<div class="empty">Sin datos en este periodo.</div>'; return; }
 
   const totalEntrantes = embudos.reduce((s, e) => s + e.leads_entrantes, 0);
   const totalContactados = embudos.reduce((s, e) => s + e.leads_con_respuesta, 0);
@@ -1718,6 +1720,83 @@ function renderTiemposRespuesta(payload) {
     </table>
     </div>`;
   els.respTimesNota.textContent = payload.nota_metodologica || '';
+  renderLeadsFueraDeMeta(payload, totalEntrantes);
+}
+
+/* ---- Listado: leads no atendidos dentro de la meta de primera respuesta ---- */
+let fueraMetaData = [];
+let fueraMetaPage = 1;
+let fueraMetaMeta = { entrantes: 0, metaSeg: 300 };
+const FUERA_META_PAGE_SIZE = 10;
+
+function escHtml(t) {
+  return String(t == null ? '' : t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+function fmtFechaHoraMx(ts) {
+  if (ts == null) return '—';
+  return new Date(ts * 1000).toLocaleString('es-MX', { timeZone: 'America/Mexico_City', day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false });
+}
+
+function renderLeadsFueraDeMeta(payload, totalEntrantes) {
+  // Si el backend aún no manda el detalle, el bloque simplemente no aparece.
+  if (!Array.isArray(payload.leads_fuera_de_meta)) { els.respTimesFueraMeta.innerHTML = ''; return; }
+  fueraMetaData = payload.leads_fuera_de_meta;
+  fueraMetaPage = 1;
+  fueraMetaMeta = { entrantes: totalEntrantes, metaSeg: payload.meta_segundos || 300 };
+  renderLeadsFueraDeMetaPagina();
+}
+
+function renderLeadsFueraDeMetaPagina() {
+  const total = fueraMetaData.length;
+  const minutos = Math.round(fueraMetaMeta.metaSeg / 60);
+  const pctFuera = fueraMetaMeta.entrantes ? Math.round((total / fueraMetaMeta.entrantes) * 100) : 0;
+  const titulo = `<h3 style="font-family:var(--display); font-size:13px; color:var(--ink-soft); font-weight:600; margin:22px 0 4px; letter-spacing:-.005em;">Leads no atendidos en los primeros ${minutos} minutos (${total})</h3>` +
+    `<p class="help" style="margin-bottom:12px;">${total} de ${fueraMetaMeta.entrantes} leads entrantes (${pctFuera}%) tardaron más de ${minutos} minutos de horario laboral en recibir su primer contacto, o todavía no lo reciben. Ordenados de mayor a menor espera.</p>`;
+
+  if (!total) {
+    els.respTimesFueraMeta.innerHTML = titulo + '<div class="empty">Todos los leads de este periodo fueron atendidos dentro de la meta.</div>';
+    return;
+  }
+
+  const totalPages = Math.max(1, Math.ceil(total / FUERA_META_PAGE_SIZE));
+  if (fueraMetaPage > totalPages) fueraMetaPage = totalPages;
+  const start = (fueraMetaPage - 1) * FUERA_META_PAGE_SIZE;
+  const items = fueraMetaData.slice(start, start + FUERA_META_PAGE_SIZE);
+
+  const rows = items.map(l => {
+    const responsable = nombreAgente(l.responsible_user_id);
+    const respuesta = l.estado === 'sin_atender'
+      ? '<span style="color:var(--c-loss); font-weight:600;">Sin respuesta</span>'
+      : fmtFechaHoraMx(l.primera_respuesta_ts);
+    return `
+    <tr>
+      <td>${leadLinkHtml(l.lead_id, escHtml(l.nombre))}</td>
+      <td>${embudoPillHtml(l.embudo)}</td>
+      <td><span class="person-cell">${avatarHtml(responsable)}${escHtml(responsable)}</span></td>
+      <td>${fmtFechaHoraMx(l.entro_ts)}</td>
+      <td>${respuesta}</td>
+      <td class="num"><span class="numval">${fmtDuracionCorta(l.tiempo_habil_seg)}</span></td>
+    </tr>`;
+  }).join('');
+
+  els.respTimesFueraMeta.innerHTML = titulo + `
+    <div class="table-scroll">
+    <table>
+      <thead><tr><th>Lead</th><th>Embudo</th><th>Responsable</th><th>Entró</th><th>Primera respuesta</th><th class="num">Espera (horario laboral)</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    </div>
+    <div class="pager">
+      <span class="pager-info">Mostrando ${items.length} de ${total} leads</span>
+      <div class="pager-controls">
+        <button type="button" class="pager-btn" id="fueraMetaPrev" ${fueraMetaPage <= 1 ? 'disabled' : ''} aria-label="Anterior">‹</button>
+        <span class="pager-page">${fueraMetaPage}</span>
+        <button type="button" class="pager-btn" id="fueraMetaNext" ${fueraMetaPage >= totalPages ? 'disabled' : ''} aria-label="Siguiente">›</button>
+      </div>
+    </div>`;
+
+  document.getElementById('fueraMetaPrev').addEventListener('click', () => { fueraMetaPage--; renderLeadsFueraDeMetaPagina(); });
+  document.getElementById('fueraMetaNext').addEventListener('click', () => { fueraMetaPage++; renderLeadsFueraDeMetaPagina(); });
 }
 </script>
 </body>
