@@ -408,7 +408,7 @@
         <div class="panel-icon" id="iconTiempos"></div>
         <h2>Tiempos de respuesta a leads entrantes</h2>
       </div>
-      <p class="help"><b style="color:var(--ink-soft)">Objetivo: -5 minutos</b><br>Por cada embudo, el promedio de tiempo entre la creación del lead y su primera atención: llamada saliente, nota nueva, mensaje saliente o conversación contestada (lo que ocurra primero, sobre el contacto del lead), contando solo horas dentro de horario laboral (lunes a viernes, 9:00-18:00).</p>
+      <p class="help"><b style="color:var(--ink-soft)">Objetivo: -5 minutos</b><br>Por cada embudo, el promedio de tiempo entre la creación del lead y su primera atención: llamada saliente, nota nueva, mensaje saliente o conversación contestada (lo que ocurra primero, sobre el contacto del lead), contando solo horas dentro de horario laboral (lunes a viernes, 9:00-18:00). No incluye los leads que un usuario creó a mano: no son entrantes.</p>
       <div id="respTimesStats"></div>
       <div id="respTimesTable"></div>
       <div id="respTimesFueraMeta"></div>
@@ -1702,6 +1702,9 @@ function renderTiemposRespuesta(payload) {
     statCard('layers', 'var(--ink-soft)', 'Entrantes', totalEntrantes) +
     statCard('checkCircle', 'var(--c-positive)', 'Contactados', totalContactados) +
     statCard('zap', 'var(--ink-soft)', 'Promedio (horario laboral)', fmtDuracionCorta(promGeneralHabil)) +
+    (typeof payload.leads_creados_manualmente_excluidos === 'number'
+      ? statCard('users', 'var(--ink-soft)', 'Creados a mano (excluidos)', payload.leads_creados_manualmente_excluidos, 'No cuentan como entrantes')
+      : '') +
     '</div>';
 
   const rows = embudos.map(e => `
