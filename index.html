@@ -410,6 +410,7 @@
       </div>
       <p class="help"><b style="color:var(--ink-soft)">Objetivo: -5 minutos</b><br>Por cada embudo, el promedio de tiempo entre la creación del lead y su primera atención: llamada saliente, nota nueva, mensaje saliente o conversación contestada (lo que ocurra primero, sobre el contacto del lead), contando solo horas dentro de horario laboral (lunes a viernes, 9:00-18:00). No incluye los leads que un usuario creó a mano: no son entrantes.</p>
       <div id="respTimesStats"></div>
+      <div class="help" id="respTimesComparaNota" style="margin:-4px 0 14px;"></div>
       <div id="respTimesTable"></div>
       <div id="respTimesFueraMeta"></div>
       <div class="help" id="respTimesNota" style="margin-top:10px;"></div>
@@ -627,6 +628,7 @@ const els = {
   rawJsonCalls: document.getElementById('rawJsonCalls'),
   respTimesPanel: document.getElementById('respTimesPanel'),
   respTimesStats: document.getElementById('respTimesStats'),
+  respTimesComparaNota: document.getElementById('respTimesComparaNota'),
   respTimesTable: document.getElementById('respTimesTable'),
   respTimesFueraMeta: document.getElementById('respTimesFueraMeta'),
   respTimesNota: document.getElementById('respTimesNota'),
@@ -854,6 +856,7 @@ els.btnGenerar.addEventListener('click', async () => {
     const filtrosSemestre = { pipelineIds, agentIds, tagIds };
     await Promise.all([
       cargarLeadsVivos(filtrosSemestre),
+      cargarTiemposSemanaAnterior(filtrosSemestre, els.dateFrom.value),
       cargarComparativaParcial(filtrosSemestre, els.dateFrom.value, els.dateTo.value),
       cargarVentasSemestre(filtrosSemestre),
       cargarLeadsEntrantesSemestre(filtrosSemestre),
@@ -1689,23 +1692,75 @@ function fmtDuracionCorta(segundos) {
   if (h > 0) return `${h}h ${m}m`;
   return `${m}m`;
 }
+/* ---- Comparativa del promedio contra la semana anterior ---- */
+let respTimesResumen = null;
+let respTimesPrevio = null; // null = sin pedir | 'cargando' | 'error' | { prom, contactados, desde, hasta }
+
+function desplazarDias(str, dias) {
+  const [y, m, d] = str.split('-').map(Number);
+  return fmt(new Date(y, m - 1, d - dias));
+}
+
+// Menos tiempo de respuesta es mejor: baja = verde (up), sube = rojo (down).
+function deltaTiempoHtml(actual, previo) {
+  if (!previo) return '<span class="delta na">—</span>';
+  const cambio = ((actual - previo) / previo) * 100;
+  if (Math.abs(cambio) < 0.5) return '<span class="delta na">=</span>';
+  const baja = cambio < 0;
+  return '<span class="delta ' + (baja ? 'up' : 'down') + '">' + (baja ? '▼ −' : '▲ +') + Math.abs(Math.round(cambio)) + '%</span>';
+}
+
+function pintarStatsTiempos() {
+  const r = respTimesResumen;
+  if (!r) return;
+  let sub = '';
+  els.respTimesComparaNota.textContent = '';
+  if (respTimesPrevio === 'cargando') sub = 'Comparando con la semana anterior…';
+  else if (respTimesPrevio === 'error') sub = 'Sin comparativa (no se pudo cargar)';
+  else if (respTimesPrevio) {
+    sub = respTimesPrevio.contactados
+      ? deltaTiempoHtml(r.prom, respTimesPrevio.prom) + ' vs semana anterior (' + fmtDuracionCorta(respTimesPrevio.prom) + ')'
+      : 'Sin leads contactados la semana anterior';
+    els.respTimesComparaNota.textContent = 'Semana anterior: ' + respTimesPrevio.desde + ' al ' + respTimesPrevio.hasta + ' (los 7 días previos al inicio del periodo). Menos tiempo es mejor.';
+  }
+  els.respTimesStats.innerHTML = '<div class="stats-row">' +
+    statCard('layers', 'var(--ink-soft)', 'Entrantes', r.entrantes) +
+    statCard('checkCircle', 'var(--c-positive)', 'Contactados', r.contactados) +
+    statCard('zap', 'var(--ink-soft)', 'Promedio (horario laboral)', fmtDuracionCorta(r.prom), sub) +
+    '</div>';
+}
+
+async function cargarTiemposSemanaAnterior(filtros, desdeStr) {
+  // Semana anterior = los 7 días inmediatamente previos al inicio del periodo elegido (sin traslape).
+  const desde = desplazarDias(desdeStr, 7), hasta = desplazarDias(desdeStr, 1);
+  respTimesPrevio = 'cargando';
+  pintarStatsTiempos();
+  try {
+    const data = await callWebhook({ type: 'leads', view: 'response_times', date_from: desde, date_to: hasta, pipeline_ids: filtros.pipelineIds });
+    const payload = extractPayload(data, 'por_embudo');
+    const embudos = Object.values(payload.por_embudo || {});
+    const contactados = embudos.reduce((sum, e) => sum + e.leads_con_respuesta, 0);
+    const suma = embudos.reduce((sum, e) => sum + e.promedio_segundos_habiles * e.leads_con_respuesta, 0);
+    respTimesPrevio = { prom: contactados ? Math.round(suma / contactados) : 0, contactados, desde, hasta };
+  } catch (err) {
+    respTimesPrevio = 'error';
+    console.error(err);
+  }
+  pintarStatsTiempos();
+}
+
 function renderTiemposRespuesta(payload) {
   const embudos = Object.values(payload.por_embudo || {});
-  if (!embudos.length) { els.respTimesStats.innerHTML = ''; els.respTimesFueraMeta.innerHTML = ''; els.respTimesTable.innerHTML = '<div class="empty">Sin datos en este periodo.</div>'; return; }
+  if (!embudos.length) { respTimesResumen = null; els.respTimesStats.innerHTML = ''; els.respTimesComparaNota.textContent = ''; els.respTimesFueraMeta.innerHTML = ''; els.respTimesTable.innerHTML = '<div class="empty">Sin datos en este periodo.</div>'; return; }
 
   const totalEntrantes = embudos.reduce((s, e) => s + e.leads_entrantes, 0);
   const totalContactados = embudos.reduce((s, e) => s + e.leads_con_respuesta, 0);
   const sumaHabiles = embudos.reduce((s, e) => s + e.promedio_segundos_habiles * e.leads_con_respuesta, 0);
   const promGeneralHabil = totalContactados ? Math.round(sumaHabiles / totalContactados) : 0;
 
-  els.respTimesStats.innerHTML = '<div class="stats-row">' +
-    statCard('layers', 'var(--ink-soft)', 'Entrantes', totalEntrantes) +
-    statCard('checkCircle', 'var(--c-positive)', 'Contactados', totalContactados) +
-    statCard('zap', 'var(--ink-soft)', 'Promedio (horario laboral)', fmtDuracionCorta(promGeneralHabil)) +
-    (typeof payload.leads_creados_manualmente_excluidos === 'number'
-      ? statCard('users', 'var(--ink-soft)', 'Creados a mano (excluidos)', payload.leads_creados_manualmente_excluidos, 'No cuentan como entrantes')
-      : '') +
-    '</div>';
+  respTimesResumen = { entrantes: totalEntrantes, contactados: totalContactados, prom: promGeneralHabil };
+  respTimesPrevio = null;
+  pintarStatsTiempos();
 
   const rows = embudos.map(e => `
     <tr>
