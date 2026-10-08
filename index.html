@@ -228,6 +228,13 @@
   .delta.up { color: var(--c-positive); background: rgba(21, 128, 61, .10); }
   .delta.down { color: var(--c-loss); background: rgba(182, 85, 47, .10); }
   .delta.na { color: var(--ink-faint); background: var(--surface-2); }
+  .seg-chips { display: inline-flex; gap: 4px; }
+  .seg-chip { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%; font-family: var(--mono); font-size: 11px; font-weight: 600; cursor: default; }
+  .seg-chip.a_tiempo { color: var(--c-positive); background: rgba(21, 128, 61, .14); }
+  .seg-chip.tarde { color: var(--c-loss); background: rgba(182, 85, 47, .14); border: 1.5px dashed var(--c-loss); }
+  .seg-chip.falta { color: #fff; background: var(--c-loss); }
+  .seg-chip.en_plazo { color: var(--ink-faint); background: var(--surface-2); }
+  .seg-legend { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 10px; font-size: 12px; color: var(--ink-faint); align-items: center; }
   .period-badge {
     margin-left: auto; font-size: 11.5px; font-family: var(--mono); color: var(--ink-soft);
     background: var(--surface-2); border: 1px solid var(--border); border-radius: 999px;
@@ -416,6 +423,17 @@
       <div class="help" id="respTimesNota" style="margin-top:10px;"></div>
       <details><summary>JSON crudo</summary><pre id="rawJsonRespTimes"></pre></details>
     </div>
+    <div class="panel" id="protocoloPanel">
+      <div class="panel-head">
+        <div class="panel-icon" id="iconProtocolo"></div>
+        <h2>Cumplimiento del protocolo de seguimiento</h2>
+      </div>
+      <p class="help"><b style="color:var(--ink-soft)">Protocolo: 5 seguimientos en menos de 10 días hábiles</b><br>Se miden con las etiquetas "seguimiento 1" a "seguimiento 5": la 1 dentro de las primeras 24 horas desde que se creó el lead, la 2 dentro de 48 horas, y la 3, 4 y 5 a más tardar 10 días hábiles (lunes a viernes) después de su creación. Evalúa los leads creados en el rango de fechas de arriba que hoy están en las dos etapas altas de su embudo (las dos siguientes a Leads Entrantes, por ejemplo Contactado/Frío y Respondió/Calificando). Respeta el filtro de embudos, agentes y etiquetas; quedan fuera Embudo global, Ejercicios de taller y Remarketing Edu.</p>
+      <div id="protocoloStats"></div>
+      <div id="protocoloTable"></div>
+      <div class="help" id="protocoloNota" style="margin-top:10px;"></div>
+      <details><summary>JSON crudo</summary><pre id="rawJsonProtocolo"></pre></details>
+    </div>
     <div class="calif-row">
       <div class="panel">
         <div class="panel-head">
@@ -563,6 +581,7 @@ paintIcon('iconComparativaParcial', 'trendingUp', 'var(--c-neutral)');
 paintIcon('iconVentasSemestre', 'barChart', 'var(--c-positive)');
 paintIcon('iconLeadsEntrantesSemestre', 'layers', 'var(--c-neutral)');
 paintIcon('iconLlamadas', 'phone', 'var(--ink-soft)');
+paintIcon('iconProtocolo', 'checkCircle', 'var(--ink-soft)');
 paintIcon('iconTiempos', 'zap', 'var(--ink-soft)');
 paintIcon('iconLeadsCalifLista', 'users', 'var(--c-positive)');
 paintIcon('iconExportar', 'download', 'var(--ink)');
@@ -628,6 +647,10 @@ const els = {
   rawJsonCalls: document.getElementById('rawJsonCalls'),
   respTimesPanel: document.getElementById('respTimesPanel'),
   respTimesStats: document.getElementById('respTimesStats'),
+  protocoloStats: document.getElementById('protocoloStats'),
+  protocoloTable: document.getElementById('protocoloTable'),
+  protocoloNota: document.getElementById('protocoloNota'),
+  rawJsonProtocolo: document.getElementById('rawJsonProtocolo'),
   respTimesComparaNota: document.getElementById('respTimesComparaNota'),
   respTimesTable: document.getElementById('respTimesTable'),
   respTimesFueraMeta: document.getElementById('respTimesFueraMeta'),
@@ -856,6 +879,7 @@ els.btnGenerar.addEventListener('click', async () => {
     const filtrosSemestre = { pipelineIds, agentIds, tagIds };
     await Promise.all([
       cargarLeadsVivos(filtrosSemestre),
+      cargarProtocolo(filtrosSemestre, els.dateFrom.value, els.dateTo.value),
       cargarTiemposSemanaAnterior(filtrosSemestre, els.dateFrom.value),
       cargarComparativaParcial(filtrosSemestre, els.dateFrom.value, els.dateTo.value),
       cargarVentasSemestre(filtrosSemestre),
@@ -1692,6 +1716,97 @@ function fmtDuracionCorta(segundos) {
   if (h > 0) return `${h}h ${m}m`;
   return `${m}m`;
 }
+/* ============================== RENDER: Cumplimiento del protocolo de seguimiento ============================== */
+let protocoloData = [];
+let protocoloPage = 1;
+const PROTOCOLO_PAGE_SIZE = 10;
+
+async function cargarProtocolo(filtros, desde, hasta) {
+  els.protocoloTable.innerHTML = '<div class="empty">Cargando…</div>';
+  els.protocoloStats.innerHTML = '';
+  els.protocoloNota.textContent = '';
+  try {
+    const data = await callWebhook({
+      type: 'leads', view: 'protocol_followups', date_from: desde, date_to: hasta,
+      pipeline_ids: filtros.pipelineIds, agent_ids: filtros.agentIds, tag_ids: filtros.tagIds,
+    });
+    renderProtocolo(extractPayload(data, 'resumen'));
+    els.rawJsonProtocolo.textContent = JSON.stringify(data, null, 2);
+  } catch (err) {
+    els.protocoloTable.innerHTML = '<div class="empty">No se pudo cargar el protocolo: ' + err.message + '</div>';
+    console.error(err);
+  }
+}
+
+function renderProtocolo(payload) {
+  const r = payload.resumen;
+  const pct = n => r.evaluados ? Math.round((n / r.evaluados) * 100) + '%' : '0%';
+  els.protocoloStats.innerHTML = '<div class="stats-row">' +
+    statCard('layers', 'var(--ink-soft)', 'Leads evaluados', r.evaluados) +
+    statCard('checkCircle', 'var(--c-positive)', 'Cumplen', r.cumplen, pct(r.cumplen) + ' de los evaluados') +
+    statCard('xCircle', 'var(--c-loss)', 'No cumplen', r.incumplen, pct(r.incumplen) + ' de los evaluados') +
+    statCard('clock', 'var(--ink-soft)', 'En plazo', r.en_curso, 'Aún sin ningún plazo vencido') +
+    '</div>';
+  els.protocoloNota.textContent = payload.nota_metodologica || '';
+  protocoloData = payload.leads_incumplen || [];
+  protocoloPage = 1;
+  renderProtocoloPagina();
+}
+
+function chipsSeguimientos(seguimientos) {
+  const nombreEstado = { a_tiempo: 'a tiempo', tarde: 'fuera de plazo', falta: 'falta (plazo vencido)', en_plazo: 'aún en plazo' };
+  return '<span class="seg-chips">' + seguimientos.map(sg => {
+    const detalle = 'Seguimiento ' + sg.n + ': ' + nombreEstado[sg.estado] + (sg.ts ? ' · puesto ' + fmtFechaHoraMx(sg.ts) : '') + ' · límite ' + fmtFechaHoraMx(sg.limite_ts);
+    return '<span class="seg-chip ' + sg.estado + '" title="' + detalle + '">' + sg.n + '</span>';
+  }).join('') + '</span>';
+}
+
+function renderProtocoloPagina() {
+  const total = protocoloData.length;
+  const titulo = `<h3 style="font-family:var(--display); font-size:13px; color:var(--ink-soft); font-weight:600; margin:22px 0 4px; letter-spacing:-.005em;">Leads que no cumplieron el protocolo (${total})</h3>`;
+  if (!total) { els.protocoloTable.innerHTML = titulo + '<div class="empty">Ningún lead incumple el protocolo en este periodo.</div>'; return; }
+  const totalPages = Math.max(1, Math.ceil(total / PROTOCOLO_PAGE_SIZE));
+  if (protocoloPage > totalPages) protocoloPage = totalPages;
+  const start = (protocoloPage - 1) * PROTOCOLO_PAGE_SIZE;
+  const items = protocoloData.slice(start, start + PROTOCOLO_PAGE_SIZE);
+  const rows = items.map(l => {
+    const responsable = nombreAgente(l.responsible_user_id);
+    return `
+    <tr>
+      <td>${leadLinkHtml(l.lead_id, escHtml(l.nombre))}</td>
+      <td>${embudoPillHtml(l.embudo)}</td>
+      <td>${escHtml(l.etapa)}</td>
+      <td><span class="person-cell">${avatarHtml(responsable)}${escHtml(responsable)}</span></td>
+      <td>${fmtFechaHoraMx(l.creado_ts)}</td>
+      <td>${chipsSeguimientos(l.seguimientos)}</td>
+    </tr>`;
+  }).join('');
+  els.protocoloTable.innerHTML = titulo + `
+    <div class="table-scroll">
+    <table>
+      <thead><tr><th>Lead</th><th>Embudo</th><th>Etapa actual</th><th>Responsable</th><th>Creado</th><th>Seguimientos 1–5</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    </div>
+    <div class="seg-legend">
+      <span><span class="seg-chip a_tiempo" style="width:18px;height:18px;font-size:10px;">✓</span> a tiempo</span>
+      <span><span class="seg-chip tarde" style="width:18px;height:18px;font-size:10px;">!</span> fuera de plazo</span>
+      <span><span class="seg-chip falta" style="width:18px;height:18px;font-size:10px;">×</span> falta, plazo vencido</span>
+      <span><span class="seg-chip en_plazo" style="width:18px;height:18px;font-size:10px;">·</span> aún en plazo</span>
+      <span>Pasa el cursor sobre cada número para ver fechas y límite.</span>
+    </div>
+    <div class="pager">
+      <span class="pager-info">Mostrando ${items.length} de ${total} leads</span>
+      <div class="pager-controls">
+        <button type="button" class="pager-btn" id="protocoloPrev" ${protocoloPage <= 1 ? 'disabled' : ''} aria-label="Anterior">‹</button>
+        <span class="pager-page">${protocoloPage}</span>
+        <button type="button" class="pager-btn" id="protocoloNext" ${protocoloPage >= totalPages ? 'disabled' : ''} aria-label="Siguiente">›</button>
+      </div>
+    </div>`;
+  document.getElementById('protocoloPrev').addEventListener('click', () => { protocoloPage--; renderProtocoloPagina(); });
+  document.getElementById('protocoloNext').addEventListener('click', () => { protocoloPage++; renderProtocoloPagina(); });
+}
+
 /* ---- Comparativa del promedio contra la semana anterior ---- */
 let respTimesResumen = null;
 let respTimesPrevio = null; // null = sin pedir | 'cargando' | 'error' | { prom, contactados, desde, hasta }
