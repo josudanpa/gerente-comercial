@@ -428,9 +428,13 @@
         <div class="panel-icon" id="iconProtocolo"></div>
         <h2>Cumplimiento del protocolo de seguimiento</h2>
       </div>
-      <p class="help"><b style="color:var(--ink-soft)">Protocolo: 5 seguimientos en menos de 10 días hábiles</b><br>Se miden con las etiquetas "seguimiento 1" a "seguimiento 5": la 1 dentro de las primeras 24 horas desde que se creó el lead, la 2 dentro de 48 horas, y la 3, 4 y 5 a más tardar 10 días hábiles (lunes a viernes) después de su creación. Evalúa los leads creados en el rango de fechas de arriba que hoy están en las dos etapas altas de su embudo (las dos siguientes a Leads Entrantes, por ejemplo Contactado/Frío y Respondió/Calificando). Respeta el filtro de embudos, agentes y etiquetas; quedan fuera Embudo global, Ejercicios de taller y Remarketing Edu.</p>
+      <p class="help"><b style="color:var(--ink-soft)">1. Seguimientos — etapa Contactado/Frío:</b> 5 seguimientos en menos de 10 días hábiles, medidos con las etiquetas "seguimiento 1" a "seguimiento 5": la 1 dentro de las primeras 24 horas desde que se creó el lead, la 2 dentro de 48 horas, y la 3, 4 y 5 a más tardar 10 días hábiles (lunes a viernes) después de su creación. Evalúa los leads creados en el rango de fechas de arriba que hoy están en Contactado/Frío (en algunos embudos se llama CONTACTADO/PROSPECTAR o Prospectar).<br><b style="color:var(--ink-soft)">2. Enviar cotización:</b> desde que el lead se movió a esa etapa no pueden pasar más de 24 horas; debe pasar a Cotización enviada. Es una foto de hoy: no depende del rango de fechas. Ambas reglas respetan el filtro de embudos, agentes y etiquetas; quedan fuera Embudo global, Ejercicios de taller y Remarketing Edu.</p>
+      <h3 style="font-family:var(--display); font-size:13px; color:var(--ink-soft); font-weight:600; margin:6px 0 8px;">1. Seguimientos — Contactado/Frío</h3>
       <div id="protocoloStats"></div>
       <div id="protocoloTable"></div>
+      <h3 style="font-family:var(--display); font-size:13px; color:var(--ink-soft); font-weight:600; margin:30px 0 8px;">2. Enviar cotización — máximo 24 horas en la etapa</h3>
+      <div id="cotizacionStats"></div>
+      <div id="cotizacionTable"></div>
       <div class="help" id="protocoloNota" style="margin-top:10px;"></div>
       <details><summary>JSON crudo</summary><pre id="rawJsonProtocolo"></pre></details>
     </div>
@@ -650,6 +654,8 @@ const els = {
   protocoloStats: document.getElementById('protocoloStats'),
   protocoloTable: document.getElementById('protocoloTable'),
   protocoloNota: document.getElementById('protocoloNota'),
+  cotizacionStats: document.getElementById('cotizacionStats'),
+  cotizacionTable: document.getElementById('cotizacionTable'),
   rawJsonProtocolo: document.getElementById('rawJsonProtocolo'),
   respTimesComparaNota: document.getElementById('respTimesComparaNota'),
   respTimesTable: document.getElementById('respTimesTable'),
@@ -1724,6 +1730,8 @@ const PROTOCOLO_PAGE_SIZE = 10;
 async function cargarProtocolo(filtros, desde, hasta) {
   els.protocoloTable.innerHTML = '<div class="empty">Cargando…</div>';
   els.protocoloStats.innerHTML = '';
+  els.cotizacionStats.innerHTML = '';
+  els.cotizacionTable.innerHTML = '';
   els.protocoloNota.textContent = '';
   try {
     const data = await callWebhook({
@@ -1751,6 +1759,65 @@ function renderProtocolo(payload) {
   protocoloData = payload.leads_incumplen || [];
   protocoloPage = 1;
   renderProtocoloPagina();
+  renderCotizacion(payload.cotizacion);
+}
+
+let cotizacionData = [];
+let cotizacionPage = 1;
+
+function fmtHorasEtapa(h) {
+  const r = Math.round(h);
+  return r >= 48 ? Math.floor(r / 24) + ' d ' + (r % 24) + ' h' : r + ' h';
+}
+
+function renderCotizacion(c) {
+  if (!c) { els.cotizacionStats.innerHTML = ''; els.cotizacionTable.innerHTML = ''; return; }
+  els.cotizacionStats.innerHTML = '<div class="stats-row">' +
+    statCard('layers', 'var(--ink-soft)', 'En Enviar cotización', c.resumen.en_etapa) +
+    statCard('checkCircle', 'var(--c-positive)', 'Dentro de 24 h', c.resumen.en_plazo, 'Cumplen') +
+    statCard('xCircle', 'var(--c-loss)', 'Más de 24 h', c.resumen.incumplen, 'No cumplen: siguen en la etapa') +
+    '</div>';
+  cotizacionData = c.leads_incumplen || [];
+  cotizacionPage = 1;
+  renderCotizacionPagina();
+}
+
+function renderCotizacionPagina() {
+  const total = cotizacionData.length;
+  if (!total) { els.cotizacionTable.innerHTML = '<div class="empty">Ningún lead lleva más de 24 horas en Enviar cotización.</div>'; return; }
+  const totalPages = Math.max(1, Math.ceil(total / PROTOCOLO_PAGE_SIZE));
+  if (cotizacionPage > totalPages) cotizacionPage = totalPages;
+  const start = (cotizacionPage - 1) * PROTOCOLO_PAGE_SIZE;
+  const items = cotizacionData.slice(start, start + PROTOCOLO_PAGE_SIZE);
+  const rows = items.map(l => {
+    const responsable = nombreAgente(l.responsible_user_id);
+    return `
+    <tr>
+      <td>${leadLinkHtml(l.lead_id, escHtml(l.nombre))}</td>
+      <td>${embudoPillHtml(l.embudo)}</td>
+      <td><span class="person-cell">${avatarHtml(responsable)}${escHtml(responsable)}</span></td>
+      <td>${fmtFechaHoraMx(l.entro_etapa_ts)}</td>
+      <td class="num"><span class="numval" style="color:var(--c-loss);">${fmtHorasEtapa(l.horas_en_etapa)}</span></td>
+    </tr>`;
+  }).join('');
+  els.cotizacionTable.innerHTML = `
+    <h3 style="font-family:var(--display); font-size:13px; color:var(--ink-soft); font-weight:600; margin:18px 0 4px; letter-spacing:-.005em;">Leads atorados en Enviar cotización por más de 24 horas (${total})</h3>
+    <div class="table-scroll">
+    <table>
+      <thead><tr><th>Lead</th><th>Embudo</th><th>Responsable</th><th>Entró a Enviar cotización</th><th class="num">Tiempo en la etapa</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    </div>
+    <div class="pager">
+      <span class="pager-info">Mostrando ${items.length} de ${total} leads</span>
+      <div class="pager-controls">
+        <button type="button" class="pager-btn" id="cotizacionPrev" ${cotizacionPage <= 1 ? 'disabled' : ''} aria-label="Anterior">‹</button>
+        <span class="pager-page">${cotizacionPage}</span>
+        <button type="button" class="pager-btn" id="cotizacionNext" ${cotizacionPage >= totalPages ? 'disabled' : ''} aria-label="Siguiente">›</button>
+      </div>
+    </div>`;
+  document.getElementById('cotizacionPrev').addEventListener('click', () => { cotizacionPage--; renderCotizacionPagina(); });
+  document.getElementById('cotizacionNext').addEventListener('click', () => { cotizacionPage++; renderCotizacionPagina(); });
 }
 
 function chipsSeguimientos(seguimientos) {
@@ -1763,8 +1830,8 @@ function chipsSeguimientos(seguimientos) {
 
 function renderProtocoloPagina() {
   const total = protocoloData.length;
-  const titulo = `<h3 style="font-family:var(--display); font-size:13px; color:var(--ink-soft); font-weight:600; margin:22px 0 4px; letter-spacing:-.005em;">Leads que no cumplieron el protocolo (${total})</h3>`;
-  if (!total) { els.protocoloTable.innerHTML = titulo + '<div class="empty">Ningún lead incumple el protocolo en este periodo.</div>'; return; }
+  const titulo = `<h3 style="font-family:var(--display); font-size:13px; color:var(--ink-soft); font-weight:600; margin:18px 0 4px; letter-spacing:-.005em;">Leads que no cumplieron el protocolo de seguimientos (${total})</h3>`;
+  if (!total) { els.protocoloTable.innerHTML = titulo + '<div class="empty">Ningún lead incumple el protocolo de seguimientos en este periodo.</div>'; return; }
   const totalPages = Math.max(1, Math.ceil(total / PROTOCOLO_PAGE_SIZE));
   if (protocoloPage > totalPages) protocoloPage = totalPages;
   const start = (protocoloPage - 1) * PROTOCOLO_PAGE_SIZE;
