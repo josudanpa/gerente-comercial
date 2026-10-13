@@ -228,6 +228,11 @@
   .delta.up { color: var(--c-positive); background: rgba(21, 128, 61, .10); }
   .delta.down { color: var(--c-loss); background: rgba(182, 85, 47, .10); }
   .delta.na { color: var(--ink-faint); background: var(--surface-2); }
+  th.sortable { cursor: pointer; user-select: none; white-space: nowrap; }
+  th.sortable:hover { color: var(--ink); }
+  th.sortable .sort-ind { display: inline-block; width: 12px; margin-left: 4px; color: var(--ink-faint); font-size: 10px; }
+  th.sortable.activa { color: var(--ink); }
+  th.sortable.activa .sort-ind { color: var(--ink); }
   .seg-chips { display: inline-flex; gap: 4px; }
   .seg-chip { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%; font-family: var(--mono); font-size: 11px; font-weight: 600; cursor: default; }
   .seg-chip.a_tiempo { color: var(--c-positive); background: rgba(21, 128, 61, .14); }
@@ -1968,6 +1973,33 @@ let fueraMetaData = [];
 let fueraMetaPage = 1;
 let fueraMetaMeta = { entrantes: 0, metaSeg: 300 };
 const FUERA_META_PAGE_SIZE = 10;
+const FUERA_META_COLUMNAS = {
+  lead:      { titulo: 'Lead',                     valor: l => (l.nombre || '').toLowerCase() },
+  embudo:    { titulo: 'Embudo',                   valor: l => (l.embudo || '').toLowerCase() },
+  resp:      { titulo: 'Responsable',              valor: l => nombreAgente(l.responsible_user_id).toLowerCase() },
+  entro:     { titulo: 'Entró',                    valor: l => l.entro_ts },
+  atencion:  { titulo: 'Primera atención',         valor: l => l.primera_respuesta_ts == null ? Infinity : l.primera_respuesta_ts },
+  actividad: { titulo: 'Actividad',                valor: l => l.primera_actividad_tipo ? (ETIQUETA_ACTIVIDAD[l.primera_actividad_tipo] || l.primera_actividad_tipo).toLowerCase() : '' },
+  espera:    { titulo: 'Espera (horario laboral)', valor: l => l.tiempo_habil_seg, num: true },
+};
+let fueraMetaOrden = { col: 'espera', dir: 'desc' };
+
+function ordenarFueraMeta() {
+  const { valor } = FUERA_META_COLUMNAS[fueraMetaOrden.col];
+  const f = fueraMetaOrden.dir === 'asc' ? 1 : -1;
+  return [...fueraMetaData].sort((a, b) => {
+    const x = valor(a), y = valor(b);
+    const c = x < y ? -1 : x > y ? 1 : 0;
+    return c !== 0 ? c * f : (a.lead_id - b.lead_id);
+  });
+}
+function thOrdenable(col) {
+  const c = FUERA_META_COLUMNAS[col];
+  const activa = fueraMetaOrden.col === col;
+  const flecha = activa ? (fueraMetaOrden.dir === 'asc' ? '▲' : '▼') : '↕';
+  const aria = activa ? (fueraMetaOrden.dir === 'asc' ? 'ascending' : 'descending') : 'none';
+  return `<th class="sortable${activa ? ' activa' : ''}${c.num ? ' num' : ''}" data-col="${col}" aria-sort="${aria}" title="Clic para ordenar">${c.titulo}<span class="sort-ind">${flecha}</span></th>`;
+}
 
 function escHtml(t) {
   return String(t == null ? '' : t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -1993,6 +2025,7 @@ function renderLeadsFueraDeMeta(payload, totalEntrantes) {
   if (!Array.isArray(payload.leads_fuera_de_meta)) { els.respTimesFueraMeta.innerHTML = ''; return; }
   fueraMetaData = payload.leads_fuera_de_meta;
   fueraMetaPage = 1;
+  fueraMetaOrden = { col: 'espera', dir: 'desc' };
   fueraMetaMeta = { entrantes: totalEntrantes, metaSeg: payload.meta_segundos || 300 };
   renderLeadsFueraDeMetaPagina();
 }
@@ -2002,7 +2035,7 @@ function renderLeadsFueraDeMetaPagina() {
   const minutos = Math.round(fueraMetaMeta.metaSeg / 60);
   const pctFuera = fueraMetaMeta.entrantes ? Math.round((total / fueraMetaMeta.entrantes) * 100) : 0;
   const titulo = `<h3 style="font-family:var(--display); font-size:13px; color:var(--ink-soft); font-weight:600; margin:22px 0 4px; letter-spacing:-.005em;">Leads no atendidos en los primeros ${minutos} minutos (${total})</h3>` +
-    `<p class="help" style="margin-bottom:12px;">${total} de ${fueraMetaMeta.entrantes} leads entrantes (${pctFuera}%) no recibieron ninguna atención (llamada saliente, nota, mensaje saliente o conversación contestada) dentro de los primeros ${minutos} minutos de horario laboral: la atención llegó a partir del minuto ${minutos + 1}, o todavía no llega. Ordenados de mayor a menor espera.</p>`;
+    `<p class="help" style="margin-bottom:12px;">${total} de ${fueraMetaMeta.entrantes} leads entrantes (${pctFuera}%) no recibieron ninguna atención (llamada saliente, nota, mensaje saliente o conversación contestada) dentro de los primeros ${minutos} minutos de horario laboral: la atención llegó a partir del minuto ${minutos + 1}, o todavía no llega. Haz clic en el encabezado de una columna para ordenarla de forma ascendente o descendente.</p>`;
 
   if (!total) {
     els.respTimesFueraMeta.innerHTML = titulo + '<div class="empty">Todos los leads de este periodo fueron atendidos dentro de la meta.</div>';
@@ -2012,7 +2045,7 @@ function renderLeadsFueraDeMetaPagina() {
   const totalPages = Math.max(1, Math.ceil(total / FUERA_META_PAGE_SIZE));
   if (fueraMetaPage > totalPages) fueraMetaPage = totalPages;
   const start = (fueraMetaPage - 1) * FUERA_META_PAGE_SIZE;
-  const items = fueraMetaData.slice(start, start + FUERA_META_PAGE_SIZE);
+  const items = ordenarFueraMeta().slice(start, start + FUERA_META_PAGE_SIZE);
 
   const rows = items.map(l => {
     const responsable = nombreAgente(l.responsible_user_id);
@@ -2034,7 +2067,7 @@ function renderLeadsFueraDeMetaPagina() {
   els.respTimesFueraMeta.innerHTML = titulo + `
     <div class="table-scroll">
     <table>
-      <thead><tr><th>Lead</th><th>Embudo</th><th>Responsable</th><th>Entró</th><th>Primera atención</th><th>Actividad</th><th class="num">Espera (horario laboral)</th></tr></thead>
+      <thead><tr>${['lead', 'embudo', 'resp', 'entro', 'atencion', 'actividad', 'espera'].map(thOrdenable).join('')}</tr></thead>
       <tbody>${rows}</tbody>
     </table>
     </div>
@@ -2047,6 +2080,12 @@ function renderLeadsFueraDeMetaPagina() {
       </div>
     </div>`;
 
+  els.respTimesFueraMeta.querySelectorAll('th.sortable').forEach(th => th.addEventListener('click', () => {
+    const col = th.dataset.col;
+    fueraMetaOrden = { col, dir: fueraMetaOrden.col === col && fueraMetaOrden.dir === 'asc' ? 'desc' : 'asc' };
+    fueraMetaPage = 1;
+    renderLeadsFueraDeMetaPagina();
+  }));
   document.getElementById('fueraMetaPrev').addEventListener('click', () => { fueraMetaPage--; renderLeadsFueraDeMetaPagina(); });
   document.getElementById('fueraMetaNext').addEventListener('click', () => { fueraMetaPage++; renderLeadsFueraDeMetaPagina(); });
 }
