@@ -486,7 +486,7 @@
         <div class="panel-icon" id="iconGanados"></div>
         <h2>Ganados del periodo</h2>
       </div>
-      <p class="help"><b style="color:var(--ink-soft)">Objetivo: $220,000 MXN mensuales</b><br>Proyectos cerrados (ganados) por embudo en el rango de fechas elegido, el monto total y el ticket promedio de venta.</p>
+      <p class="help"><b style="color:var(--ink-soft)">Objetivo: $220,000 MXN mensuales</b><br>Ventas registradas: leads que hoy están en la etapa de cierre ganado (Leads ganados, Logrado con éxito o Closed - won) y cuya fecha de cierre cae dentro del rango de fechas elegido arriba, con el monto total y el ticket promedio. Este tablero siempre va por fecha de cierre, aunque arriba esté seleccionada "Fecha de creación". Un lead que se regresó a otra etapa después de ganarse ya no cuenta.</p>
       <div id="ganadosStats"></div>
       <div id="ganadosTable"></div>
       <h3 style="font-family:var(--display); font-size:13px; color:var(--ink-soft); font-weight:600; margin:22px 0 4px; letter-spacing:-.005em;">Desglose de leads ganados</h3>
@@ -875,7 +875,6 @@ els.btnGenerar.addEventListener('click', async () => {
 
     const perfPayload = extractPayload(perfData, 'por_embudo');
     renderResultados(perfPayload);
-    renderGanados(perfPayload);
     els.rawJson.textContent = JSON.stringify(perfData, null, 2);
 
     const crossPayload = extractPayload(crossData, 'totales');
@@ -893,6 +892,7 @@ els.btnGenerar.addEventListener('click', async () => {
     const filtrosSemestre = { pipelineIds, agentIds, tagIds };
     await Promise.all([
       cargarLeadsCampanas(filtrosSemestre, els.dateFrom.value, els.dateTo.value),
+      cargarGanados(filtrosSemestre, els.dateFrom.value, els.dateTo.value),
       cargarLeadsVivos(filtrosSemestre),
       cargarProtocolo(filtrosSemestre, els.dateFrom.value, els.dateTo.value),
       cargarTiemposSemanaAnterior(filtrosSemestre, els.dateFrom.value),
@@ -912,6 +912,26 @@ els.btnGenerar.addEventListener('click', async () => {
     els.btnGenerar.disabled = false;
   }
 });
+
+/* ============================== RENDER: Ganados del periodo (siempre por fecha de cierre) ============================== */
+// Ventas registradas = leads que hoy están en la etapa de cierre ganado (Leads ganados / Logrado con éxito /
+// Closed - won) y cuya fecha de cierre cae dentro del rango elegido arriba. Va siempre por fecha de cierre,
+// sin importar el interruptor "Filtrar desempeño por", que solo aplica al resto del reporte.
+async function cargarGanados(filtros, desde, hasta) {
+  els.ganadosStats.innerHTML = '';
+  els.ganadosTable.innerHTML = '<div class="empty">Cargando…</div>';
+  els.ganadosDetalleTable.innerHTML = '';
+  try {
+    const data = await callWebhook({
+      type: 'leads', view: 'performance', date_from: desde, date_to: hasta, filter_by: 'closed_at',
+      pipeline_ids: filtros.pipelineIds, agent_ids: filtros.agentIds, tag_ids: filtros.tagIds,
+    });
+    renderGanados(extractPayload(data, 'por_embudo'));
+  } catch (err) {
+    els.ganadosTable.innerHTML = '<div class="empty">No se pudo cargar ganados: ' + err.message + '</div>';
+    console.error(err);
+  }
+}
 
 /* ============================== RENDER: Leads recibidos de campañas por periodo ============================== */
 // Misma consulta de "performance", pero solo con leads que traen alguna de las etiquetas de campaña
