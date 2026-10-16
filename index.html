@@ -368,9 +368,9 @@
     <div class="panel">
       <div class="panel-head">
         <div class="panel-icon" id="iconLeadsPeriodo"></div>
-        <h2>Leads recibidos por periodo</h2>
+        <h2>Leads recibidos de campañas por periodo</h2>
       </div>
-      <p class="help"><b style="color:var(--ink-soft)">Objetivo: 250 leads mensuales</b><br>Cuántos leads se están administrando ahora mismo, vistos de dos formas — por asesor y por embudo. Las dos sumas tienen que coincidir: es la misma población de leads, nada más que el desglose es distinto.</p>
+      <p class="help"><b style="color:var(--ink-soft)">Objetivo: 250 leads mensuales</b><br>Cuántos leads de campañas se recibieron en el periodo, vistos de dos formas — por asesor y por embudo. Solo cuenta los leads que traen alguna de las etiquetas Google, Meta, Educonnect o EduGeneral. Las dos sumas tienen que coincidir: es la misma población de leads, nada más que el desglose es distinto.</p>
       <div id="leadsPeriodoStats"></div>
       <div style="display:flex; gap:20px; flex-wrap:wrap; margin-top:14px;">
         <div style="flex:1; min-width:260px;">
@@ -672,6 +672,9 @@ const els = {
 let filterBy = 'created_at';
 let calificadosMode = 'actual';
 let agentsCatalog = [];
+// Etiquetas que identifican a un lead de campaña (se comparan sin importar mayúsculas; Educonnect existe con 2 grafías).
+const ETIQUETAS_CAMPANA = ['google', 'meta', 'educonnect', 'edugeneral'];
+let tagsCampanaIds = [];
 
 els.calificadosToggle.addEventListener('click', (e) => {
   const label = e.target.closest('label');
@@ -818,6 +821,7 @@ function pct(n, total) { return total ? Math.round((n / total) * 100) + '%' : '0
     const data = await callWebhook({ type: 'scan' });
     const scanData = extractPayload(data, 'pipelines');
     agentsCatalog = scanData.agents || [];
+    tagsCampanaIds = (scanData.tags || []).filter(t => ETIQUETAS_CAMPANA.includes(String(t.name).trim().toLowerCase())).map(t => Number(t.id));
     els.pipelineChecks.innerHTML = scanData.pipelines.map(p => `<label class="chip"><input type="checkbox" value="${p.id}" class="pipelineCheck"><span class="chip-dot"></span>${p.name}</label>`).join('');
     els.agentChecks.innerHTML = scanData.agents.map(a => `<label class="chip"><input type="checkbox" value="${a.id}" class="agentCheck"><span class="chip-dot"></span>${a.name}</label>`).join('');
     els.tagChecks.innerHTML = (scanData.tags || []).map(t => `<label class="chip"><input type="checkbox" value="${t.id}" class="tagCheck"><span class="chip-dot"></span>${t.name}</label>`).join('') || '<span class="help">Sin etiquetas en la cuenta.</span>';
@@ -870,7 +874,6 @@ els.btnGenerar.addEventListener('click', async () => {
     ]);
 
     const perfPayload = extractPayload(perfData, 'por_embudo');
-    renderLeadsPorPeriodo(perfPayload);
     renderResultados(perfPayload);
     renderGanados(perfPayload);
     els.rawJson.textContent = JSON.stringify(perfData, null, 2);
@@ -889,6 +892,7 @@ els.btnGenerar.addEventListener('click', async () => {
 
     const filtrosSemestre = { pipelineIds, agentIds, tagIds };
     await Promise.all([
+      cargarLeadsCampanas(filtrosSemestre, els.dateFrom.value, els.dateTo.value),
       cargarLeadsVivos(filtrosSemestre),
       cargarProtocolo(filtrosSemestre, els.dateFrom.value, els.dateTo.value),
       cargarTiemposSemanaAnterior(filtrosSemestre, els.dateFrom.value),
@@ -908,6 +912,30 @@ els.btnGenerar.addEventListener('click', async () => {
     els.btnGenerar.disabled = false;
   }
 });
+
+/* ============================== RENDER: Leads recibidos de campañas por periodo ============================== */
+// Misma consulta de "performance", pero solo con leads que traen alguna de las etiquetas de campaña
+// (Google, Meta, Educonnect, EduGeneral). Si además se marcaron etiquetas arriba, cuenta solo las que
+// estén en ambas listas.
+async function cargarLeadsCampanas(filtros, desde, hasta) {
+  els.leadsPorAsesorTable.innerHTML = '<div class="empty">Cargando…</div>';
+  els.leadsPorEmbudoTable.innerHTML = '<div class="empty">Cargando…</div>';
+  els.leadsPeriodoStats.innerHTML = '';
+  try {
+    if (!tagsCampanaIds.length) throw new Error('no se encontraron las etiquetas de campaña en el catálogo');
+    const efectivas = filtros.tagIds.length ? tagsCampanaIds.filter(id => filtros.tagIds.includes(id)) : tagsCampanaIds;
+    if (!efectivas.length) { renderLeadsPorPeriodo({ leads_por_asesor: {}, leads_por_embudo: {} }); return; }
+    const data = await callWebhook({
+      type: 'leads', view: 'performance', date_from: desde, date_to: hasta, filter_by: filterBy,
+      pipeline_ids: filtros.pipelineIds, agent_ids: filtros.agentIds, tag_ids: efectivas,
+    });
+    renderLeadsPorPeriodo(extractPayload(data, 'por_embudo'));
+  } catch (err) {
+    els.leadsPorAsesorTable.innerHTML = '<div class="empty">No se pudo cargar: ' + err.message + '</div>';
+    els.leadsPorEmbudoTable.innerHTML = '';
+    console.error(err);
+  }
+}
 
 /* ============================== RENDER: Leads por periodo ============================== */
 function miniTabla(rows, labelCol) {
