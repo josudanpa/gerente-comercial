@@ -16,11 +16,11 @@
     --border: #dcdfe3;
     --border-soft: #e8eaed;
     --ink: #1a1c20;
-    --ink-soft: #6b6f78;
-    --ink-faint: #9a9ea7;
+    --ink-soft: #5a5e67;
+    --ink-faint: #666a73;
 
-    --c-positive: #15803d;
-    --c-loss: #b6552f;
+    --c-positive: #137a38;
+    --c-loss: #a5451d;
     --c-neutral: #5b5f68;
     --pill-ink: #f7f7f8;
 
@@ -101,7 +101,8 @@
     font-family: var(--display); font-size: 15.5px; font-weight: 600;
     color: var(--ink); margin: 0; letter-spacing: -.005em;
   }
-  .help { color: var(--ink-faint); font-size: 12.5px; margin: 0 0 16px; max-width: 720px; line-height: 1.55; }
+  .help { color: var(--ink-faint); font-size: 13px; margin: 0 0 16px; max-width: 720px; line-height: 1.6; }
+  .panel-head { flex-wrap: wrap; }
 
   /* ---------- Stat cards ---------- */
   .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 20px; }
@@ -110,15 +111,14 @@
     padding: 14px 14px; display: flex; align-items: center; gap: 11px;
     transition: transform .15s ease, border-color .15s ease;
   }
-  .stat-card:hover { transform: translateY(-2px); border-color: var(--stat-color); }
   .stat-icon {
     width: 36px; height: 36px; border-radius: 9px; flex-shrink: 0;
     background: color-mix(in srgb, var(--stat-color) 18%, transparent); color: var(--stat-color);
     display: flex; align-items: center; justify-content: center;
   }
-  .stat-label { font-size: 10.5px; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-faint); font-weight: 600; margin-bottom: 2px; }
+  .stat-label { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-faint); font-weight: 600; margin-bottom: 2px; }
   .stat-value { font-family: var(--display); font-size: 20px; font-weight: 700; color: var(--ink); line-height: 1.15; }
-  .stat-sub { font-size: 11px; color: var(--ink-soft); margin-top: 1px; }
+  .stat-sub { font-size: 12px; color: var(--ink-soft); margin-top: 1px; }
 
   /* ---------- Form controls ---------- */
   label.field-label { font-size: 12.5px; color: var(--ink-soft); display: block; margin-bottom: 6px; font-weight: 500; }
@@ -127,7 +127,8 @@
     font-family: var(--body); font-size: 13.5px; background: var(--surface-2); color: var(--ink);
   }
   input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.2); cursor: pointer; }
-  input:focus-visible, button:focus-visible, .chip:focus-within { outline: 2px solid var(--ink-soft); outline-offset: 2px; }
+  input:focus-visible, button:focus-visible, .chip:focus-within, a:focus-visible, summary:focus-visible, select:focus-visible,
+  th.sortable:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 
   .row { display: flex; gap: 16px; flex-wrap: wrap; align-items: end; margin-bottom: 14px; }
   .row > div { flex: 1; min-width: 170px; }
@@ -177,7 +178,7 @@
   th, td { padding: 11px 13px; text-align: right; vertical-align: middle; }
   th:first-child, td:first-child { text-align: left; }
   thead th {
-    color: var(--ink-faint); font-weight: 600; text-transform: uppercase; font-size: 10px;
+    color: var(--ink-faint); font-weight: 600; text-transform: uppercase; font-size: 11px;
     letter-spacing: .05em; white-space: nowrap; background: var(--surface-2); border-bottom: 1px solid var(--border);
   }
   tbody tr { border-bottom: 1px solid var(--border-soft); transition: background .12s ease; }
@@ -276,8 +277,67 @@
     border-radius: var(--radius-sm); padding: 7px 10px; font-size: 12.5px; font-family: var(--body); cursor: pointer;
   }
 
+
+  /* ---------- UX: navegación, ayudas plegables, filtros ---------- */
+  html { scroll-padding-top: 76px; }
+  tbody tr:not(.totales):hover { background: var(--surface-2); }
+  .panel .help b { color: var(--ink-soft); }
+
+  .secnav {
+    position: sticky; top: 0; z-index: 30; display: flex; gap: 8px; align-items: center;
+    margin: 0 -6px 16px; padding: 10px 6px; overflow-x: auto; scrollbar-width: none;
+    background: color-mix(in srgb, var(--bg) 92%, transparent); backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--border-soft);
+  }
+  .secnav[hidden] { display: none; }
+  .secnav::-webkit-scrollbar { display: none; }
+  .secnav a {
+    flex-shrink: 0; padding: 7px 14px; border-radius: 999px; font-size: 12.5px; font-weight: 600;
+    color: var(--ink-soft); text-decoration: none; border: 1px solid var(--border); background: var(--surface);
+    transition: background .15s ease, color .15s ease, border-color .15s ease;
+  }
+  .secnav a:hover { color: var(--ink); border-color: var(--ink-soft); }
+  .secnav a.activa { background: var(--ink); color: var(--pill-ink); border-color: var(--ink); }
+  .secnav .secnav-sep { flex: 1; min-width: 8px; }
+  .btn-ghost {
+    flex-shrink: 0; background: transparent; color: var(--ink-soft); border: 1px solid var(--border);
+    padding: 8px 15px; border-radius: 999px; font-size: 12.5px; font-weight: 600; cursor: pointer; font-family: var(--body);
+  }
+  .btn-ghost:hover { color: var(--ink); border-color: var(--ink-soft); }
+  .btn-ghost[aria-pressed="true"] { background: var(--surface-2); color: var(--ink); border-color: var(--ink-soft); }
+  .goal-chip {
+    margin-left: auto; display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 999px;
+    background: rgba(19, 122, 56, .10); color: var(--c-positive); font-size: 12px; font-weight: 700; white-space: nowrap;
+    border: 1px solid color-mix(in srgb, var(--c-positive) 28%, transparent);
+  }
+  details.info { margin: 0 0 14px; }
+  details.info > summary {
+    cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600;
+    color: var(--ink-soft); list-style: none; padding: 4px 0;
+  }
+  details.info > summary::-webkit-details-marker { display: none; }
+  details.info > summary::before { content: 'ⓘ'; font-size: 14px; }
+  details.info > summary::after { content: '▾'; font-size: 10px; transition: transform .15s ease; }
+  details.info[open] > summary::after { transform: rotate(180deg); }
+  details.info > p.help { margin: 6px 0 0; padding: 12px 14px; background: var(--surface-2); border-radius: var(--radius-md); max-width: 780px; }
+
+  .empty.loading { display: flex; align-items: center; justify-content: center; gap: 10px; }
+  .spinner { width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--border); border-top-color: var(--ink-soft); animation: spin .8s linear infinite; flex-shrink: 0; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .btn-top {
+    position: fixed; right: 16px; bottom: 16px; z-index: 40; width: 44px; height: 44px; border-radius: 50%;
+    border: 1px solid var(--border); background: var(--surface); color: var(--ink); font-size: 18px; cursor: pointer;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, .16); opacity: 0; pointer-events: none; transition: opacity .2s ease;
+  }
+  .btn-top.visible { opacity: 1; pointer-events: auto; }
+
   @media (max-width: 640px) {
     body { padding: 18px 12px 70px; }
+    .stats-row { grid-template-columns: repeat(2, 1fr); }
+    .stats-row > .stat-card:last-child:nth-child(odd) { grid-column: 1 / -1; }
+    .secnav { margin: 0 -12px 12px; padding-inline: 12px; }
+    .goal-chip { margin-left: 0; }
     .panel { padding: 18px 16px 20px; }
     .top { align-items: flex-start; }
     button#btnGenerar { width: 100%; }
@@ -298,8 +358,10 @@
         <h1>Reporte de desempeño y pipeline</h1>
       </div>
     </div>
-    <div class="status pending" id="status">Cargando catálogo…</div>
+    <div class="status pending" id="status" role="status" aria-live="polite">Cargando catálogo…</div>
   </header>
+
+  <nav class="secnav" id="secNav" aria-label="Secciones del reporte" hidden></nav>
 
   <div class="panel">
     <div class="panel-head">
@@ -533,6 +595,8 @@
   </div>
 
 </div>
+
+<button type="button" class="btn-top" id="btnTop" aria-label="Volver arriba">↑</button>
 
 <script>
 /* ============================== ICONOS ============================== */
@@ -889,8 +953,15 @@ els.btnGenerar.addEventListener('click', async () => {
     renderTiemposRespuesta(respTimesPayload);
     els.rawJsonRespTimes.textContent = JSON.stringify(respTimesData, null, 2);
 
+    // El reporte se muestra ya con el primer lote; los tableros restantes se van llenando solos
+    // (cada uno trae su propio "Cargando…") en vez de hacer esperar al usuario a que termine todo.
+    els.resultsRow.style.display = 'block';
+    els.callsPanel.style.display = 'block';
+    els.respTimesPanel.style.display = 'block';
+    mostrarVistaResultados();
+
     const filtrosSemestre = { pipelineIds, agentIds, tagIds };
-    await Promise.all([
+    const tareas = [
       cargarLeadsCampanas(filtrosSemestre, els.dateFrom.value, els.dateTo.value),
       cargarGanados(filtrosSemestre, els.dateFrom.value, els.dateTo.value),
       cargarLeadsVivos(filtrosSemestre),
@@ -899,11 +970,14 @@ els.btnGenerar.addEventListener('click', async () => {
       cargarComparativaParcial(filtrosSemestre, els.dateFrom.value, els.dateTo.value),
       cargarVentasSemestre(filtrosSemestre),
       cargarLeadsEntrantesSemestre(filtrosSemestre),
-    ]);
+    ];
+    let terminadas = 0;
+    setStatus(`Tableros principales listos · cargando el resto (0/${tareas.length})…`, 'pending');
+    await Promise.all(tareas.map(t => t.finally(() => {
+      terminadas++;
+      if (terminadas < tareas.length) setStatus(`Tableros principales listos · cargando el resto (${terminadas}/${tareas.length})…`, 'pending');
+    })));
 
-    els.resultsRow.style.display = 'block';
-    els.callsPanel.style.display = 'block';
-    els.respTimesPanel.style.display = 'block';
     setStatus(`Listo · ${perfPayload.total_leads_extraidos} leads · ${crossPayload.totales.leads_calificados} calificados · ${callsPayload.total_llamadas} llamadas`, 'ok');
   } catch (err) {
     setStatus('No se pudo generar el reporte: ' + err.message, 'err');
@@ -919,7 +993,7 @@ els.btnGenerar.addEventListener('click', async () => {
 // sin importar el interruptor "Filtrar desempeño por", que solo aplica al resto del reporte.
 async function cargarGanados(filtros, desde, hasta) {
   els.ganadosStats.innerHTML = '';
-  els.ganadosTable.innerHTML = '<div class="empty">Cargando…</div>';
+  els.ganadosTable.innerHTML = '<div class="empty loading"><span class="spinner" aria-hidden="true"></span>Cargando…</div>';
   els.ganadosDetalleTable.innerHTML = '';
   try {
     const data = await callWebhook({
@@ -938,8 +1012,8 @@ async function cargarGanados(filtros, desde, hasta) {
 // (Google, Meta, Educonnect, EduGeneral). Si además se marcaron etiquetas arriba, cuenta solo las que
 // estén en ambas listas.
 async function cargarLeadsCampanas(filtros, desde, hasta) {
-  els.leadsPorAsesorTable.innerHTML = '<div class="empty">Cargando…</div>';
-  els.leadsPorEmbudoTable.innerHTML = '<div class="empty">Cargando…</div>';
+  els.leadsPorAsesorTable.innerHTML = '<div class="empty loading"><span class="spinner" aria-hidden="true"></span>Cargando…</div>';
+  els.leadsPorEmbudoTable.innerHTML = '<div class="empty loading"><span class="spinner" aria-hidden="true"></span>Cargando…</div>';
   els.leadsPeriodoStats.innerHTML = '';
   try {
     if (!tagsCampanaIds.length) throw new Error('no se encontraron las etiquetas de campaña en el catálogo');
@@ -979,7 +1053,7 @@ function miniTabla(rows, labelCol) {
 
 /* ============================== RENDER: Leads vivos en el embudo ============================== */
 async function cargarLeadsVivos(filtros) {
-  els.leadsVivosTable.innerHTML = '<div class="empty">Cargando…</div>';
+  els.leadsVivosTable.innerHTML = '<div class="empty loading"><span class="spinner" aria-hidden="true"></span>Cargando…</div>';
   els.leadsVivosAsesorTable.innerHTML = '';
   try {
     const data = await callWebhook({
@@ -1565,7 +1639,7 @@ function deltaHtml(actual, previo) {
 async function cargarComparativaParcial(filtros, desdeStr, hastaStr) {
   const periodos = periodosComparables(desdeStr, hastaStr, COMPARATIVA_PARCIAL_MESES);
   els.comparativaParcialBadge.textContent = periodos[0].date_from + ' → ' + periodos[periodos.length - 1].date_to;
-  els.comparativaParcialTable.innerHTML = '<div class="empty">Cargando…</div>';
+  els.comparativaParcialTable.innerHTML = '<div class="empty loading"><span class="spinner" aria-hidden="true"></span>Cargando…</div>';
   try {
     const resultados = await fetchPeriodosPerformance(periodos, 'created_at', filtros);
     const datos = resultados.map(r => ({ label: r.label, titulo: r.titulo, ...sumarEmbudos(r.payload) }));
@@ -1627,7 +1701,7 @@ function renderComparativaParcial(datos) {
 }
 
 async function cargarVentasSemestre(filtros) {
-  els.ventasSemestreChart.innerHTML = '<div class="empty">Cargando…</div>';
+  els.ventasSemestreChart.innerHTML = '<div class="empty loading"><span class="spinner" aria-hidden="true"></span>Cargando…</div>';
   try {
     const resultados = await fetchMesesPerformance('closed_at', filtros);
     const datos = resultados.map(r => {
@@ -1667,7 +1741,7 @@ function renderVentasSemestre(datos) {
 }
 
 async function cargarLeadsEntrantesSemestre(filtros) {
-  els.leadsEntrantesSemestreChart.innerHTML = '<div class="empty">Cargando…</div>';
+  els.leadsEntrantesSemestreChart.innerHTML = '<div class="empty loading"><span class="spinner" aria-hidden="true"></span>Cargando…</div>';
   try {
     const resultados = await fetchMesesPerformance('created_at', filtros);
     const datos = resultados.map(r => ({ label: r.label, parcial: r.parcial, leads: sumarEmbudos(r.payload).leads }));
@@ -1781,7 +1855,7 @@ let protocoloPage = 1;
 const PROTOCOLO_PAGE_SIZE = 10;
 
 async function cargarProtocolo(filtros, desde, hasta) {
-  els.protocoloTable.innerHTML = '<div class="empty">Cargando…</div>';
+  els.protocoloTable.innerHTML = '<div class="empty loading"><span class="spinner" aria-hidden="true"></span>Cargando…</div>';
   els.protocoloStats.innerHTML = '';
   els.cotizacionStats.innerHTML = '';
   els.cotizacionTable.innerHTML = '';
@@ -2045,7 +2119,7 @@ function thOrdenable(col) {
   const activa = fueraMetaOrden.col === col;
   const flecha = activa ? (fueraMetaOrden.dir === 'asc' ? '▲' : '▼') : '↕';
   const aria = activa ? (fueraMetaOrden.dir === 'asc' ? 'ascending' : 'descending') : 'none';
-  return `<th class="sortable${activa ? ' activa' : ''}${c.num ? ' num' : ''}" data-col="${col}" aria-sort="${aria}" title="Clic para ordenar">${c.titulo}<span class="sort-ind">${flecha}</span></th>`;
+  return `<th class="sortable${activa ? ' activa' : ''}${c.num ? ' num' : ''}" data-col="${col}" aria-sort="${aria}" tabindex="0" title="Clic o Enter para ordenar">${c.titulo}<span class="sort-ind">${flecha}</span></th>`;
 }
 
 function escHtml(t) {
@@ -2127,15 +2201,100 @@ function renderLeadsFueraDeMetaPagina() {
       </div>
     </div>`;
 
-  els.respTimesFueraMeta.querySelectorAll('th.sortable').forEach(th => th.addEventListener('click', () => {
-    const col = th.dataset.col;
-    fueraMetaOrden = { col, dir: fueraMetaOrden.col === col && fueraMetaOrden.dir === 'asc' ? 'desc' : 'asc' };
-    fueraMetaPage = 1;
-    renderLeadsFueraDeMetaPagina();
-  }));
+  els.respTimesFueraMeta.querySelectorAll('th.sortable').forEach(th => {
+    const ordenar = (conTeclado) => {
+      const col = th.dataset.col;
+      fueraMetaOrden = { col, dir: fueraMetaOrden.col === col && fueraMetaOrden.dir === 'asc' ? 'desc' : 'asc' };
+      fueraMetaPage = 1;
+      renderLeadsFueraDeMetaPagina();
+      if (conTeclado) { const nuevo = els.respTimesFueraMeta.querySelector('th[data-col="' + col + '"]'); if (nuevo) nuevo.focus(); }
+    };
+    th.addEventListener('click', () => ordenar(false));
+    th.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); ordenar(true); } });
+  });
   document.getElementById('fueraMetaPrev').addEventListener('click', () => { fueraMetaPage--; renderLeadsFueraDeMetaPagina(); });
   document.getElementById('fueraMetaNext').addEventListener('click', () => { fueraMetaPage++; renderLeadsFueraDeMetaPagina(); });
 }
+
+/* ============================== UX: navegación, ayudas plegables, filtros y teclado ============================== */
+// Solo capa de presentación: no toca consultas ni cálculos.
+const GRUPOS_NAV = [
+  { id: 'leads',      etiqueta: 'Leads',               iconos: ['iconLeadsPeriodo', 'iconLeadsVivos'] },
+  { id: 'actividad',  etiqueta: 'Actividad comercial', iconos: ['iconLlamadas', 'iconTiempos', 'iconProtocolo'] },
+  { id: 'embudo',     etiqueta: 'Embudo',              iconos: ['iconCalificados', 'iconDesempeno'] },
+  { id: 'ventas',     etiqueta: 'Ventas',              iconos: ['iconGanados'] },
+  { id: 'tendencias', etiqueta: 'Tendencias',          iconos: ['iconComparativaParcial', 'iconVentasSemestre', 'iconLeadsEntrantesSemestre'] },
+];
+function mostrarVistaResultados() {
+  document.getElementById('secNav').hidden = false;
+  const panelRes = document.getElementById('resultsRow');
+  if (panelRes) panelRes.scrollIntoView({ block: 'start' });
+}
+
+(function iniciarUX() {
+  const panelDe = idIcono => { const i = document.getElementById(idIcono); return i ? i.closest('.panel') : null; };
+
+  // 1) Navegación por secciones (sticky) con resaltado de la sección visible
+  const nav = document.getElementById('secNav');
+  const enlaces = [];
+  GRUPOS_NAV.forEach(g => {
+    let primero = null;
+    g.iconos.forEach(ic => { const p = panelDe(ic); if (!p) return; p.dataset.grupo = g.id; if (!primero) primero = p; });
+    if (primero) { if (!primero.id) primero.id = 'sec-' + g.id; enlaces.push({ href: '#' + primero.id, texto: g.etiqueta, clave: g.id }); }
+  });
+  nav.innerHTML = enlaces.map(e => `<a href="${e.href}" data-clave="${e.clave}">${e.texto}</a>`).join('') +
+    '<span class="secnav-sep"></span><button type="button" class="btn-ghost" id="btnCriterios" aria-pressed="false">Ver criterios</button>';
+
+  const btnCriterios = document.getElementById('btnCriterios');
+  btnCriterios.addEventListener('click', () => {
+    const abrir = btnCriterios.getAttribute('aria-pressed') !== 'true';
+    document.querySelectorAll('#resultsRow details.info').forEach(d => { d.open = abrir; });
+    btnCriterios.setAttribute('aria-pressed', String(abrir));
+    btnCriterios.textContent = abrir ? 'Ocultar criterios' : 'Ver criterios';
+  });
+
+  // 2) Ayudas largas -> plegables ("Cómo se calcula"); el objetivo se vuelve una etiqueta visible
+  document.querySelectorAll('#resultsRow .panel').forEach(panel => {
+    const ayuda = panel.querySelector(':scope > p.help');
+    if (!ayuda) return;
+    let html = ayuda.innerHTML;
+    const m = html.match(/^\s*<b[^>]*>\s*(Objetivo:[^<]*?)\s*<\/b>\s*<br\s*\/?>\s*/i);
+    if (m) {
+      const chip = document.createElement('span');
+      chip.className = 'goal-chip';
+      chip.innerHTML = icon('target', 'currentColor', 14) + '<span></span>';
+      chip.lastChild.textContent = m[1];
+      panel.querySelector('.panel-head').appendChild(chip);
+      html = html.slice(m[0].length);
+    }
+    const texto = html.replace(/<[^>]*>/g, '').trim();
+    if (texto.length <= 120) { ayuda.innerHTML = html; return; }
+    const det = document.createElement('details');
+    det.className = 'info';
+    det.innerHTML = '<summary>Cómo se calcula</summary><p class="help"></p>';
+    det.querySelector('p').innerHTML = html;
+    ayuda.replaceWith(det);
+  });
+
+  // 3) Resaltado de sección activa + botón "volver arriba"
+  const btnTop = document.getElementById('btnTop');
+  btnTop.addEventListener('click', () => window.scrollTo({ top: 0 }));
+  const links = [...nav.querySelectorAll('a')];
+  let pendiente = false;
+  const alScroll = () => {
+    if (pendiente) return;
+    pendiente = true;
+    setTimeout(() => {
+      pendiente = false;
+      let activo = null;
+      links.forEach(a => { const el = document.getElementById(a.getAttribute('href').slice(1)); if (el && el.offsetParent !== null && el.getBoundingClientRect().top <= 140) activo = a; });
+      links.forEach(a => { const on = a === activo; a.classList.toggle('activa', on); if (on) a.setAttribute('aria-current', 'true'); else a.removeAttribute('aria-current'); });
+      btnTop.classList.toggle('visible', window.scrollY > 700);
+    }, 60);
+  };
+  addEventListener('scroll', alScroll, { passive: true });
+  alScroll();
+})();
 </script>
 </body>
 </html>
