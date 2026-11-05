@@ -237,6 +237,15 @@
   .seg-chip.tarde { color: var(--c-loss); background: rgba(182, 85, 47, .14); border: 1.5px dashed var(--c-loss); }
   .seg-chip.falta { color: #fff; background: var(--c-loss); }
   .seg-chip.en_plazo { color: var(--ink-faint); background: var(--surface-2); }
+  .res-tag { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+  .res-tag.incumple { color: var(--c-loss); background: rgba(182, 85, 47, .14); }
+  .res-tag.cumple { color: var(--c-positive); background: rgba(21, 128, 61, .14); }
+  .res-tag.en_plazo { color: var(--ink-faint); background: var(--surface-2); }
+  .incons-list { display: flex; flex-direction: column; gap: 3px; font-size: 11.5px; color: var(--ink-soft); min-width: 260px; }
+  .incons-list b { color: var(--c-loss); font-weight: 600; }
+  .proto-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 18px 0 4px; }
+  .proto-head h3 { margin: 0 !important; }
+  .proto-head .export-btn { margin-left: auto; }
   .seg-legend { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 10px; font-size: 12px; color: var(--ink-faint); align-items: center; }
   .period-badge {
     margin-left: auto; font-size: 11.5px; font-family: var(--mono); color: var(--ink-soft);
@@ -494,10 +503,11 @@
         <div class="panel-icon" id="iconProtocolo"></div>
         <h2>Cumplimiento del protocolo de seguimiento</h2>
       </div>
-      <p class="help"><b style="color:var(--ink-soft)">1. Seguimientos — etapa Contactado/Frío:</b> 5 seguimientos en menos de 10 días hábiles, medidos con las etiquetas "seguimiento 1" a "seguimiento 5": la 1 dentro de las primeras 24 horas hábiles desde que se creó el lead, la 2 dentro de 48 horas hábiles, y la 3, 4 y 5 a más tardar 10 días hábiles (90 horas hábiles) después de su creación. Evalúa los leads creados en el rango de fechas de arriba que hoy están en Contactado/Frío (en algunos embudos se llama CONTACTADO/PROSPECTAR o Prospectar).<br><b style="color:var(--ink-soft)">2. Enviar cotización:</b> desde que el lead se movió a esa etapa no pueden pasar más de 24 horas hábiles; debe pasar a Cotización enviada. Es una foto de hoy: no depende del rango de fechas. <b style="color:var(--ink-soft)">Horario que se audita:</b> solo lunes a viernes de 9:00 a 18:00 (hora local); las noches y los fines de semana no cuentan para ningún plazo. Ambas reglas respetan el filtro de embudos, agentes y etiquetas. Solo se auditan los embudos Web Edu/DC, Talleres de venta, Agentes de venta y Campañas publicitarias (en las dos reglas); el resto, incluido Prospección en frío, queda fuera.</p>
+      <p class="help"><b style="color:var(--ink-soft)">1. Seguimientos — etapa Contactado/Frío:</b> 5 seguimientos en menos de 10 días hábiles, medidos con las etiquetas "seguimiento 1" a "seguimiento 5": la 1 dentro de las primeras 24 horas hábiles desde que se creó el lead, la 2 dentro de 48 horas hábiles, y la 3, 4 y 5 a más tardar 10 días hábiles (90 horas hábiles) después de su creación. Evalúa los leads creados en el rango de fechas de arriba que pasaron por Contactado/Frío (en algunos embudos se llama CONTACTADO/PROSPECTAR o Prospectar), aunque hoy estén en otra etapa del embudo; junto a cada lead se muestra su etapa actual. Se reportan solo los que no cumplen y queda documentado el detalle de cada inconsistencia (se puede exportar a CSV).<br><b style="color:var(--ink-soft)">2. Enviar cotización:</b> desde que el lead se movió a esa etapa no pueden pasar más de 24 horas hábiles; debe pasar a Cotización enviada. Es una foto de hoy: no depende del rango de fechas. <b style="color:var(--ink-soft)">Horario que se audita:</b> solo lunes a viernes de 9:00 a 18:00 (hora local); las noches y los fines de semana no cuentan para ningún plazo. Ambas reglas respetan el filtro de embudos, agentes y etiquetas. Solo se auditan los embudos Web Edu/DC, Talleres de venta, Agentes de venta y Campañas publicitarias (en las dos reglas); el resto, incluido Prospección en frío, queda fuera.</p>
       <h3 style="font-family:var(--display); font-size:13px; color:var(--ink-soft); font-weight:600; margin:6px 0 8px;">1. Seguimientos — Contactado/Frío</h3>
       <div id="protocoloStats"></div>
       <div id="protocoloTable"></div>
+      <div id="protocoloEvaluados"></div>
       <h3 style="font-family:var(--display); font-size:13px; color:var(--ink-soft); font-weight:600; margin:30px 0 8px;">2. Enviar cotización — máximo 24 horas hábiles en la etapa</h3>
       <div id="cotizacionStats"></div>
       <div id="cotizacionTable"></div>
@@ -721,6 +731,7 @@ const els = {
   respTimesStats: document.getElementById('respTimesStats'),
   protocoloStats: document.getElementById('protocoloStats'),
   protocoloTable: document.getElementById('protocoloTable'),
+  protocoloEvaluados: document.getElementById('protocoloEvaluados'),
   protocoloNota: document.getElementById('protocoloNota'),
   cotizacionStats: document.getElementById('cotizacionStats'),
   cotizacionTable: document.getElementById('cotizacionTable'),
@@ -1865,10 +1876,16 @@ function fmtDuracionCorta(segundos) {
 let protocoloData = [];
 let protocoloPage = 1;
 const PROTOCOLO_PAGE_SIZE = 10;
+let protocoloPeriodo = null;
+let protocoloEvaluadosData = null;
+let protocoloEvaluadosPage = 1;
+let protocoloEvaluadosFiltro = '';
+const PROTOCOLO_EVALUADOS_PAGE_SIZE = 25;
 
 async function cargarProtocolo(filtros, desde, hasta) {
   els.protocoloTable.innerHTML = '<div class="empty loading"><span class="spinner" aria-hidden="true"></span>Cargando…</div>';
   els.protocoloStats.innerHTML = '';
+  els.protocoloEvaluados.innerHTML = '';
   els.cotizacionStats.innerHTML = '';
   els.cotizacionTable.innerHTML = '';
   els.protocoloNota.textContent = '';
@@ -1889,7 +1906,7 @@ function renderProtocolo(payload) {
   const r = payload.resumen;
   const pct = n => r.evaluados ? Math.round((n / r.evaluados) * 100) + '%' : '0%';
   els.protocoloStats.innerHTML = '<div class="stats-row">' +
-    statCard('layers', 'var(--ink-soft)', 'Leads evaluados', r.evaluados) +
+    statCard('layers', 'var(--ink-soft)', 'Leads evaluados', r.evaluados, 'Pasaron por Contactado/Frío') +
     statCard('checkCircle', 'var(--c-positive)', 'Cumplen', r.cumplen, pct(r.cumplen) + ' de los evaluados') +
     statCard('xCircle', 'var(--c-loss)', 'No cumplen', r.incumplen, pct(r.incumplen) + ' de los evaluados') +
     statCard('clock', 'var(--ink-soft)', 'En plazo', r.en_curso, 'Aún sin ningún plazo vencido') +
@@ -1897,7 +1914,12 @@ function renderProtocolo(payload) {
   els.protocoloNota.textContent = payload.nota_metodologica || '';
   protocoloData = payload.leads_incumplen || [];
   protocoloPage = 1;
+  protocoloPeriodo = payload.periodo || null;
+  protocoloEvaluadosData = Array.isArray(payload.leads_evaluados) ? payload.leads_evaluados : null;
+  protocoloEvaluadosPage = 1;
+  protocoloEvaluadosFiltro = '';
   renderProtocoloPagina();
+  renderProtocoloEvaluados();
   renderCotizacion(payload.cotizacion);
 }
 
@@ -1968,7 +1990,8 @@ function chipsSeguimientos(seguimientos) {
 
 function renderProtocoloPagina() {
   const total = protocoloData.length;
-  const titulo = `<h3 style="font-family:var(--display); font-size:13px; color:var(--ink-soft); font-weight:600; margin:18px 0 4px; letter-spacing:-.005em;">Leads que no cumplieron el protocolo de seguimientos (${total})</h3>`;
+  const titulo = `<div class="proto-head"><h3 style="font-family:var(--display); font-size:13px; color:var(--ink-soft); font-weight:600; letter-spacing:-.005em;">Leads que no cumplieron el protocolo de seguimientos (${total})</h3>` +
+    (total ? `<button type="button" class="export-btn" id="protocoloExportIncumplen"><span class="ico-dl"></span><span>Exportar inconsistencias (CSV)</span></button>` : '') + `</div>`;
   if (!total) { els.protocoloTable.innerHTML = titulo + '<div class="empty">Ningún lead incumple el protocolo de seguimientos en este periodo.</div>'; return; }
   const totalPages = Math.max(1, Math.ceil(total / PROTOCOLO_PAGE_SIZE));
   if (protocoloPage > totalPages) protocoloPage = totalPages;
@@ -1984,12 +2007,13 @@ function renderProtocoloPagina() {
       <td><span class="person-cell">${avatarHtml(responsable)}${escHtml(responsable)}</span></td>
       <td>${fmtFechaHoraMx(l.creado_ts)}</td>
       <td>${chipsSeguimientos(l.seguimientos)}</td>
+      <td>${inconsistenciasHtml(l)}</td>
     </tr>`;
   }).join('');
   els.protocoloTable.innerHTML = titulo + `
     <div class="table-scroll">
     <table>
-      <thead><tr><th>Lead</th><th>Embudo</th><th>Etapa actual</th><th>Responsable</th><th>Creado</th><th>Seguimientos 1–5</th></tr></thead>
+      <thead><tr><th>Lead</th><th>Embudo</th><th>Etapa actual</th><th>Responsable</th><th>Creado</th><th>Seguimientos 1–5</th><th>Inconsistencias</th></tr></thead>
       <tbody>${rows}</tbody>
     </table>
     </div>
@@ -2010,6 +2034,116 @@ function renderProtocoloPagina() {
     </div>`;
   document.getElementById('protocoloPrev').addEventListener('click', () => { protocoloPage--; renderProtocoloPagina(); });
   document.getElementById('protocoloNext').addEventListener('click', () => { protocoloPage++; renderProtocoloPagina(); });
+  conectarExportProtocolo(els.protocoloTable);
+}
+
+/* ---- Documentación de inconsistencias y de los leads evaluados ---- */
+function fmtHrsHab(h) { return (Math.round((h || 0) * 10) / 10).toLocaleString('es-MX') + ' h háb.'; }
+function fmtFechaHoraAnio(ts) {
+  if (ts == null) return '';
+  return new Date(ts * 1000).toLocaleString('es-MX', { timeZone: 'America/Mexico_City', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
+}
+// Una línea por seguimiento fuera de plazo o faltante (sin HTML; sirve para pantalla y CSV).
+function inconsistenciasLead(l, conAnio) {
+  const f = conAnio ? fmtFechaHoraAnio : fmtFechaHoraMx;
+  return (l.seguimientos || []).filter(sg => sg.estado === 'tarde' || sg.estado === 'falta').map(sg => {
+    const extra = sg.retraso_horas_habiles != null ? ' · retraso ' + fmtHrsHab(sg.retraso_horas_habiles) : '';
+    return sg.estado === 'tarde'
+      ? 'Seguimiento ' + sg.n + ' fuera de plazo: puesto ' + f(sg.ts) + ' · límite ' + f(sg.limite_ts) + extra
+      : 'Seguimiento ' + sg.n + ' sin registrar: venció ' + f(sg.limite_ts) + extra;
+  });
+}
+function inconsistenciasHtml(l) {
+  const lineas = inconsistenciasLead(l, false);
+  if (!lineas.length) return '<span style="color:var(--ink-faint);">—</span>';
+  return '<div class="incons-list">' + lineas.map(t => '<span>' + escHtml(t) + '</span>').join('') + '</div>';
+}
+const RESULTADO_TXT = { incumple: 'No cumple', cumple: 'Cumple', en_plazo: 'En plazo' };
+
+function descargarCsvProtocolo(lista, nombre) {
+  if (!lista || !lista.length) return;
+  const cab = ['ID lead', 'Lead', 'Enlace Kommo', 'Embudo', 'Etapa actual', 'Responsable', 'Creado', 'Resultado'];
+  for (let n = 1; n <= 5; n++) cab.push('Seg ' + n + ' estado', 'Seg ' + n + ' puesto', 'Seg ' + n + ' límite');
+  cab.push('Inconsistencias');
+  const estadoTxt = { a_tiempo: 'A tiempo', tarde: 'Fuera de plazo', falta: 'Falta (plazo vencido)', en_plazo: 'Aún en plazo' };
+  const filas = [cab];
+  lista.forEach(l => {
+    const fila = [l.lead_id, l.nombre, kommoLeadUrl(l.lead_id), l.embudo, l.etapa, nombreAgente(l.responsible_user_id), fmtFechaHoraAnio(l.creado_ts), RESULTADO_TXT[l.resultado] || 'No cumple'];
+    (l.seguimientos || []).forEach(sg => fila.push(estadoTxt[sg.estado] || sg.estado, fmtFechaHoraAnio(sg.ts), fmtFechaHoraAnio(sg.limite_ts)));
+    fila.push(inconsistenciasLead(l, true).join(' | '));
+    filas.push(fila);
+  });
+  const csv = filas.map(f => f.map(v => `"${String(v == null ? '' : v).replace(/"/g, '""')}"`).join(',')).join('\r\n');
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const per = protocoloPeriodo ? protocoloPeriodo.from + '_a_' + protocoloPeriodo.to : 'actual';
+  a.href = url;
+  a.download = nombre + '_' + per + '.csv';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+function conectarExportProtocolo(contenedor) {
+  const bi = contenedor.querySelector('#protocoloExportIncumplen');
+  if (bi) { paintIcon2(bi.querySelector('.ico-dl')); bi.addEventListener('click', () => descargarCsvProtocolo(protocoloData, 'protocolo_inconsistencias')); }
+  const be = contenedor.querySelector('#protocoloExportEvaluados');
+  if (be) { paintIcon2(be.querySelector('.ico-dl')); be.addEventListener('click', () => descargarCsvProtocolo(protocoloEvaluadosData, 'protocolo_leads_evaluados')); }
+}
+function paintIcon2(el) { if (el) el.innerHTML = icon('download', 'var(--ink)', 20); }
+
+function renderProtocoloEvaluados() {
+  // Si el backend aún no manda el listado completo, el bloque simplemente no aparece.
+  if (!protocoloEvaluadosData) { els.protocoloEvaluados.innerHTML = ''; return; }
+  const todos = protocoloEvaluadosData;
+  const lista = protocoloEvaluadosFiltro ? todos.filter(l => l.resultado === protocoloEvaluadosFiltro) : todos;
+  const total = lista.length;
+  const totalPages = Math.max(1, Math.ceil(total / PROTOCOLO_EVALUADOS_PAGE_SIZE));
+  if (protocoloEvaluadosPage > totalPages) protocoloEvaluadosPage = totalPages;
+  const start = (protocoloEvaluadosPage - 1) * PROTOCOLO_EVALUADOS_PAGE_SIZE;
+  const items = lista.slice(start, start + PROTOCOLO_EVALUADOS_PAGE_SIZE);
+  const cuenta = r => todos.filter(l => l.resultado === r).length;
+  const opc = (v, t) => `<option value="${v}"${protocoloEvaluadosFiltro === v ? ' selected' : ''}>${t}</option>`;
+  const rows = items.map(l => {
+    const responsable = nombreAgente(l.responsible_user_id);
+    return `
+    <tr>
+      <td>${leadLinkHtml(l.lead_id, escHtml(l.nombre))}</td>
+      <td>${embudoPillHtml(l.embudo)}</td>
+      <td>${escHtml(l.etapa)}</td>
+      <td><span class="person-cell">${avatarHtml(responsable)}${escHtml(responsable)}</span></td>
+      <td>${fmtFechaHoraMx(l.creado_ts)}</td>
+      <td><span class="res-tag ${l.resultado}">${RESULTADO_TXT[l.resultado] || ''}</span></td>
+      <td>${chipsSeguimientos(l.seguimientos)}</td>
+    </tr>`;
+  }).join('');
+  els.protocoloEvaluados.innerHTML = `
+    <div class="proto-head" style="margin-top:28px;"><h3 style="font-family:var(--display); font-size:13px; color:var(--ink-soft); font-weight:600; letter-spacing:-.005em;">Leads evaluados y etapa actual en el embudo (${todos.length})</h3>
+      <button type="button" class="export-btn" id="protocoloExportEvaluados"><span class="ico-dl"></span><span>Exportar evaluados (CSV)</span></button></div>
+    <div class="embudo-filter-row">
+      <label for="protocoloEvaluadosFiltro">Resultado</label>
+      <select id="protocoloEvaluadosFiltro">${opc('', 'Todos (' + todos.length + ')')}${opc('incumple', 'No cumplen (' + cuenta('incumple') + ')')}${opc('en_plazo', 'En plazo (' + cuenta('en_plazo') + ')')}${opc('cumple', 'Cumplen (' + cuenta('cumple') + ')')}</select>
+    </div>
+    ${total ? `<div class="table-scroll">
+    <table>
+      <thead><tr><th>Lead</th><th>Embudo</th><th>Etapa actual</th><th>Responsable</th><th>Creado</th><th>Resultado</th><th>Seguimientos 1–5</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    </div>
+    <div class="pager">
+      <span class="pager-info">Mostrando ${items.length} de ${total} leads</span>
+      <div class="pager-controls">
+        <button type="button" class="pager-btn" id="protoEvalPrev" ${protocoloEvaluadosPage <= 1 ? 'disabled' : ''} aria-label="Anterior">‹</button>
+        <span class="pager-page">${protocoloEvaluadosPage}</span>
+        <button type="button" class="pager-btn" id="protoEvalNext" ${protocoloEvaluadosPage >= totalPages ? 'disabled' : ''} aria-label="Siguiente">›</button>
+      </div>
+    </div>` : '<div class="empty">Ningún lead evaluado con ese resultado.</div>'}`;
+  document.getElementById('protocoloEvaluadosFiltro').addEventListener('change', e => { protocoloEvaluadosFiltro = e.target.value; protocoloEvaluadosPage = 1; renderProtocoloEvaluados(); });
+  const pv = document.getElementById('protoEvalPrev'), nx = document.getElementById('protoEvalNext');
+  if (pv) pv.addEventListener('click', () => { protocoloEvaluadosPage--; renderProtocoloEvaluados(); });
+  if (nx) nx.addEventListener('click', () => { protocoloEvaluadosPage++; renderProtocoloEvaluados(); });
+  conectarExportProtocolo(els.protocoloEvaluados);
 }
 
 /* ---- Comparativa del periodo seleccionado vs los 2 periodos anteriores (misma duración) ---- */
