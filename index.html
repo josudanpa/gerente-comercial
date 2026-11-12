@@ -239,7 +239,20 @@
   }
   .empty { color: var(--ink-faint); font-size: 13px; padding: 28px 0; text-align: center; }
   .resultsRow { display: block; }
-  .resultsRow > .panel { width: 100%; }
+  .resultsRow .tabpanel > .panel { width: 100%; }
+  .tabpanel[hidden] { display: none; }
+
+  /* ---------- Pestañas de secciones ---------- */
+  .tabs { display: flex; gap: 6px; border-bottom: 1px solid var(--border); margin: 0 0 18px; overflow-x: auto; scrollbar-width: none; }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab {
+    flex-shrink: 0; position: relative; background: transparent; border: none; cursor: pointer;
+    padding: 12px 16px 14px; font-family: var(--body); font-size: 15px; font-weight: 500; color: var(--ink-faint);
+    border-radius: 8px 8px 0 0; transition: color .15s ease;
+  }
+  .tab:hover { color: var(--ink-soft); }
+  .tab[aria-selected="true"] { color: var(--ink); font-weight: 600; }
+  .tab[aria-selected="true"]::after { content: ''; position: absolute; left: 10px; right: 10px; bottom: -1px; height: 2px; background: var(--ink); border-radius: 2px; }
 
   /* ---------- Calificados: fila de dos columnas ---------- */
   .calif-row { display: flex; gap: 18px; flex-wrap: wrap; margin-bottom: 18px; }
@@ -440,6 +453,13 @@
   </div>
 
   <div class="resultsRow" id="resultsRow" style="display:none;">
+    <div class="tabs" role="tablist" aria-label="Secciones del reporte" id="tabsBar">
+      <button type="button" class="tab" role="tab" id="tabBtn-leads" aria-controls="tab-leads" aria-selected="true" data-tab="leads">Leads</button>
+      <button type="button" class="tab" role="tab" id="tabBtn-ejecucion" aria-controls="tab-ejecucion" aria-selected="false" tabindex="-1" data-tab="ejecucion">Ejecución comercial</button>
+      <button type="button" class="tab" role="tab" id="tabBtn-oportunidades" aria-controls="tab-oportunidades" aria-selected="false" tabindex="-1" data-tab="oportunidades">Oportunidades</button>
+      <button type="button" class="tab" role="tab" id="tabBtn-tendencias" aria-controls="tab-tendencias" aria-selected="false" tabindex="-1" data-tab="tendencias">Tendencias</button>
+    </div>
+    <section class="tabpanel" role="tabpanel" id="tab-leads" aria-labelledby="tabBtn-leads">
     <div class="panel">
       <div class="panel-head">
         <div class="panel-icon" id="iconLeadsPeriodo"></div>
@@ -479,6 +499,8 @@
       </div>
       <details><summary>JSON crudo</summary><pre id="rawJsonLeadsVivos"></pre></details>
     </div>
+    </section>
+    <section class="tabpanel" role="tabpanel" id="tab-ejecucion" aria-labelledby="tabBtn-ejecucion" hidden>
     <div class="panel" id="callsPanel" style="display:none;">
       <div class="panel-head">
         <div class="panel-icon" id="iconLlamadas"></div>
@@ -520,6 +542,18 @@
       <div class="help" id="protocoloNota" style="margin-top:10px;"></div>
       <details><summary>JSON crudo</summary><pre id="rawJsonProtocolo"></pre></details>
     </div>
+    <div class="panel">
+      <div class="panel-head">
+        <div class="panel-icon" id="iconDesempeno"></div>
+        <h2>Desempeño del periodo</h2>
+      </div>
+      <p class="help">Cuántos leads entraron, a cuántos se les habló de verdad, cuántos llegaron a cotización/calificado, y cómo se perdieron los que se perdieron.</p>
+      <div id="resultsStats"></div>
+      <div id="resultsTable"></div>
+      <details><summary>JSON crudo</summary><pre id="rawJson"></pre></details>
+    </div>
+    </section>
+    <section class="tabpanel" role="tabpanel" id="tab-oportunidades" aria-labelledby="tabBtn-oportunidades" hidden>
     <div class="calif-row">
       <div class="panel">
         <div class="panel-head">
@@ -548,16 +582,8 @@
         <div id="calificadosListaPaginacion"></div>
       </div>
     </div>
-    <div class="panel">
-      <div class="panel-head">
-        <div class="panel-icon" id="iconDesempeno"></div>
-        <h2>Desempeño del periodo</h2>
-      </div>
-      <p class="help">Cuántos leads entraron, a cuántos se les habló de verdad, cuántos llegaron a cotización/calificado, y cómo se perdieron los que se perdieron.</p>
-      <div id="resultsStats"></div>
-      <div id="resultsTable"></div>
-      <details><summary>JSON crudo</summary><pre id="rawJson"></pre></details>
-    </div>
+    </section>
+    <section class="tabpanel" role="tabpanel" id="tab-tendencias" aria-labelledby="tabBtn-tendencias" hidden>
     <div class="panel">
       <div class="panel-head">
         <div class="panel-icon" id="iconGanados"></div>
@@ -607,6 +633,7 @@
         <details><summary>JSON crudo</summary><pre id="rawJsonLeadsEntrantesSemestre"></pre></details>
       </div>
     </div>
+    </section>
   </div>
 
 </div>
@@ -2517,6 +2544,36 @@ function mostrarVistaResultados() {
   const panelRes = document.getElementById('resultsRow');
   if (panelRes) panelRes.scrollIntoView({ block: 'start' });
 }
+
+/* ---- Pestañas del reporte (Leads / Ejecución comercial / Oportunidades / Tendencias) ---- */
+(function iniciarPestanas() {
+  const barra = document.getElementById('tabsBar');
+  const tabs = [...barra.querySelectorAll('[role="tab"]')];
+  function activar(nombre, enfocar) {
+    tabs.forEach(t => {
+      const activa = t.dataset.tab === nombre;
+      t.setAttribute('aria-selected', String(activa));
+      t.tabIndex = activa ? 0 : -1;
+      document.getElementById('tab-' + t.dataset.tab).hidden = !activa;
+      if (activa && enfocar) t.focus();
+    });
+    // Si el usuario venía muy abajo en la pestaña anterior, vuelve al inicio de la nueva.
+    if (barra.getBoundingClientRect().top < 0) barra.scrollIntoView({ block: 'start' });
+  }
+  tabs.forEach((t, i) => {
+    t.addEventListener('click', () => activar(t.dataset.tab));
+    t.addEventListener('keydown', e => {
+      let j = null;
+      if (e.key === 'ArrowRight') j = (i + 1) % tabs.length;
+      else if (e.key === 'ArrowLeft') j = (i - 1 + tabs.length) % tabs.length;
+      else if (e.key === 'Home') j = 0;
+      else if (e.key === 'End') j = tabs.length - 1;
+      if (j == null) return;
+      e.preventDefault();
+      activar(tabs[j].dataset.tab, true);
+    });
+  });
+})();
 
 (function iniciarUX() {
   const panelDe = idIcono => { const i = document.getElementById(idIcono); return i ? i.closest('.panel') : null; };
