@@ -89,6 +89,8 @@
     background: var(--border);
   }
   .panel-head { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; }
+  .panel-title { min-width: 0; }
+  .panel-sub { margin: 3px 0 0; font-size: 13px; font-weight: 400; line-height: 1.4; color: var(--ink-soft); }
   .panel-icon {
     width: 34px; height: 34px; border-radius: 10px; flex-shrink: 0;
     background: var(--surface-2); border: 1px solid var(--border-soft);
@@ -463,7 +465,7 @@
     <div class="panel">
       <div class="panel-head">
         <div class="panel-icon" id="iconLeadsPeriodo"></div>
-        <h2>Leads recibidos de campañas por periodo</h2>
+        <div class="panel-title"><h2>Leads recibidos de campañas por periodo</h2><p class="panel-sub">Mide que esté entrando el volumen de leads correctos.</p></div>
       </div>
       <p class="help"><b style="color:var(--ink-soft)">Objetivo: 250 leads mensuales</b><br>Cuántos leads de campañas se recibieron en el periodo, vistos de dos formas — por asesor y por embudo. Solo cuenta los leads que traen alguna de las etiquetas Google, Meta, Educonnect o EduGeneral. Las dos sumas tienen que coincidir: es la misma población de leads, nada más que el desglose es distinto.</p>
       <div id="leadsPeriodoStats"></div>
@@ -483,7 +485,7 @@
     <div class="panel">
       <div class="panel-head">
         <div class="panel-icon" id="iconLeadsVivos"></div>
-        <h2>Leads vivos en el embudo</h2>
+        <div class="panel-title"><h2>Leads vivos en el embudo</h2><p class="panel-sub">Mide la capacidad instalada. Cada vendedor puede administrar 300 prospectos al mes.</p></div>
       </div>
       <p class="help">Leads que están hoy en cualquier etapa activa de cada embudo — el mismo criterio del filtro "Leads activos" de Kommo: no cuenta los que están en Ganado ni en Perdido/Descalificado. Es una foto del momento actual (no depende del rango de fechas) y respeta el filtro de embudos, agentes y etiquetas de arriba. Los embudos Embudo global, Ejercicios de taller y Remarketing Edu están excluidos siempre de este tablero.</p>
       <div id="leadsVivosStats"></div>
@@ -515,7 +517,7 @@
     <div class="panel" id="respTimesPanel" style="display:none;">
       <div class="panel-head">
         <div class="panel-icon" id="iconTiempos"></div>
-        <h2>Tiempos de respuesta a leads entrantes</h2>
+        <div class="panel-title"><h2>Tiempos de respuesta a leads entrantes</h2><p class="panel-sub">Mide la rapidez del primer contacto. Un lead sin respuesta ágil se enfría y deja de responder.</p></div>
       </div>
       <p class="help"><b style="color:var(--ink-soft)">Objetivo: -5 minutos</b><br>Por cada embudo, el promedio de tiempo entre la creación del lead y su primera atención: llamada saliente, nota nueva, mensaje saliente o conversación contestada (lo que ocurra primero, sobre el contacto del lead), contando solo horas dentro de horario laboral (lunes a viernes, 9:00-18:00). No incluye los leads que un usuario creó a mano (no son entrantes) ni, por defecto, los de Embudo global; este último solo se incluye si lo seleccionas en el filtro de embudos.</p>
       <div id="respTimesStats"></div>
@@ -529,7 +531,7 @@
     <div class="panel" id="protocoloPanel">
       <div class="panel-head">
         <div class="panel-icon" id="iconProtocolo"></div>
-        <h2>Cumplimiento del protocolo de seguimiento</h2>
+        <div class="panel-title"><h2>Cumplimiento del protocolo de seguimiento</h2><p class="panel-sub">Mide que el equipo esté ejecutando el manual de ventas al pie de la letra.</p></div>
       </div>
       <p class="help"><b style="color:var(--ink-soft)">1. Seguimientos — etapa Contactado/Frío:</b> 5 seguimientos en menos de 10 días hábiles, medidos con las etiquetas "seguimiento 1" a "seguimiento 5": la 1 dentro de las primeras 24 horas hábiles desde que se creó el lead, la 2 dentro de 48 horas hábiles, y la 3, 4 y 5 a más tardar 10 días hábiles (90 horas hábiles) después de su creación. Evalúa los leads creados en el rango de fechas de arriba que pasaron por Contactado/Frío (en algunos embudos se llama CONTACTADO/PROSPECTAR o Prospectar), aunque hoy estén en otra etapa del embudo; junto a cada lead se muestra su etapa actual. Se reportan solo los que no cumplen y queda documentado el detalle de cada inconsistencia (se puede exportar a CSV).<br><b style="color:var(--ink-soft)">2. Enviar cotización:</b> desde que el lead se movió a esa etapa no pueden pasar más de 24 horas hábiles; debe pasar a Cotización enviada. Es una foto de hoy: no depende del rango de fechas. <b style="color:var(--ink-soft)">Horario que se audita:</b> solo lunes a viernes de 9:00 a 18:00 (hora local); las noches y los fines de semana no cuentan para ningún plazo. Ambas reglas respetan el filtro de embudos, agentes y etiquetas. Solo se auditan los embudos Web Edu/DC, Talleres de venta, Agentes de venta y Campañas publicitarias (en las dos reglas); el resto, incluido Prospección en frío, queda fuera.</p>
       <h3 style="font-family:var(--display); font-size:13px; color:var(--ink-soft); font-weight:600; margin:6px 0 8px;">1. Seguimientos — Contactado/Frío</h3>
