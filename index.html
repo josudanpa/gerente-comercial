@@ -483,7 +483,7 @@
 
   <div class="resultsRow" id="resultsRow" style="display:none;">
     <div class="tabs" role="tablist" aria-label="Secciones del reporte" id="tabsBar">
-      <button type="button" class="tab" role="tab" id="tabBtn-leads" aria-controls="tab-leads" aria-selected="true" data-tab="leads">Leads</button>
+      <button type="button" class="tab" role="tab" id="tabBtn-leads" aria-controls="tab-leads" aria-selected="true" data-tab="leads">Leads recibidos</button>
       <button type="button" class="tab" role="tab" id="tabBtn-ejecucion" aria-controls="tab-ejecucion" aria-selected="false" tabindex="-1" data-tab="ejecucion">Ejecución comercial</button>
       <button type="button" class="tab" role="tab" id="tabBtn-oportunidades" aria-controls="tab-oportunidades" aria-selected="false" tabindex="-1" data-tab="oportunidades">Oportunidades</button>
       <button type="button" class="tab" role="tab" id="tabBtn-tendencias" aria-controls="tab-tendencias" aria-selected="false" tabindex="-1" data-tab="tendencias">Tendencias</button>
@@ -530,17 +530,6 @@
     </div>
     </section>
     <section class="tabpanel" role="tabpanel" id="tab-ejecucion" aria-labelledby="tabBtn-ejecucion" hidden>
-    <div class="panel" id="callsPanel" style="display:none;">
-      <div class="panel-head">
-        <div class="panel-icon" id="iconLlamadas"></div>
-        <h2>Volumen de llamadas por asesor</h2>
-      </div>
-      <p class="help"><b style="color:var(--ink-soft)">Objetivo: 800 mensuales</b><br>Llamadas entrantes y salientes registradas en Kommo en el rango de fechas, agrupadas por quién realizó/registró la llamada vía Twilio.</p>
-      <div id="callsStats"></div>
-      <div id="callsTableCreador"></div>
-      <div class="help" id="callsNota" style="margin-top:10px;"></div>
-      <details><summary>JSON crudo</summary><pre id="rawJsonCalls"></pre></details>
-    </div>
     <div class="panel" id="respTimesPanel" style="display:none;">
       <div class="panel-head">
         <div class="panel-icon" id="iconTiempos"></div>
@@ -574,12 +563,23 @@
     <div class="panel">
       <div class="panel-head">
         <div class="panel-icon" id="iconDesempeno"></div>
-        <h2>Desempeño del periodo</h2>
+        <div class="panel-title"><h2>Conversión dentro del embudo</h2><p class="panel-sub">Mide la conversión en etapas clave del embudo.</p></div>
       </div>
-      <p class="help">Cuántos leads entraron, a cuántos se les habló de verdad, cuántos llegaron a cotización/calificado, y cómo se perdieron los que se perdieron.</p>
+      <p class="help">Cuántos leads entraron, a cuántos se les habló de verdad, cuántos llegaron a cotización/calificado, y cuántos se ganaron o se descalificaron.</p>
       <div id="resultsStats"></div>
       <div id="resultsTable"></div>
       <details><summary>JSON crudo</summary><pre id="rawJson"></pre></details>
+    </div>
+    <div class="panel" id="callsPanel" style="display:none;">
+      <div class="panel-head">
+        <div class="panel-icon" id="iconLlamadas"></div>
+        <h2>Volumen de llamadas por asesor</h2>
+      </div>
+      <p class="help"><b style="color:var(--ink-soft)">Objetivo: 800 mensuales</b><br>Llamadas entrantes y salientes registradas en Kommo en el rango de fechas, agrupadas por quién realizó/registró la llamada vía Twilio.</p>
+      <div id="callsStats"></div>
+      <div id="callsTableCreador"></div>
+      <div class="help" id="callsNota" style="margin-top:10px;"></div>
+      <details><summary>JSON crudo</summary><pre id="rawJsonCalls"></pre></details>
     </div>
     </section>
     <section class="tabpanel" role="tabpanel" id="tab-oportunidades" aria-labelledby="tabBtn-oportunidades" hidden>
@@ -1299,14 +1299,10 @@ function renderResultados(payload) {
     statCard('layers', 'var(--ink-soft)', 'Total leads', totales.total) +
     statCard('checkCircle', 'var(--c-positive)', 'Ganados', totales.ganado, pct(totales.ganado, totales.total) + ' de conversión') +
     statCard('dollar', 'var(--ink-soft)', 'Monto ganado', '$' + totales.monto_ganado.toLocaleString('es-MX', {maximumFractionDigits:0})) +
-    statCard('xCircle', 'var(--c-loss)', 'Perdidos', totales.perdido) +
+    statCard('xCircle', 'var(--c-loss)', 'Descalificados', totales.perdido) +
     '</div>';
 
   const rows = embudos.map(e => {
-    const motivosOrdenados = Object.entries(e.motivos_perdida).sort((a, b) => b[1] - a[1]);
-    const motivosCompleto = motivosOrdenados.map(([m, c]) => `${m} (${c})`).join(', ') || 'Sin pérdidas';
-    const motivosCorto = motivosOrdenados.slice(0, 1).map(([m, c]) => `${m} (${c})`).join(', ')
-      + (motivosOrdenados.length > 1 ? ` +${motivosOrdenados.length - 1} más` : '') || '—';
     return `
     <tr>
       <td>${e.embudo}</td>
@@ -1317,16 +1313,14 @@ function renderResultados(payload) {
       <td class="num"><span class="numval">${e.ganado}</span></td>
       <td class="num"><span class="numval">$${e.monto_ganado.toLocaleString('es-MX')}</span></td>
       <td class="num"><span class="numval">${pct(e.ganado, e.total)}</span></td>
-      <td class="num"><span class="numval">${pct(e.ganado, e.total)}</span></td>
       <td class="num"><span class="numval">${e.perdido}</span></td>
-      <td class="motivos" title="${motivosCompleto}">${motivosCorto}</td>
     </tr>`;
   }).join('');
 
   els.resultsTable.innerHTML = `
     <div class="table-scroll">
     <table>
-      <thead><tr><th>Embudo</th><th class="num">Total</th><th class="num">Efectivo</th><th class="num">Cotiz.</th><th class="num">Calif.</th><th class="num">Ganado</th><th class="num">Monto</th><th class="num">Tasa conv.</th><th class="num">Tasa cierre</th><th class="num">Perdido</th><th>Motivos</th></tr></thead>
+      <thead><tr><th>Embudo</th><th class="num">Recibidos</th><th class="num">Efectivo</th><th class="num">Cotiz.</th><th class="num">Calif.</th><th class="num">Ganado</th><th class="num">Monto</th><th class="num">Tasa cierre</th><th class="num">Descalificado</th></tr></thead>
       <tbody>${rows}
         <tr class="totales">
           <td>Total</td><td class="num"><span class="numval">${totales.total}</span></td>
@@ -1335,8 +1329,7 @@ function renderResultados(payload) {
           <td class="num"><span class="numval">${totales.calificado}</span><span class="pct">${pct(totales.calificado, totales.total)}</span></td>
           <td class="num"><span class="numval">${totales.ganado}</span></td><td class="num"><span class="numval">$${totales.monto_ganado.toLocaleString('es-MX')}</span></td>
           <td class="num"><span class="numval">${pct(totales.ganado, totales.total)}</span></td>
-          <td class="num"><span class="numval">${pct(totales.ganado, totales.total)}</span></td>
-          <td class="num"><span class="numval">${totales.perdido}</span></td><td></td>
+          <td class="num"><span class="numval">${totales.perdido}</span></td>
         </tr>
       </tbody>
     </table>
