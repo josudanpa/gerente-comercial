@@ -130,6 +130,12 @@
   .stat-label { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-faint); font-weight: 600; margin-bottom: 2px; }
   .stat-value { font-family: var(--display); font-size: 20px; font-weight: 700; color: var(--ink); line-height: 1.15; }
   .stat-sub { font-size: 12px; color: var(--ink-soft); margin-top: 1px; }
+  /* Pastillas sin ícono (Tiempos de respuesta): etiqueta arriba, valor grande y variación contra el periodo anterior */
+  .stats-row.cuatro { grid-template-columns: repeat(4, 1fr); }
+  .stat-card.plain { display: block; padding: 14px 18px 15px; }
+  .stat-card.plain .stat-label { text-transform: none; letter-spacing: 0; font-size: 13px; font-weight: 500; color: var(--ink-soft); margin-bottom: 4px; }
+  .stat-card.plain .stat-value { font-size: 30px; line-height: 1.1; }
+  .stat-card.plain .stat-sub { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; margin-top: 9px; font-size: 13px; color: var(--ink-faint); min-height: 24px; }
 
   /* ---------- Form controls ---------- */
   label.field-label { font-size: 12.5px; color: var(--ink-soft); display: block; margin-bottom: 6px; font-weight: 500; }
@@ -371,7 +377,7 @@
 
   @media (max-width: 640px) {
     body { padding: 18px 12px 70px; }
-    .stats-row { grid-template-columns: repeat(2, 1fr); }
+    .stats-row, .stats-row.cuatro { grid-template-columns: repeat(2, 1fr); }
     .stats-row > .stat-card:last-child:nth-child(odd) { grid-column: 1 / -1; }
     .goal-chip { margin-left: 0; }
     .panel { padding: 18px 16px 20px; }
@@ -538,7 +544,6 @@
       </div>
       <p class="help"><b style="color:var(--ink-soft)">Objetivo: -5 minutos</b><br>Por cada embudo, el promedio de tiempo entre la creación del lead y su primera atención: llamada saliente, nota nueva, mensaje saliente o conversación contestada (lo que ocurra primero, sobre el contacto del lead), contando solo horas dentro de horario laboral (lunes a viernes, 9:00-18:00, sin contar los días festivos oficiales de descanso obligatorio). No incluye los leads que un usuario creó a mano (no son entrantes) ni, por defecto, los de Embudo global; este último solo se incluye si lo seleccionas en el filtro de embudos.</p>
       <div id="respTimesStats"></div>
-      <div class="help" id="respTimesComparaNota" style="margin:-4px 0 14px;"></div>
       <div id="respTimesComparativa"></div>
       <div id="respTimesTable"></div>
       <div id="respTimesFueraMeta"></div>
@@ -800,7 +805,6 @@ const els = {
   cotizacionStats: document.getElementById('cotizacionStats'),
   cotizacionTable: document.getElementById('cotizacionTable'),
   rawJsonProtocolo: document.getElementById('rawJsonProtocolo'),
-  respTimesComparaNota: document.getElementById('respTimesComparaNota'),
   respTimesComparativa: document.getElementById('respTimesComparativa'),
   respTimesTable: document.getElementById('respTimesTable'),
   respTimesFueraMeta: document.getElementById('respTimesFueraMeta'),
@@ -1091,7 +1095,6 @@ els.btnGenerar.addEventListener('click', async () => {
       cargarGanados(filtrosSemestre, els.dateFrom.value, els.dateTo.value),
       cargarLeadsVivos(filtrosSemestre),
       cargarProtocolo(filtrosSemestre, els.dateFrom.value, els.dateTo.value),
-      cargarTiemposSemanaAnterior(filtrosSemestre, els.dateFrom.value),
       cargarComparativaTiempos(filtrosSemestre, els.dateFrom.value, els.dateTo.value),
       cargarComparativaParcial(filtrosSemestre, els.dateFrom.value, els.dateTo.value),
       cargarVentasSemestre(filtrosSemestre),
@@ -2268,7 +2271,7 @@ function resumenTiempos(payload) {
   return {
     entrantes, contactados,
     prom: contactados ? Math.round(suma / contactados) : null,
-    pctOk: entrantes && fuera != null ? Math.round(((entrantes - fuera) / entrantes) * 100) : null,
+    pctOk: entrantes && fuera != null ? Math.round(((entrantes - fuera) / entrantes) * 1000) / 10 : null,
   };
 }
 function diasInclusivos(desde, hasta) {
@@ -2290,7 +2293,7 @@ function fmtRangoCorto(desde, hasta) {
 // Puntos porcentuales: más alto es mejor.
 function deltaPuntosHtml(actual, previo) {
   if (actual == null || previo == null) return '<span class="delta na">—</span>';
-  const d = actual - previo;
+  const d = Math.round((actual - previo) * 10) / 10;
   if (d === 0) return '<span class="delta na">=</span>';
   return '<span class="delta ' + (d > 0 ? 'up' : 'down') + '">' + (d > 0 ? '▲ +' : '▼ −') + Math.abs(d) + ' pts</span>';
 }
@@ -2314,6 +2317,11 @@ async function cargarComparativaTiempos(filtros, desde, hasta) {
 }
 
 function pintarComparativaTiempos() {
+  pintarTablaComparativaTiempos();
+  pintarPastillasTiempos();
+}
+
+function pintarTablaComparativaTiempos() {
   const cont = els.respTimesComparativa;
   if (!respTimesActual || respTimesComparativa == null) { cont.innerHTML = ''; return; }
   const titulo = '<h3 style="font-family:var(--display); font-size:13px; color:var(--ink-soft); font-weight:600; margin:4px 0 8px;">Comparativa vs los 2 periodos anteriores</h3>';
@@ -2344,10 +2352,7 @@ function pintarComparativaTiempos() {
     <div class="help" style="margin:8px 0 18px;">Cada periodo anterior dura lo mismo que el seleccionado. En el promedio, menos tiempo es mejor (▼ verde); la variación es contra la columna de su izquierda.</div>`;
 }
 
-/* ---- Comparativa del promedio contra la semana anterior ---- */
-let respTimesResumen = null;
-let respTimesPrevio = null; // null = sin pedir | 'cargando' | 'error' | { prom, contactados, desde, hasta }
-
+/* ---- 4 pastillas del tablero de Tiempos de respuesta (valor del periodo + variación contra el periodo anterior) ---- */
 function desplazarDias(str, dias) {
   const [y, m, d] = str.split('-').map(Number);
   return fmt(new Date(y, m - 1, d - dias));
@@ -2362,57 +2367,61 @@ function deltaTiempoHtml(actual, previo) {
   return '<span class="delta ' + (baja ? 'up' : 'down') + '">' + (baja ? '▼ −' : '▲ +') + Math.abs(Math.round(cambio)) + '%</span>';
 }
 
-function pintarStatsTiempos() {
-  const r = respTimesResumen;
-  if (!r) return;
-  let sub = '';
-  els.respTimesComparaNota.textContent = '';
-  if (respTimesPrevio === 'cargando') sub = 'Comparando con la semana anterior…';
-  else if (respTimesPrevio === 'error') sub = 'Sin comparativa (no se pudo cargar)';
-  else if (respTimesPrevio) {
-    sub = respTimesPrevio.contactados
-      ? deltaTiempoHtml(r.prom, respTimesPrevio.prom) + ' vs semana anterior (' + fmtDuracionCorta(respTimesPrevio.prom) + ')'
-      : 'Sin leads contactados la semana anterior';
-    els.respTimesComparaNota.textContent = 'Semana anterior: ' + respTimesPrevio.desde + ' al ' + respTimesPrevio.hasta + ' (los 7 días previos al inicio del periodo). Menos tiempo es mejor.';
-  }
-  els.respTimesStats.innerHTML = '<div class="stats-row">' +
-    statCard('layers', 'var(--ink-soft)', 'Entrantes', r.entrantes) +
-    statCard('checkCircle', 'var(--c-positive)', 'Contactados', r.contactados) +
-    statCard('zap', 'var(--ink-soft)', 'Promedio (horario laboral)', fmtDuracionCorta(r.prom), sub) +
-    '</div>';
+const fmtPct1 = n => (Math.round(n * 10) / 10).toLocaleString('es-MX', { minimumFractionDigits: 0, maximumFractionDigits: 1 });
+// Variación porcentual con signo; "sube" = ▲. goodWhenUp: true si que suba es bueno (verde).
+function deltaPctPastilla(actual, previo, goodWhenUp, conSigno, decimales) {
+  if (previo == null || !previo) return '<span class="delta na">—</span>';
+  const cambio = ((actual - previo) / previo) * 100;
+  const redondeado = Math.round(Math.abs(cambio) * Math.pow(10, decimales)) / Math.pow(10, decimales);
+  if (redondeado === 0) return '<span class="delta na">=</span>';
+  const sube = cambio > 0;
+  const bueno = sube === goodWhenUp;
+  const num = redondeado.toLocaleString('es-MX', { minimumFractionDigits: 0, maximumFractionDigits: decimales });
+  return '<span class="delta ' + (bueno ? 'up' : 'down') + '">' + (sube ? '▲ ' : '▼ ') + (conSigno ? (sube ? '+' : '−') : '') + num + '%</span>';
+}
+// Puntos porcentuales para las pastillas: flecha + magnitud (sin signo), verde si mejora.
+function deltaPuntosPastilla(actual, previo) {
+  const d = Math.round((actual - previo) * 10) / 10;
+  if (d === 0) return '<span class="delta na">=</span>';
+  return '<span class="delta ' + (d > 0 ? 'up' : 'down') + '">' + (d > 0 ? '▲ ' : '▼ ') + Math.abs(d).toLocaleString('es-MX', { maximumFractionDigits: 1 }) + ' pts</span>';
+}
+function pastillaTiempos(etiqueta, valor, subHtml) {
+  return '<div class="stat-card plain"><div class="stat-label">' + etiqueta + '</div><div class="stat-value">' + valor + '</div><div class="stat-sub">' + subHtml + '</div></div>';
 }
 
-async function cargarTiemposSemanaAnterior(filtros, desdeStr) {
-  // Semana anterior = los 7 días inmediatamente previos al inicio del periodo elegido (sin traslape).
-  const desde = desplazarDias(desdeStr, 7), hasta = desplazarDias(desdeStr, 1);
-  respTimesPrevio = 'cargando';
-  pintarStatsTiempos();
-  try {
-    const data = await callWebhook({ type: 'leads', view: 'response_times', date_from: desde, date_to: hasta, pipeline_ids: filtros.pipelineIds });
-    const payload = extractPayload(data, 'por_embudo');
-    const embudos = Object.values(payload.por_embudo || {});
-    const contactados = embudos.reduce((sum, e) => sum + e.leads_con_respuesta, 0);
-    const suma = embudos.reduce((sum, e) => sum + e.promedio_segundos_habiles * e.leads_con_respuesta, 0);
-    respTimesPrevio = { prom: contactados ? Math.round(suma / contactados) : 0, contactados, desde, hasta };
-  } catch (err) {
-    respTimesPrevio = 'error';
-    console.error(err);
-  }
-  pintarStatsTiempos();
+function pintarPastillasTiempos() {
+  const r = respTimesActual;
+  if (!r) return;
+  const comp = respTimesComparativa;
+  const prev = Array.isArray(comp) ? comp[1] : null; // periodo inmediatamente anterior, de la misma duración
+  const estado = comp === 'error' ? 'Sin comparativa' : 'Comparando…';
+  const sinPrev = !prev || !prev.entrantes;
+
+  const subEntrantes = prev
+    ? (sinPrev ? '<span>Sin leads en el periodo anterior</span>' : deltaPctPastilla(r.entrantes, prev.entrantes, true, false, 0) + '<span>vs periodo anterior</span>')
+    : '<span>' + estado + '</span>';
+  const subContactados = '<span>' + (r.entrantes ? fmtPct1((r.contactados / r.entrantes) * 100) + '% de los entrantes' : '—') + '</span>';
+  const subProm = prev
+    ? (prev.prom == null || r.prom == null ? '<span>Sin comparativa</span>' : deltaPctPastilla(r.prom, prev.prom, false, true, 1) + '<span>antes ' + fmtDuracionCorta(prev.prom) + '</span>')
+    : '<span>' + estado + '</span>';
+  const subOk = prev
+    ? (prev.pctOk == null || r.pctOk == null ? '<span>Sin comparativa</span>' : deltaPuntosPastilla(r.pctOk, prev.pctOk) + '<span>antes ' + fmtPct1(prev.pctOk) + '%</span>')
+    : '<span>' + estado + '</span>';
+
+  els.respTimesStats.innerHTML = '<div class="stats-row cuatro">' +
+    pastillaTiempos('Entrantes', r.entrantes, subEntrantes) +
+    pastillaTiempos('Contactados', r.contactados, subContactados) +
+    pastillaTiempos('Promedio (horario laboral)', r.prom == null ? '—' : fmtDuracionCorta(r.prom), subProm) +
+    pastillaTiempos('Atendidos en 5 min', r.pctOk == null ? '—' : fmtPct1(r.pctOk) + '%', subOk) +
+    '</div>';
 }
 
 function renderTiemposRespuesta(payload) {
   const embudos = Object.values(payload.por_embudo || {});
-  if (!embudos.length) { respTimesResumen = null; respTimesActual = null; els.respTimesComparativa.innerHTML = ''; els.respTimesStats.innerHTML = ''; els.respTimesComparaNota.textContent = ''; els.respTimesFueraMeta.innerHTML = ''; els.respTimesTable.innerHTML = '<div class="empty">Sin datos en este periodo.</div>'; return; }
+  if (!embudos.length) { respTimesActual = null; els.respTimesComparativa.innerHTML = ''; els.respTimesStats.innerHTML = ''; els.respTimesFueraMeta.innerHTML = ''; els.respTimesTable.innerHTML = '<div class="empty">Sin datos en este periodo.</div>'; return; }
 
   const totalEntrantes = embudos.reduce((s, e) => s + e.leads_entrantes, 0);
-  const totalContactados = embudos.reduce((s, e) => s + e.leads_con_respuesta, 0);
-  const sumaHabiles = embudos.reduce((s, e) => s + e.promedio_segundos_habiles * e.leads_con_respuesta, 0);
-  const promGeneralHabil = totalContactados ? Math.round(sumaHabiles / totalContactados) : 0;
 
-  respTimesResumen = { entrantes: totalEntrantes, contactados: totalContactados, prom: promGeneralHabil };
-  respTimesPrevio = null;
-  pintarStatsTiempos();
   respTimesActual = resumenTiempos(payload);
   respTimesComparativa = null;
   pintarComparativaTiempos();
