@@ -295,6 +295,25 @@
   .seg-chip.tarde { color: var(--c-loss); background: rgba(182, 85, 47, .14); border: 1.5px dashed var(--c-loss); }
   .seg-chip.falta { color: #fff; background: var(--c-loss); }
   .seg-chip.en_plazo { color: var(--ink-faint); background: var(--surface-2); }
+  /* ---- Seguimiento en la primera semana ---- */
+  .semana-grid { display: grid; grid-template-columns: minmax(280px, 1fr) minmax(280px, 1fr); gap: 24px 32px; margin: 6px 0 22px; }
+  .semana-grid h3 { font-family: var(--display); font-size: 13px; color: var(--ink); font-weight: 600; margin: 0 0 10px; }
+  .sem-bar { display: grid; grid-template-columns: 130px 1fr 44px; align-items: center; gap: 12px; padding: 5px 0; font-size: 13.5px; color: var(--ink-soft); }
+  .sem-bar .track { height: 22px; background: var(--surface-2); border-radius: 8px; overflow: hidden; }
+  .sem-bar .fill { height: 100%; min-width: 3px; background: var(--ink); border-radius: 8px; }
+  .sem-bar.cero .fill { background: var(--c-loss); }
+  .sem-bar .n { text-align: right; font-family: var(--mono); font-weight: 600; color: var(--ink); }
+  #semanaTabla td.nw { white-space: nowrap; }
+  .semana-leer { font-size: 13.5px; line-height: 1.55; color: var(--ink-soft); }
+  .semana-leer p { margin: 0 0 12px; }
+  .semana-leer b { color: var(--ink); }
+  .semana-toolbar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+  .semana-toolbar .seg { display: inline-flex; gap: 2px; padding: 3px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface-2); flex-wrap: wrap; }
+  .semana-toolbar .seg button { border: none; background: transparent; color: var(--ink-soft); padding: 7px 14px; font-size: 13px; font-weight: 500; border-radius: 999px; cursor: pointer; font-family: var(--body); }
+  .semana-toolbar .seg button span { color: var(--ink-faint); font-family: var(--mono); font-size: 12px; margin-left: 4px; }
+  .semana-toolbar .seg button[aria-pressed="true"] { background: var(--surface); color: var(--ink); font-weight: 600; box-shadow: 0 1px 2px rgba(0,0,0,.10); }
+  .semana-toolbar .export-btn { margin-left: auto; }
+  @media (max-width: 760px) { .semana-grid { grid-template-columns: 1fr; } .sem-bar { grid-template-columns: 100px 1fr 36px; } }
   .res-tag { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 600; white-space: nowrap; }
   .res-tag.incumple { color: var(--c-loss); background: rgba(182, 85, 47, .14); }
   .res-tag.cumple { color: var(--c-positive); background: rgba(21, 128, 61, .14); }
@@ -566,6 +585,20 @@
       <div class="help" id="protocoloNota" style="margin-top:10px;"></div>
       <details><summary>JSON crudo</summary><pre id="rawJsonProtocolo"></pre></details>
     </div>
+    <div class="panel" id="semanaPanel">
+      <div class="panel-head">
+        <div class="panel-icon" id="iconSemana"></div>
+        <div class="panel-title"><h2>Seguimiento en la primera semana</h2><p class="panel-sub">Leads creados en el periodo · días en que se les volvió a escribir en sus primeros 7 días</p></div>
+      </div>
+      <p class="help">Cuenta cuántos días distintos se le volvió a escribir a cada lead durante sus primeros 7 días de vida. Un seguimiento es un día calendario distinto del día del primer contacto en el que un usuario (no un robot) envió al menos un mensaje saliente; varios mensajes el mismo día cuentan como uno. Los mensajes se atribuyen por contacto (todos los contactos del lead). Solo se evalúa a los leads que ya cumplieron sus 7 días y que no se ganaron ni se perdieron dentro de ellos. Audita los embudos Web Edu/DC, Talleres de venta, Agentes de venta y Campañas publicitarias y respeta los filtros de embudos, agentes y etiquetas.</p>
+      <div id="semanaStats"></div>
+      <div class="semana-grid" id="semanaGrid" hidden>
+        <div><h3>Seguimientos en la primera semana</h3><div id="semanaBars"></div></div>
+        <div><h3>Cómo leerlo</h3><div class="semana-leer" id="semanaLeer"></div></div>
+      </div>
+      <div id="semanaTabla"></div>
+      <details><summary>JSON crudo</summary><pre id="rawJsonSemana"></pre></details>
+    </div>
     <div class="panel">
       <div class="panel-head">
         <div class="panel-icon" id="iconDesempeno"></div>
@@ -733,6 +766,7 @@ paintIcon('iconVentasSemestre', 'barChart', 'var(--c-positive)');
 paintIcon('iconLeadsEntrantesSemestre', 'layers', 'var(--c-neutral)');
 paintIcon('iconLlamadas', 'phone', 'var(--ink-soft)');
 paintIcon('iconProtocolo', 'checkCircle', 'var(--ink-soft)');
+paintIcon('iconSemana', 'users', 'var(--ink-soft)');
 paintIcon('iconTiempos', 'zap', 'var(--ink-soft)');
 paintIcon('iconLeadsCalifLista', 'users', 'var(--c-positive)');
 paintIcon('iconExportar', 'download', 'var(--ink)');
@@ -801,6 +835,12 @@ const els = {
   protocoloStats: document.getElementById('protocoloStats'),
   protocoloTable: document.getElementById('protocoloTable'),
   protocoloEvaluados: document.getElementById('protocoloEvaluados'),
+  semanaStats: document.getElementById('semanaStats'),
+  semanaGrid: document.getElementById('semanaGrid'),
+  semanaBars: document.getElementById('semanaBars'),
+  semanaLeer: document.getElementById('semanaLeer'),
+  semanaTabla: document.getElementById('semanaTabla'),
+  rawJsonSemana: document.getElementById('rawJsonSemana'),
   protocoloNota: document.getElementById('protocoloNota'),
   cotizacionStats: document.getElementById('cotizacionStats'),
   cotizacionTable: document.getElementById('cotizacionTable'),
@@ -1095,6 +1135,7 @@ els.btnGenerar.addEventListener('click', async () => {
       cargarGanados(filtrosSemestre, els.dateFrom.value, els.dateTo.value),
       cargarLeadsVivos(filtrosSemestre),
       cargarProtocolo(filtrosSemestre, els.dateFrom.value, els.dateTo.value),
+      cargarSeguimientoSemanal(filtrosSemestre, els.dateFrom.value, els.dateTo.value),
       cargarComparativaTiempos(filtrosSemestre, els.dateFrom.value, els.dateTo.value),
       cargarComparativaParcial(filtrosSemestre, els.dateFrom.value, els.dateTo.value),
       cargarVentasSemestre(filtrosSemestre),
@@ -2254,6 +2295,165 @@ function renderProtocoloEvaluados() {
   if (pv) pv.addEventListener('click', () => { protocoloEvaluadosPage--; renderProtocoloEvaluados(); });
   if (nx) nx.addEventListener('click', () => { protocoloEvaluadosPage++; renderProtocoloEvaluados(); });
   conectarExportProtocolo(els.protocoloEvaluados);
+}
+
+/* ============================== RENDER: Seguimiento en la primera semana ============================== */
+let semanaPayload = null;
+let semanaFiltro = 'sin';            // 'sin' | 'm3' | 'm5'
+let semanaPage = 1;
+let semanaOrden = { col: 'creado', dir: 'asc' };
+const SEMANA_PAGE_SIZE = 10;
+const SEMANA_FILTROS = {
+  sin: { texto: 'Sin seguimiento',          test: l => l.seguimientos === 0 },
+  m3:  { texto: 'Menos de 3 seguimientos',  test: l => l.seguimientos < 3 },
+  m5:  { texto: 'Menos de 5 seguimientos',  test: l => l.seguimientos < 5 },
+};
+const SEMANA_COLUMNAS = {
+  lead:        { titulo: 'ID lead',        valor: l => l.lead_id },
+  embudo:      { titulo: 'Embudo',         valor: l => (l.embudo || '').toLowerCase() },
+  etapa:       { titulo: 'Etapa actual',   valor: l => (l.etapa || '').toLowerCase() },
+  resp:        { titulo: 'Responsable',    valor: l => nombreAgente(l.responsible_user_id).toLowerCase() },
+  creado:      { titulo: 'Creado',         valor: l => l.creado_ts, num: true },
+  primer:      { titulo: 'Primer contacto', valor: l => l.primer_contacto_ts, num: true },
+  seguimientos:{ titulo: 'Seguimientos',   valor: l => l.seguimientos, num: true },
+  ultimo:      { titulo: 'Último mensaje', valor: l => l.ultimo_mensaje_ts, num: true },
+};
+
+async function cargarSeguimientoSemanal(filtros, desde, hasta) {
+  els.semanaStats.innerHTML = '';
+  els.semanaGrid.hidden = true;
+  els.semanaTabla.innerHTML = '<div class="empty loading"><span class="spinner" aria-hidden="true"></span>Cargando…</div>';
+  try {
+    const data = await callWebhook({
+      type: 'leads', view: 'weekly_followups', date_from: desde, date_to: hasta,
+      pipeline_ids: filtros.pipelineIds, agent_ids: filtros.agentIds, tag_ids: filtros.tagIds,
+    });
+    els.rawJsonSemana.textContent = JSON.stringify(data, null, 2);
+    renderSeguimientoSemanal(extractPayload(data, 'resumen'));
+  } catch (err) {
+    els.semanaTabla.innerHTML = '<div class="empty">No se pudo cargar el seguimiento de la primera semana: ' + escHtml(err.message) + '</div>';
+    console.error(err);
+  }
+}
+
+function renderSeguimientoSemanal(payload) {
+  semanaPayload = payload;
+  semanaFiltro = 'sin'; semanaPage = 1; semanaOrden = { col: 'creado', dir: 'asc' };
+  const r = payload.resumen;
+  const pctDe = n => r.evaluados ? fmtPct1((n / r.evaluados) * 100) + '% de los evaluados' : '—';
+  els.semanaStats.innerHTML = '<div class="stats-row cuatro">' +
+    pastillaTiempos('Leads evaluados', r.evaluados, '<span>' + r.fuera_evaluacion + ' fuera de la evaluación</span>') +
+    pastillaTiempos('Menos de 5 seguimientos', r.menos_de_5, '<span>' + pctDe(r.menos_de_5) + '</span>') +
+    pastillaTiempos('Menos de 3 seguimientos', r.menos_de_3, '<span>' + pctDe(r.menos_de_3) + '</span>') +
+    pastillaTiempos('Sin seguimiento', r.sin_seguimiento, '<span>' + pctDe(r.sin_seguimiento) + '</span>') +
+    '</div>';
+  if (!r.creados) {
+    els.semanaGrid.hidden = true;
+    els.semanaTabla.innerHTML = '<div class="empty">Sin leads creados en este periodo con estos filtros.</div>';
+    return;
+  }
+  const max = Math.max(1, ...payload.distribucion.map(d => d.leads));
+  els.semanaBars.innerHTML = payload.distribucion.map(d =>
+    '<div class="sem-bar' + (d.seguimientos === 0 ? ' cero' : '') + '"><span>' + d.etiqueta + (d.etiqueta === '1' ? ' seguimiento' : ' seguimientos') + '</span>' +
+    '<div class="track"><div class="fill" style="width:' + (d.leads ? Math.max(1.5, (d.leads / max) * 100) : 0) + '%"></div></div><span class="n">' + d.leads + '</span></div>').join('');
+  els.semanaLeer.innerHTML =
+    '<p>Un lead con <b>0 seguimientos</b> recibió el primer mensaje y nadie le volvió a escribir en su primera semana.</p>' +
+    '<p>Fuera de la evaluación: ' + r.aun_no_cumplen_semana + ' leads aún no cumplen su primera semana; ' + r.cerrados_en_semana + ' se ganaron o perdieron dentro de su primera semana.</p>';
+  els.semanaGrid.hidden = false;
+  renderSemanaTabla();
+}
+
+function semanaListaActual() {
+  const test = SEMANA_FILTROS[semanaFiltro].test;
+  const { col, dir } = semanaOrden;
+  const f = dir === 'asc' ? 1 : -1, valor = SEMANA_COLUMNAS[col].valor;
+  return (semanaPayload.leads || []).filter(test).sort((a, b) => {
+    const x = valor(a), y = valor(b);
+    if (x == null && y == null) return 0;
+    if (x == null) return 1;
+    if (y == null) return -1;
+    const c = x < y ? -1 : x > y ? 1 : 0;
+    return c !== 0 ? c * f : a.lead_id - b.lead_id;
+  });
+}
+
+function renderSemanaTabla() {
+  const lista = semanaListaActual();
+  const total = lista.length;
+  const totalPages = Math.max(1, Math.ceil(total / SEMANA_PAGE_SIZE));
+  if (semanaPage > totalPages) semanaPage = totalPages;
+  const items = lista.slice((semanaPage - 1) * SEMANA_PAGE_SIZE, semanaPage * SEMANA_PAGE_SIZE);
+  const todos = semanaPayload.leads || [];
+  const cuenta = k => todos.filter(SEMANA_FILTROS[k].test).length;
+  const th = k => {
+    const c = SEMANA_COLUMNAS[k], activa = semanaOrden.col === k;
+    const flecha = activa ? (semanaOrden.dir === 'asc' ? '▲' : '▼') : '↕';
+    const aria = activa ? (semanaOrden.dir === 'asc' ? 'ascending' : 'descending') : 'none';
+    return `<th class="sortable${activa ? ' activa' : ''}${c.num ? ' num' : ''}" data-col="${k}" aria-sort="${aria}" tabindex="0" title="Clic o Enter para ordenar">${c.titulo}<span class="sort-ind">${flecha}</span></th>`;
+  };
+  const rows = items.map(l => {
+    const responsable = nombreAgente(l.responsible_user_id);
+    return `
+    <tr>
+      <td>${leadLinkHtml(l.lead_id, String(l.lead_id))}</td>
+      <td>${embudoPillHtml(l.embudo)}</td>
+      <td>${escHtml(l.etapa)}</td>
+      <td class="nw"><span class="person-cell">${avatarHtml(responsable)}${escHtml(responsable)}</span></td>
+      <td class="num nw">${fmtFechaHoraMx(l.creado_ts)}</td>
+      <td class="num nw">${fmtFechaHoraMx(l.primer_contacto_ts)}</td>
+      <td class="num"><span class="numval">${l.seguimientos}</span></td>
+      <td class="num nw">${fmtFechaHoraMx(l.ultimo_mensaje_ts)}</td>
+    </tr>`;
+  }).join('');
+  els.semanaTabla.innerHTML = `
+    <div class="semana-toolbar">
+      <div class="seg" role="group" aria-label="Filtro de seguimientos">${Object.keys(SEMANA_FILTROS).map(k => `<button type="button" data-filtro="${k}" aria-pressed="${semanaFiltro === k}">${SEMANA_FILTROS[k].texto}<span>${cuenta(k)}</span></button>`).join('')}</div>
+      <button type="button" class="export-btn" id="semanaExport"><span class="ico-dl"></span><span>CSV</span></button>
+    </div>
+    ${total ? `<div class="table-scroll">
+    <table>
+      <thead><tr>${Object.keys(SEMANA_COLUMNAS).map(th).join('')}</tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    </div>
+    <div class="pager">
+      <span class="pager-info">Mostrando ${items.length} de ${total} leads</span>
+      <div class="pager-controls">
+        <button type="button" class="pager-btn" id="semanaPrev" ${semanaPage <= 1 ? 'disabled' : ''} aria-label="Anterior">‹</button>
+        <span class="pager-page">${semanaPage}</span>
+        <button type="button" class="pager-btn" id="semanaNext" ${semanaPage >= totalPages ? 'disabled' : ''} aria-label="Siguiente">›</button>
+      </div>
+    </div>` : '<div class="empty">Ningún lead en este grupo.</div>'}`;
+  els.semanaTabla.querySelectorAll('[data-filtro]').forEach(b => b.addEventListener('click', () => { semanaFiltro = b.dataset.filtro; semanaPage = 1; renderSemanaTabla(); }));
+  els.semanaTabla.querySelectorAll('th.sortable').forEach(h => {
+    const ordenar = conTeclado => {
+      const k = h.dataset.col;
+      semanaOrden = { col: k, dir: semanaOrden.col === k ? (semanaOrden.dir === 'asc' ? 'desc' : 'asc') : (SEMANA_COLUMNAS[k].num ? 'desc' : 'asc') };
+      semanaPage = 1; renderSemanaTabla();
+      if (conTeclado) { const nuevo = els.semanaTabla.querySelector('th[data-col="' + k + '"]'); if (nuevo) nuevo.focus(); }
+    };
+    h.addEventListener('click', () => ordenar(false));
+    h.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); ordenar(true); } });
+  });
+  const pv = document.getElementById('semanaPrev'), nx = document.getElementById('semanaNext');
+  if (pv) pv.addEventListener('click', () => { semanaPage--; renderSemanaTabla(); });
+  if (nx) nx.addEventListener('click', () => { semanaPage++; renderSemanaTabla(); });
+  const bx = document.getElementById('semanaExport');
+  if (bx) { paintIcon2(bx.querySelector('.ico-dl')); bx.addEventListener('click', descargarCsvSemana); }
+}
+
+function descargarCsvSemana() {
+  const lista = semanaListaActual();
+  if (!lista.length) return;
+  const filas = [['ID lead', 'Enlace Kommo', 'Embudo', 'Etapa actual', 'Responsable', 'Creado', 'Primer contacto', 'Seguimientos', 'Último mensaje']];
+  lista.forEach(l => filas.push([l.lead_id, kommoLeadUrl(l.lead_id), l.embudo, l.etapa, nombreAgente(l.responsible_user_id), fmtFechaHoraAnio(l.creado_ts), fmtFechaHoraAnio(l.primer_contacto_ts), l.seguimientos, fmtFechaHoraAnio(l.ultimo_mensaje_ts)]));
+  const csv = filas.map(f => f.map(v => `"${String(v == null ? '' : v).replace(/"/g, '""')}"`).join(',')).join('\r\n');
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const per = semanaPayload.periodo ? semanaPayload.periodo.from + '_a_' + semanaPayload.periodo.to : 'actual';
+  a.href = url; a.download = 'seguimiento_primera_semana_' + SEMANA_FILTROS[semanaFiltro].texto.toLowerCase().replace(/\s+/g, '_') + '_' + per + '.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
 }
 
 /* ---- Comparativa del periodo seleccionado vs los 2 periodos anteriores (misma duración) ---- */
