@@ -588,12 +588,12 @@
     <div class="panel" id="semanaPanel">
       <div class="panel-head">
         <div class="panel-icon" id="iconSemana"></div>
-        <div class="panel-title"><h2>Seguimiento en la primera semana</h2><p class="panel-sub">Leads creados en el periodo · días en que se les volvió a escribir en sus primeros 7 días</p></div>
+        <div class="panel-title"><h2>Seguimiento en la primera semana</h2><p class="panel-sub">Leads creados en el periodo · días en que se les volvió a escribir o llamar en sus primeros 10 días</p></div>
       </div>
-      <p class="help">Cuenta cuántos días distintos se le volvió a escribir a cada lead durante sus primeros 7 días de vida. Un seguimiento es un día calendario distinto del día del primer contacto en el que un usuario (no un robot) envió al menos un mensaje saliente; varios mensajes el mismo día cuentan como uno. Los mensajes se atribuyen por contacto (todos los contactos del lead). Solo se evalúa a los leads que ya cumplieron sus 7 días y que no se ganaron ni se perdieron dentro de ellos. Audita los embudos Web Edu/DC, Talleres de venta, Agentes de venta y Campañas publicitarias y respeta los filtros de embudos, agentes y etiquetas.</p>
+      <p class="help">Cuenta cuántos días distintos se le volvió a escribir o llamar a cada lead durante sus primeros 10 días de vida. Un seguimiento es un día calendario distinto del día del primer contacto en el que un usuario (no un robot) envió al menos un mensaje saliente o hizo una llamada saliente; varios mensajes o llamadas el mismo día cuentan como uno. Los mensajes y llamadas se atribuyen por contacto (todos los contactos del lead) y por el propio lead. Solo se evalúa a los leads que ya cumplieron sus 10 días y que no se ganaron ni se perdieron dentro de ellos. Audita los embudos Web Edu/DC, Talleres de venta, Agentes de venta y Campañas publicitarias y respeta los filtros de embudos, agentes y etiquetas.</p>
       <div id="semanaStats"></div>
       <div class="semana-grid" id="semanaGrid" hidden>
-        <div><h3>Seguimientos en la primera semana</h3><div id="semanaBars"></div></div>
+        <div><h3>Seguimientos en los primeros 10 días</h3><div id="semanaBars"></div></div>
         <div><h3>Cómo leerlo</h3><div class="semana-leer" id="semanaLeer"></div></div>
       </div>
       <div id="semanaTabla"></div>
@@ -2331,7 +2331,7 @@ async function cargarSeguimientoSemanal(filtros, desde, hasta) {
     els.rawJsonSemana.textContent = JSON.stringify(data, null, 2);
     renderSeguimientoSemanal(extractPayload(data, 'resumen'));
   } catch (err) {
-    els.semanaTabla.innerHTML = '<div class="empty">No se pudo cargar el seguimiento de la primera semana: ' + escHtml(err.message) + '</div>';
+    els.semanaTabla.innerHTML = '<div class="empty">No se pudo cargar el seguimiento de los primeros 10 días: ' + escHtml(err.message) + '</div>';
     console.error(err);
   }
 }
@@ -2357,8 +2357,8 @@ function renderSeguimientoSemanal(payload) {
     '<div class="sem-bar' + (d.seguimientos === 0 ? ' cero' : '') + '"><span>' + d.etiqueta + (d.etiqueta === '1' ? ' seguimiento' : ' seguimientos') + '</span>' +
     '<div class="track"><div class="fill" style="width:' + (d.leads ? Math.max(1.5, (d.leads / max) * 100) : 0) + '%"></div></div><span class="n">' + d.leads + '</span></div>').join('');
   els.semanaLeer.innerHTML =
-    '<p>Un lead con <b>0 seguimientos</b> recibió el primer mensaje y nadie le volvió a escribir en su primera semana.</p>' +
-    '<p>Fuera de la evaluación: ' + r.aun_no_cumplen_semana + ' leads aún no cumplen su primera semana; ' + r.cerrados_en_semana + ' se ganaron o perdieron dentro de su primera semana.</p>';
+    '<p>Un lead con <b>0 seguimientos</b> recibió el primer mensaje y nadie le volvió a escribir ni llamar en sus primeros 10 días.</p>' +
+    '<p>Fuera de la evaluación: ' + r.aun_no_cumplen_semana + ' leads aún no cumplen sus 10 días; ' + r.cerrados_en_semana + ' se ganaron o perdieron dentro de sus primeros 10 días.</p>';
   els.semanaGrid.hidden = false;
   renderSemanaTabla();
 }
