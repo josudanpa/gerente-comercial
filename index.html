@@ -2416,6 +2416,72 @@ function pintarPastillasTiempos() {
     '</div>';
 }
 
+/* ---- Tabla "Por embudo" del tablero de Tiempos de respuesta (columnas ordenables) ---- */
+let respTimesEmbudoData = [];
+let respTimesEmbudoOrden = { col: 'entrantes', dir: 'desc' };
+const TIEMPOS_EMBUDO_COLUMNAS = {
+  embudo:      { titulo: 'Embudo',                    valor: r => (r.embudo || '').toLowerCase() },
+  entrantes:   { titulo: 'Entrantes',                 valor: r => r.entrantes, num: true },
+  contactados: { titulo: 'Contactados',               valor: r => r.contactados, num: true },
+  habil:       { titulo: 'Promedio (horario laboral)', valor: r => r.habil, num: true },
+  reloj:       { titulo: 'Promedio (reloj)',          valor: r => r.reloj, num: true },
+  ok5:         { titulo: 'En 5 min',                  valor: r => r.ok5, num: true },
+};
+// "38 min" por debajo de una hora y "1h 14m" a partir de ahí; "—" si no hay dato.
+function fmtDuracionTabla(segundos) {
+  if (segundos == null) return '—';
+  const h = Math.floor(segundos / 3600);
+  const m = Math.round((segundos % 3600) / 60);
+  if (h === 0) return m + ' min';
+  return m === 60 ? (h + 1) + 'h 0m' : h + 'h ' + m + 'm';
+}
+function renderTablaTiemposEmbudo() {
+  const { col, dir } = respTimesEmbudoOrden;
+  const f = dir === 'asc' ? 1 : -1;
+  const valor = TIEMPOS_EMBUDO_COLUMNAS[col].valor;
+  const filas = [...respTimesEmbudoData].sort((a, b) => {
+    const x = valor(a), y = valor(b);
+    if (x == null && y == null) return 0;
+    if (x == null) return 1;            // sin dato siempre al final
+    if (y == null) return -1;
+    const c = x < y ? -1 : x > y ? 1 : 0;
+    return c !== 0 ? c * f : a.embudo.localeCompare(b.embudo, 'es');
+  });
+  const th = k => {
+    const c = TIEMPOS_EMBUDO_COLUMNAS[k], activa = col === k;
+    const flecha = activa ? (dir === 'asc' ? '▲' : '▼') : '↕';
+    const aria = activa ? (dir === 'asc' ? 'ascending' : 'descending') : 'none';
+    return `<th class="sortable${activa ? ' activa' : ''}${c.num ? ' num' : ''}" data-col="${k}" aria-sort="${aria}" tabindex="0" title="Clic o Enter para ordenar">${c.titulo}<span class="sort-ind">${flecha}</span></th>`;
+  };
+  const rows = filas.map(r => `
+    <tr>
+      <td>${r.embudo}</td>
+      <td class="num">${r.entrantes}</td>
+      <td class="num">${r.contactados}</td>
+      <td class="num">${fmtDuracionTabla(r.habil)}</td>
+      <td class="num">${fmtDuracionTabla(r.reloj)}</td>
+      <td class="num">${r.ok5 == null ? '—' : r.ok5.toLocaleString('es-MX', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + '%'}</td>
+    </tr>`).join('');
+  els.respTimesTable.innerHTML = `
+    <h3 style="font-family:var(--display); font-size:13px; color:var(--ink-soft); font-weight:600; margin:6px 0 8px; letter-spacing:-.005em;">Por embudo</h3>
+    <div class="table-scroll">
+    <table>
+      <thead><tr>${Object.keys(TIEMPOS_EMBUDO_COLUMNAS).map(th).join('')}</tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    </div>`;
+  els.respTimesTable.querySelectorAll('th.sortable').forEach(h => {
+    const ordenar = conTeclado => {
+      const k = h.dataset.col;
+      respTimesEmbudoOrden = { col: k, dir: respTimesEmbudoOrden.col === k && respTimesEmbudoOrden.dir === 'asc' ? 'desc' : (respTimesEmbudoOrden.col === k ? 'asc' : (k === 'embudo' ? 'asc' : 'desc')) };
+      renderTablaTiemposEmbudo();
+      if (conTeclado) { const nuevo = els.respTimesTable.querySelector('th[data-col="' + k + '"]'); if (nuevo) nuevo.focus(); }
+    };
+    h.addEventListener('click', () => ordenar(false));
+    h.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); ordenar(true); } });
+  });
+}
+
 function renderTiemposRespuesta(payload) {
   const embudos = Object.values(payload.por_embudo || {});
   if (!embudos.length) { respTimesActual = null; els.respTimesComparativa.innerHTML = ''; els.respTimesStats.innerHTML = ''; els.respTimesFueraMeta.innerHTML = ''; els.respTimesTable.innerHTML = '<div class="empty">Sin datos en este periodo.</div>'; return; }
@@ -2426,21 +2492,20 @@ function renderTiemposRespuesta(payload) {
   respTimesComparativa = null;
   pintarComparativaTiempos();
 
-  const rows = embudos.map(e => `
-    <tr>
-      <td>${e.embudo}</td>
-      <td class="num">${e.leads_entrantes}</td>
-      <td class="num">${e.leads_con_respuesta}</td>
-      <td class="num">${fmtDuracionCorta(e.promedio_segundos_habiles)}</td>
-      <td class="num">${fmtDuracionCorta(e.promedio_segundos_real)}</td>
-    </tr>`).join('');
-  els.respTimesTable.innerHTML = `
-    <div class="table-scroll">
-    <table>
-      <thead><tr><th>Embudo</th><th class="num">Entrantes</th><th class="num">Contactados</th><th class="num">Promedio (horario laboral)</th><th class="num">Promedio (real)</th></tr></thead>
-      <tbody>${rows}</tbody>
-    </table>
-    </div>`;
+  // Por embudo: entrantes, contactados, promedios y % atendido dentro de la meta (5 min hábiles).
+  const fueraPorEmbudo = {};
+  const hayDetalleFuera = Array.isArray(payload.leads_fuera_de_meta);
+  if (hayDetalleFuera) payload.leads_fuera_de_meta.forEach(l => { fueraPorEmbudo[l.embudo] = (fueraPorEmbudo[l.embudo] || 0) + 1; });
+  respTimesEmbudoData = embudos.map(e => ({
+    embudo: e.embudo,
+    entrantes: e.leads_entrantes,
+    contactados: e.leads_con_respuesta,
+    habil: e.leads_con_respuesta ? e.promedio_segundos_habiles : null,
+    reloj: e.leads_con_respuesta ? e.promedio_segundos_real : null,
+    ok5: hayDetalleFuera && e.leads_entrantes ? Math.round(((e.leads_entrantes - (fueraPorEmbudo[e.embudo] || 0)) / e.leads_entrantes) * 1000) / 10 : null,
+  }));
+  respTimesEmbudoOrden = { col: 'entrantes', dir: 'desc' };
+  renderTablaTiemposEmbudo();
   els.respTimesNota.textContent = payload.nota_metodologica || '';
   renderLeadsFueraDeMeta(payload, totalEntrantes);
 }
