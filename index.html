@@ -300,23 +300,30 @@
   :root { --sem-verde: #137a38; --sem-naranja: #b45309; --sem-rojo: #b42318; }
   .stats-row.cinco { grid-template-columns: repeat(5, 1fr); }
   .stat-card.plain .stat-sub .sub-line { flex-basis: 100%; font-size: 12.5px; line-height: 1.4; }
-  .semaforo-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin-top: 6px; }
-  .sem-card { position: relative; display: flex; flex-direction: column; gap: 6px; padding: 16px 18px 14px 20px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface); overflow: hidden; }
-  .sem-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 6px; background: var(--sem-color, var(--border)); }
-  .sem-card.verde { --sem-color: var(--sem-verde); --sem-tint: rgba(19,122,56,.10); }
-  .sem-card.naranja { --sem-color: var(--sem-naranja); --sem-tint: rgba(180,83,9,.12); }
-  .sem-card.rojo { --sem-color: var(--sem-rojo); --sem-tint: rgba(180,35,24,.10); }
-  .sem-card.gris { --sem-color: var(--border); --sem-tint: var(--surface-2); }
-  .sem-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-  .sem-nombre { font-size: 13.5px; font-weight: 600; color: var(--ink-soft); }
-  .sem-pill { display: inline-flex; align-items: center; gap: 6px; padding: 3px 11px 3px 9px; border-radius: 999px; font-size: 12px; font-weight: 700; color: var(--sem-color, var(--ink-faint)); background: var(--sem-tint, var(--surface-2)); white-space: nowrap; }
-  .sem-pill i { width: 9px; height: 9px; border-radius: 50%; background: var(--sem-color, var(--border)); display: inline-block; }
-  .sem-valor { font-family: var(--display); font-size: 30px; font-weight: 600; line-height: 1.1; color: var(--ink); }
-  .sem-valor small { font-size: 14px; font-weight: 500; color: var(--ink-soft); margin-left: 4px; }
-  .sem-detalle { font-size: 13px; color: var(--ink-soft); line-height: 1.45; }
-  .sem-regla { font-size: 12px; color: var(--ink-faint); line-height: 1.45; border-top: 1px dashed var(--border-soft); padding-top: 8px; margin-top: 4px; }
-  .sem-link { align-self: flex-start; background: none; border: none; padding: 2px 0 0; font: inherit; font-size: 12.5px; font-weight: 600; color: var(--ink-soft); cursor: pointer; }
-  .sem-link:hover { color: var(--ink); text-decoration: underline; }
+  .semaforo-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin-top: 10px; }
+  .sem-card { position: relative; display: flex; flex-direction: column; padding: 26px 20px 18px; border: 1px solid var(--border-soft); border-radius: 20px; background: var(--surface); overflow: hidden; box-shadow: 0 10px 24px -14px rgba(20, 28, 40, .28); }
+  .sem-card::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 10px; background: var(--sem-color, var(--border)); }
+  .sem-card.verde { --sem-color: var(--sem-verde); --sem-tint: rgba(19,122,56,.12); --sem-ink: #0f6a31; }
+  .sem-card.naranja { --sem-color: #d98e0b; --sem-tint: rgba(217,142,11,.16); --sem-ink: #8a5a00; }
+  .sem-card.rojo { --sem-color: #d93a3a; --sem-tint: rgba(217,58,58,.12); --sem-ink: #b42318; }
+  .sem-card.gris { --sem-color: #9aa1ab; --sem-tint: var(--surface-2); --sem-ink: var(--ink-soft); }
+  .sem-top { display: flex; align-items: center; gap: 14px; }
+  .sem-ico { width: 54px; height: 54px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: var(--sem-color); color: #fff; box-shadow: 0 0 0 8px var(--sem-tint); margin: 4px 6px 4px 4px; }
+  .sem-ico svg { width: 26px; height: 26px; }
+  .sem-estado { min-width: 0; }
+  .sem-etiqueta { display: block; font-size: 11px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--sem-ink); }
+  .sem-palabra { display: block; font-family: var(--display); font-size: 21px; font-weight: 700; line-height: 1.15; color: var(--ink); }
+  .sem-nombre { margin-top: 18px; font-size: 13.5px; font-weight: 600; color: var(--ink-soft); }
+  .sem-valor { font-family: var(--display); font-size: 36px; font-weight: 700; line-height: 1.1; color: var(--ink); margin-top: 2px; letter-spacing: -.01em; }
+  .sem-valor small { font-size: 15px; font-weight: 500; color: var(--ink-soft); margin-left: 6px; letter-spacing: 0; }
+  .sem-bars { display: flex; align-items: flex-end; gap: 9px; height: 74px; margin: 16px 2px 0; padding-bottom: 6px; border-bottom: 2px solid var(--border-soft); }
+  .sem-bars i { flex: 1; border-radius: 6px; background: var(--border-soft); }
+  .sem-bars i.on { background: var(--sem-color); }
+  .sem-detalle { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border-soft); font-size: 13.5px; line-height: 1.5; color: var(--ink-soft); }
+  .sem-regla { flex: 1; margin-top: 8px; font-size: 12px; line-height: 1.5; color: var(--ink-faint); }
+  .sem-link { align-self: flex-start; margin-top: 14px; display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border: none; border-radius: 999px; background: var(--sem-tint); color: var(--sem-ink); font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
+  .sem-link:hover { filter: brightness(.96); }
+  .sem-card.gris .sem-link { background: var(--surface-2); }
   .resumen-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
   .resumen-grid > .panel { margin-bottom: 0; }
   .atender-lista { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
@@ -570,7 +577,6 @@
       <button type="button" class="tab" role="tab" id="tabBtn-tendencias" aria-controls="tab-tendencias" aria-selected="false" tabindex="-1" data-tab="tendencias">Comparativos</button>
     </div>
     <section class="tabpanel" role="tabpanel" id="tab-resumen" aria-labelledby="tabBtn-resumen">
-    <div id="resumenKpis"></div>
     <div class="panel" id="semaforoPanel">
       <div class="panel-head">
         <div class="panel-icon" id="iconSemaforo"></div>
@@ -920,7 +926,6 @@ const els = {
   protocoloStats: document.getElementById('protocoloStats'),
   protocoloTable: document.getElementById('protocoloTable'),
   protocoloEvaluados: document.getElementById('protocoloEvaluados'),
-  resumenKpis: document.getElementById('resumenKpis'),
   semaforoGrid: document.getElementById('semaforoGrid'),
   atenderLista: document.getElementById('atenderLista'),
   embudoPeriodoTitulo: document.getElementById('embudoPeriodoTitulo'),
@@ -1205,7 +1210,6 @@ els.btnGenerar.addEventListener('click', async () => {
 
     const crossPayload = extractPayload(crossData, 'totales');
     renderCrosstab(crossPayload);
-    resumenDato('cross', crossPayload);
     els.rawJsonCrosstab.textContent = JSON.stringify(crossData, null, 2);
 
     const callsPayload = extractPayload(callsData, 'por_creador');
@@ -1236,7 +1240,6 @@ els.btnGenerar.addEventListener('click', async () => {
       cargarComparativaParcial(filtrosSemestre, els.dateFrom.value, els.dateTo.value),
       cargarVentasSemestre(filtrosSemestre),
       cargarLeadsEntrantesSemestre(filtrosSemestre),
-      cargarVentasPrevias(filtrosSemestre, els.dateFrom.value, els.dateTo.value),
     ];
     let terminadas = 0;
     setStatus(`Tableros principales listos · cargando el resto (0/${tareas.length})…`, 'pending');
@@ -1335,10 +1338,8 @@ async function cargarLeadsVivos(filtros) {
     });
     const payloadV = extractPayload(data, 'por_embudo');
     renderLeadsVivos(payloadV);
-    resumenDato('vivos', payloadV);
     els.rawJsonLeadsVivos.textContent = JSON.stringify(data, null, 2);
   } catch (err) {
-    resumenDato('vivos', { error: true });
     els.leadsVivosTable.innerHTML = '<div class="empty">No se pudo cargar leads vivos: ' + err.message + '</div>';
     els.leadsVivosAsesorTable.innerHTML = '';
     els.leadsVivosStats.innerHTML = '';
@@ -1913,10 +1914,8 @@ async function cargarComparativaParcial(filtros, desdeStr, hastaStr) {
     const resultados = await fetchPeriodosPerformance(periodos, 'created_at', filtros);
     const datos = resultados.map(r => ({ label: r.label, titulo: r.titulo, ...sumarEmbudos(r.payload) }));
     renderComparativaParcial(datos);
-    resumenDato('parcial', datos);
     els.rawJsonComparativaParcial.textContent = JSON.stringify(datos, null, 2);
   } catch (err) {
-    resumenDato('parcial', 'error');
     els.comparativaParcialTable.innerHTML = '<div class="empty">No se pudo cargar la comparativa: ' + err.message + '</div>';
     els.comparativaParcialStats.innerHTML = '';
     console.error(err);
@@ -2630,7 +2629,6 @@ async function cargarComparativaTiempos(filtros, desde, hasta) {
 function pintarComparativaTiempos() {
   pintarTablaComparativaTiempos();
   pintarPastillasTiempos();
-  programarResumen();
 }
 
 function pintarTablaComparativaTiempos() {
@@ -2996,6 +2994,21 @@ const SEM_UMBRALES = {
 function nivelMayor(v, verde, naranja) { return v >= verde ? 'verde' : (v >= naranja ? 'naranja' : 'rojo'); }
 function nivelMenor(v, verde, naranja) { return v <= verde ? 'verde' : (v <= naranja ? 'naranja' : 'rojo'); }
 const SEM_TEXTO = { verde: 'Verde', naranja: 'Naranja', rojo: 'Rojo', gris: 'Sin datos' };
+const SEM_ESTADO = { verde: 'Saludable', naranja: 'Alerta', rojo: 'Crítico', gris: 'Pendiente' };
+const SEM_ACCION = { verde: 'Sigue así', naranja: 'Investiga', rojo: 'Actúa ya', gris: 'Ver tablero' };
+const SEM_ICONO = {
+  verde: '<polyline points="20 6 9 17 4 12"/>',
+  naranja: '<path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>',
+  rojo: '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>',
+  gris: '<circle cx="12" cy="12" r="1.5"/><circle cx="5" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/>',
+};
+// Mini gráfica decorativa (alturas en %, barra resaltada) según el nivel, como en el diseño de referencia.
+const SEM_BARRAS = {
+  verde: { h: [38, 55, 100, 36, 62], on: 2 },
+  naranja: { h: [36, 72, 48, 100, 42], on: 2 },
+  rojo: { h: [16, 46, 66, 80, 34], on: 0 },
+  gris: { h: [30, 30, 30, 30, 30], on: -1 },
+};
 const nMx = v => Math.round(v).toLocaleString('es-MX');
 
 // "12–31 oct" si es el mismo mes; "28 oct – 5 nov" si cruza de mes.
@@ -3011,12 +3024,16 @@ function irATablero(tab, panelId) {
 }
 
 function semCard({ nombre, nivel, valor, detalle, regla, tab, panel }) {
+  const b = SEM_BARRAS[nivel];
   return '<div class="sem-card ' + nivel + '">' +
-    '<div class="sem-head"><span class="sem-nombre">' + nombre + '</span><span class="sem-pill"><i></i>' + SEM_TEXTO[nivel] + '</span></div>' +
+    '<div class="sem-top"><span class="sem-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">' + SEM_ICONO[nivel] + '</svg></span>' +
+    '<span class="sem-estado"><span class="sem-etiqueta">' + SEM_TEXTO[nivel] + '</span><span class="sem-palabra">' + SEM_ESTADO[nivel] + '</span></span></div>' +
+    '<div class="sem-nombre">' + nombre + '</div>' +
     '<div class="sem-valor">' + valor + '</div>' +
+    '<div class="sem-bars" aria-hidden="true">' + b.h.map((h, i) => '<i' + (i === b.on ? ' class="on"' : '') + ' style="height:' + h + '%"></i>').join('') + '</div>' +
     '<div class="sem-detalle">' + detalle + '</div>' +
     '<div class="sem-regla">' + regla + '</div>' +
-    '<button type="button" class="sem-link" data-ir-tab="' + tab + '" data-ir-panel="' + panel + '">Ver tablero →</button></div>';
+    '<button type="button" class="sem-link" data-ir-tab="' + tab + '" data-ir-panel="' + panel + '">' + SEM_ACCION[nivel] + ' →</button></div>';
 }
 function semCargando(nombre, regla, tab, panel, errorMsg) {
   return semCard({ nombre, nivel: 'gris', valor: '—', detalle: errorMsg || 'Cargando…', regla, tab, panel });
@@ -3110,77 +3127,6 @@ function sumaPerf(payload) {
     calificado: a.calificado + (e.calificado || 0), ganado: a.ganado + (e.ganado || 0), monto: a.monto + (e.monto_ganado || 0),
   }), { total: 0, efectivo: 0, cotizacion: 0, calificado: 0, ganado: 0, monto: 0 });
 }
-const sinDato = '<span class="sub-line">Cargando…</span>';
-
-function pintarResumenKpis() {
-  const perf = RES.perf ? sumaPerf(RES.perf) : null;
-  const parcial = Array.isArray(RES.parcial) && RES.parcial.length > 1 ? RES.parcial : null;
-  const previoLeads = parcial ? parcial[parcial.length - 2] : null;
-
-  // Leads recibidos (todos los embudos del reporte), contra el mismo tramo del mes anterior
-  let subLeads = sinDato;
-  if (perf) {
-    if (RES.filterBy !== 'created_at') subLeads = '<span>Filtrado por fecha de cierre</span>';
-    else if (previoLeads) subLeads = deltaPctPastilla(perf.total, previoLeads.leads, true, false, 0) + '<span>vs ' + previoLeads.label + '</span>';
-    else if (RES.parcial === 'error') subLeads = '<span>Sin comparativa</span>';
-    else subLeads = '<span>Comparando…</span>';
-  }
-
-  // Ventas cerradas (por fecha de cierre) + cuántas son de leads del periodo y cuántas de leads anteriores
-  const g = RES.ganados;
-  let valVentas = '—', subVentas = sinDato;
-  if (g && g.error) subVentas = '<span class="sub-line">No se pudo cargar.</span>';
-  else if (g) {
-    const emb = Object.values(g.por_embudo || {});
-    const n = emb.reduce((x, e) => x + (e.ganado || 0), 0), monto = emb.reduce((x, e) => x + (e.monto_ganado || 0), 0);
-    valVentas = nMx(n);
-    const prev = RES.ventasPrev && !RES.ventasPrev.error ? RES.ventasPrev : null;
-    const delta = prev ? deltaPctPastilla(n, prev.ganado, true, false, 0) + '<span>vs ' + prev.label + '</span>' : '';
-    subVentas = '<span>$' + nMx(monto) + ' en ventas</span>' + delta;
-    if (perf && RES.filterBy === 'created_at') {
-      const delPeriodo = Math.min(n, perf.ganado);
-      subVentas += '<span class="sub-line">' + nMx(delPeriodo) + ' de leads que llegaron en el periodo · ' + nMx(n - delPeriodo) + ' de leads anteriores</span>';
-    }
-  }
-
-  // Leads vivos + calificados
-  const v = RES.vivos;
-  let valVivos = '—', subVivos = sinDato;
-  if (v && v.error) subVivos = '<span class="sub-line">No se pudo cargar.</span>';
-  else if (v) {
-    const tot = v.total_leads_vivos != null ? v.total_leads_vivos : Object.values(v.por_embudo || {}).reduce((x, e) => x + (e.leads_vivos || 0), 0);
-    valVivos = nMx(tot);
-    const cal = RES.cross && RES.cross.totales ? RES.cross.totales.leads_calificados : null;
-    subVivos = cal == null ? '<span>Foto de hoy</span>' : '<span>' + nMx(cal) + (RES.calificadosMode === 'actual' ? ' calificados hoy' : ' calificados en el periodo') + '</span>';
-  }
-
-  // Respuesta promedio y atendidos en 5 min (vs el periodo anterior inmediato, como en Tiempos de respuesta)
-  const rt = RES.resp ? resumenTiempos(RES.resp) : null;
-  const comp = respTimesComparativa;
-  const prevT = Array.isArray(comp) ? comp[1] : null;
-  let valProm = '—', subProm = sinDato, valOk = '—', subOk = sinDato;
-  if (rt) {
-    valProm = rt.prom == null ? '—' : fmtDuracionTabla(rt.prom);
-    valOk = rt.pctOk == null ? '—' : fmtPct1(rt.pctOk) + '%';
-    const estado = comp === 'error' ? 'Sin comparativa' : 'Comparando…';
-    const etiqPrev = prevT ? 'vs ' + rangoCortoSinAnio(prevT.desde, prevT.hasta) : '';
-    subProm = prevT
-      ? (prevT.prom == null || rt.prom == null ? '<span>Sin comparativa</span>' : deltaPctPastilla(rt.prom, prevT.prom, false, false, 0) + '<span>' + etiqPrev + '</span>')
-      : '<span>' + estado + '</span>';
-    subOk = prevT
-      ? (prevT.pctOk == null || rt.pctOk == null ? '<span>Sin comparativa</span>' : deltaPuntosPastilla(rt.pctOk, prevT.pctOk) + '<span>' + etiqPrev + '</span>')
-      : '<span>' + estado + '</span>';
-  }
-
-  els.resumenKpis.innerHTML = '<div class="stats-row cinco">' +
-    pastillaTiempos('Leads recibidos', perf ? nMx(perf.total) : '—', subLeads) +
-    pastillaTiempos('Ventas cerradas', valVentas, subVentas) +
-    pastillaTiempos('Leads vivos', valVivos, subVivos) +
-    pastillaTiempos('Respuesta promedio', valProm, subProm) +
-    pastillaTiempos('Atendidos en 5 min', valOk, subOk) +
-    '</div>';
-}
-
 function pintarParaAtender() {
   const items = [];
   const cargando = (titulo, tab, panel) => items.push({ nivel: 'gris', ico: '…', tit: titulo, sub: 'Cargando…', tab, panel });
@@ -3272,8 +3218,8 @@ function pintarEmbudoPeriodo() {
 
 function pintarResumen() {
   if (!els.semaforoGrid) return;
-  if (!RES.desde) { els.resumenKpis.innerHTML = ''; els.semaforoGrid.innerHTML = ''; els.atenderLista.innerHTML = ''; els.embudoPeriodoBars.innerHTML = ''; return; }
-  pintarResumenKpis(); pintarSemaforo(); pintarParaAtender(); pintarEmbudoPeriodo();
+  if (!RES.desde) { els.semaforoGrid.innerHTML = ''; els.atenderLista.innerHTML = ''; els.embudoPeriodoBars.innerHTML = ''; return; }
+  pintarSemaforo(); pintarParaAtender(); pintarEmbudoPeriodo();
 }
 document.getElementById('tab-resumen').addEventListener('click', e => {
   const b = e.target.closest('[data-ir-tab]');
@@ -3284,19 +3230,6 @@ paintIcon('iconSemaforo', 'target', 'var(--ink-soft)');
 paintIcon('iconAtender', 'zap', 'var(--ink-soft)');
 paintIcon('iconEmbudoPeriodo', 'barChart', 'var(--ink-soft)');
 
-async function cargarVentasPrevias(filtros, desde, hasta) {
-  try {
-    const per = periodosComparables(desde, hasta, 2)[0];
-    const data = await callWebhook({
-      type: 'leads', view: 'performance', date_from: per.date_from, date_to: per.date_to, filter_by: 'closed_at',
-      pipeline_ids: filtros.pipelineIds, agent_ids: filtros.agentIds, tag_ids: filtros.tagIds,
-    });
-    resumenDato('ventasPrev', { ...sumarEmbudos(extractPayload(data, 'por_embudo')), label: per.label });
-  } catch (err) {
-    resumenDato('ventasPrev', { error: true });
-    console.error(err);
-  }
-}
 
 /* ---- Pestañas del reporte (Resumen / Leads / Ejecución comercial / Oportunidades / Ventas / Comparativos) ---- */
 (function iniciarPestanas() {
