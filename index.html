@@ -295,6 +295,60 @@
   .seg-chip.tarde { color: var(--c-loss); background: rgba(182, 85, 47, .14); border: 1.5px dashed var(--c-loss); }
   .seg-chip.falta { color: #fff; background: var(--c-loss); }
   .seg-chip.en_plazo { color: var(--ink-faint); background: var(--surface-2); }
+
+  /* ---- Resumen: KPIs, semáforo, para atender, embudo del periodo ---- */
+  :root { --sem-verde: #137a38; --sem-naranja: #b45309; --sem-rojo: #b42318; }
+  .stats-row.cinco { grid-template-columns: repeat(5, 1fr); }
+  .stat-card.plain .stat-sub .sub-line { flex-basis: 100%; font-size: 12.5px; line-height: 1.4; }
+  .semaforo-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin-top: 6px; }
+  .sem-card { position: relative; display: flex; flex-direction: column; gap: 6px; padding: 16px 18px 14px 20px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface); overflow: hidden; }
+  .sem-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 6px; background: var(--sem-color, var(--border)); }
+  .sem-card.verde { --sem-color: var(--sem-verde); --sem-tint: rgba(19,122,56,.10); }
+  .sem-card.naranja { --sem-color: var(--sem-naranja); --sem-tint: rgba(180,83,9,.12); }
+  .sem-card.rojo { --sem-color: var(--sem-rojo); --sem-tint: rgba(180,35,24,.10); }
+  .sem-card.gris { --sem-color: var(--border); --sem-tint: var(--surface-2); }
+  .sem-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .sem-nombre { font-size: 13.5px; font-weight: 600; color: var(--ink-soft); }
+  .sem-pill { display: inline-flex; align-items: center; gap: 6px; padding: 3px 11px 3px 9px; border-radius: 999px; font-size: 12px; font-weight: 700; color: var(--sem-color, var(--ink-faint)); background: var(--sem-tint, var(--surface-2)); white-space: nowrap; }
+  .sem-pill i { width: 9px; height: 9px; border-radius: 50%; background: var(--sem-color, var(--border)); display: inline-block; }
+  .sem-valor { font-family: var(--display); font-size: 30px; font-weight: 600; line-height: 1.1; color: var(--ink); }
+  .sem-valor small { font-size: 14px; font-weight: 500; color: var(--ink-soft); margin-left: 4px; }
+  .sem-detalle { font-size: 13px; color: var(--ink-soft); line-height: 1.45; }
+  .sem-regla { font-size: 12px; color: var(--ink-faint); line-height: 1.45; border-top: 1px dashed var(--border-soft); padding-top: 8px; margin-top: 4px; }
+  .sem-link { align-self: flex-start; background: none; border: none; padding: 2px 0 0; font: inherit; font-size: 12.5px; font-weight: 600; color: var(--ink-soft); cursor: pointer; }
+  .sem-link:hover { color: var(--ink); text-decoration: underline; }
+  .resumen-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+  .resumen-grid > .panel { margin-bottom: 0; }
+  .atender-lista { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
+  .atender-item { display: flex; align-items: center; gap: 14px; width: 100%; text-align: left; padding: 13px 14px; border: none; border-radius: var(--radius-md); background: var(--surface-2); cursor: pointer; font: inherit; color: inherit; }
+  .atender-item:hover { background: var(--surface-hover); }
+  .atender-ico { width: 34px; height: 34px; border-radius: 10px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 15px; color: var(--sem-color); background: var(--sem-tint); }
+  .atender-item.rojo { --sem-color: var(--sem-rojo); --sem-tint: rgba(180,35,24,.12); }
+  .atender-item.naranja { --sem-color: var(--sem-naranja); --sem-tint: rgba(180,83,9,.14); }
+  .atender-item.verde { --sem-color: var(--sem-verde); --sem-tint: rgba(19,122,56,.12); }
+  .atender-item.gris { --sem-color: var(--ink-faint); --sem-tint: var(--border-soft); }
+  .atender-txt { flex: 1; min-width: 0; }
+  .atender-tit { font-size: 15px; font-weight: 600; color: var(--ink); line-height: 1.3; }
+  .atender-sub { font-size: 13px; color: var(--ink-soft); line-height: 1.45; margin-top: 2px; }
+  .atender-chev { color: var(--ink-faint); font-size: 20px; flex-shrink: 0; }
+  .embudo-periodo-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+  .embudo-periodo-head .ver-detalle { background: none; border: none; font: inherit; font-size: 13px; font-weight: 600; color: var(--ink-soft); cursor: pointer; white-space: nowrap; padding: 4px 0; }
+  .embudo-periodo-head .ver-detalle:hover { color: var(--ink); text-decoration: underline; }
+  .info-tip { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; margin-left: 6px; border: 1px solid var(--ink-faint); border-radius: 50%; font-size: 10px; font-weight: 700; color: var(--ink-faint); cursor: help; vertical-align: middle; }
+  .fun-fila { display: grid; grid-template-columns: 96px minmax(0, 1fr) auto; align-items: center; gap: 12px; margin: 12px 0; }
+  .fun-nom { font-size: 14px; color: var(--ink-soft); }
+  .fun-barra { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .fun-barra .fun-fill { height: 40px; border-radius: 8px; background: var(--ink); flex-shrink: 0; min-width: 6px; }
+  .fun-fila.ganado .fun-fill { background: var(--sem-verde); }
+  .fun-fila.leads .fun-fill { background: var(--ink); }
+  .fun-n { font-family: var(--display); font-size: 17px; font-weight: 600; color: var(--ink); }
+  .fun-pct { font-size: 13px; color: var(--ink-soft); text-align: right; white-space: nowrap; }
+  .fun-pct b { color: var(--ink); font-weight: 600; }
+  @media (max-width: 1000px) { .semaforo-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 900px) { .stats-row.cinco { grid-template-columns: repeat(2, 1fr); } .resumen-grid { grid-template-columns: 1fr; } }
+  @media (max-width: 560px) { .semaforo-grid { grid-template-columns: 1fr; } }
+  @media (max-width: 640px) { .stats-row.cinco > .stat-card:last-child:nth-child(odd) { grid-column: 1 / -1; } .fun-fila { grid-template-columns: 74px minmax(0, 1fr) auto; gap: 8px; } }
+
   /* ---- Seguimiento en la primera semana ---- */
   .semana-grid { display: grid; grid-template-columns: minmax(280px, 1fr) minmax(280px, 1fr); gap: 24px 32px; margin: 6px 0 22px; }
   .semana-grid h3 { font-family: var(--display); font-size: 13px; color: var(--ink); font-weight: 600; margin: 0 0 10px; }
@@ -508,13 +562,44 @@
 
   <div class="resultsRow" id="resultsRow" style="display:none;">
     <div class="tabs" role="tablist" aria-label="Secciones del reporte" id="tabsBar">
-      <button type="button" class="tab" role="tab" id="tabBtn-leads" aria-controls="tab-leads" aria-selected="true" data-tab="leads">Leads recibidos</button>
+      <button type="button" class="tab" role="tab" id="tabBtn-resumen" aria-controls="tab-resumen" aria-selected="true" data-tab="resumen">Resumen</button>
+      <button type="button" class="tab" role="tab" id="tabBtn-leads" aria-controls="tab-leads" aria-selected="false" tabindex="-1" data-tab="leads">Leads recibidos</button>
       <button type="button" class="tab" role="tab" id="tabBtn-ejecucion" aria-controls="tab-ejecucion" aria-selected="false" tabindex="-1" data-tab="ejecucion">Ejecución comercial</button>
       <button type="button" class="tab" role="tab" id="tabBtn-oportunidades" aria-controls="tab-oportunidades" aria-selected="false" tabindex="-1" data-tab="oportunidades">Oportunidades</button>
       <button type="button" class="tab" role="tab" id="tabBtn-ventas" aria-controls="tab-ventas" aria-selected="false" tabindex="-1" data-tab="ventas">Ventas</button>
       <button type="button" class="tab" role="tab" id="tabBtn-tendencias" aria-controls="tab-tendencias" aria-selected="false" tabindex="-1" data-tab="tendencias">Comparativos</button>
     </div>
-    <section class="tabpanel" role="tabpanel" id="tab-leads" aria-labelledby="tabBtn-leads">
+    <section class="tabpanel" role="tabpanel" id="tab-resumen" aria-labelledby="tabBtn-resumen">
+    <div id="resumenKpis"></div>
+    <div class="panel" id="semaforoPanel">
+      <div class="panel-head">
+        <div class="panel-icon" id="iconSemaforo"></div>
+        <div class="panel-title"><h2>Semáforo comercial</h2><p class="panel-sub">Qué tan cerca está el periodo de la meta de cada indicador</p></div>
+      </div>
+      <p class="help">Cada semáforo toma su cifra del tablero correspondiente de las otras pestañas. Leads recibidos: leads de campañas contra la meta mensual por embudo (suma de las metas de la tabla de Leads recibidos). Verde: 90% de la meta o más; naranja: de 70% a menos de 90%; rojo: menos de 70%. Tiempos de respuesta: promedio en horario laboral de los leads entrantes; verde hasta 15 min, naranja de 16 a 30 min, rojo 31 min o más. Volumen de llamadas: total de llamadas del periodo; verde 1,000 o más, naranja de 900 a 999, rojo menos de 900. Número de seguimientos: promedio de seguimientos (mensajes o llamadas en días distintos) por lead evaluado en el tablero Seguimiento en la primera semana; verde 5 o más, naranja 4 (hasta 4.9), rojo menos de 4. Las metas y los umbrales de llamadas son mensuales: si el periodo no es un mes completo se ajustan proporcionalmente a los días elegidos.</p>
+      <div class="semaforo-grid" id="semaforoGrid"></div>
+    </div>
+    <div class="resumen-grid">
+      <div class="panel" id="atenderPanel">
+        <div class="panel-head">
+          <div class="panel-icon" id="iconAtender"></div>
+          <div class="panel-title"><h2>Para atender</h2><p class="panel-sub">Lo que pide acción en este periodo</p></div>
+        </div>
+        <div class="atender-lista" id="atenderLista"></div>
+      </div>
+      <div class="panel" id="embudoPeriodoPanel">
+        <div class="embudo-periodo-head">
+          <div class="panel-head" style="margin-bottom:0">
+            <div class="panel-icon" id="iconEmbudoPeriodo"></div>
+            <div class="panel-title"><h2 id="embudoPeriodoTitulo">Embudo del periodo</h2><p class="panel-sub" id="embudoPeriodoSub"></p></div>
+          </div>
+          <button type="button" class="ver-detalle" id="embudoVerDetalle">Ver detalle →</button>
+        </div>
+        <div id="embudoPeriodoBars"></div>
+      </div>
+    </div>
+    </section>
+    <section class="tabpanel" role="tabpanel" id="tab-leads" aria-labelledby="tabBtn-leads" hidden>
     <div class="panel">
       <div class="panel-head">
         <div class="panel-icon" id="iconLeadsPeriodo"></div>
@@ -835,6 +920,12 @@ const els = {
   protocoloStats: document.getElementById('protocoloStats'),
   protocoloTable: document.getElementById('protocoloTable'),
   protocoloEvaluados: document.getElementById('protocoloEvaluados'),
+  resumenKpis: document.getElementById('resumenKpis'),
+  semaforoGrid: document.getElementById('semaforoGrid'),
+  atenderLista: document.getElementById('atenderLista'),
+  embudoPeriodoTitulo: document.getElementById('embudoPeriodoTitulo'),
+  embudoPeriodoSub: document.getElementById('embudoPeriodoSub'),
+  embudoPeriodoBars: document.getElementById('embudoPeriodoBars'),
   semanaStats: document.getElementById('semanaStats'),
   semanaGrid: document.getElementById('semanaGrid'),
   semanaBars: document.getElementById('semanaBars'),
@@ -1078,6 +1169,7 @@ els.btnGenerar.addEventListener('click', async () => {
   abrirFiltros(false);
   setStatus('Generando reporte de desempeño, cross-tab de calificados, llamadas y tiempos de respuesta…', 'pending');
   els.resultsRow.style.display = 'none';
+  resumenReiniciar(els.dateFrom.value, els.dateTo.value);
 
   try {
     const perfBody = {
@@ -1108,18 +1200,22 @@ els.btnGenerar.addEventListener('click', async () => {
 
     const perfPayload = extractPayload(perfData, 'por_embudo');
     renderResultados(perfPayload);
+    resumenDato('perf', perfPayload);
     els.rawJson.textContent = JSON.stringify(perfData, null, 2);
 
     const crossPayload = extractPayload(crossData, 'totales');
     renderCrosstab(crossPayload);
+    resumenDato('cross', crossPayload);
     els.rawJsonCrosstab.textContent = JSON.stringify(crossData, null, 2);
 
     const callsPayload = extractPayload(callsData, 'por_creador');
     renderLlamadas(callsPayload);
+    resumenDato('calls', callsPayload);
     els.rawJsonCalls.textContent = JSON.stringify(callsData, null, 2);
 
     const respTimesPayload = extractPayload(respTimesData, 'por_embudo');
     renderTiemposRespuesta(respTimesPayload);
+    resumenDato('resp', respTimesPayload);
     els.rawJsonRespTimes.textContent = JSON.stringify(respTimesData, null, 2);
 
     // El reporte se muestra ya con el primer lote; los tableros restantes se van llenando solos
@@ -1140,6 +1236,7 @@ els.btnGenerar.addEventListener('click', async () => {
       cargarComparativaParcial(filtrosSemestre, els.dateFrom.value, els.dateTo.value),
       cargarVentasSemestre(filtrosSemestre),
       cargarLeadsEntrantesSemestre(filtrosSemestre),
+      cargarVentasPrevias(filtrosSemestre, els.dateFrom.value, els.dateTo.value),
     ];
     let terminadas = 0;
     setStatus(`Tableros principales listos · cargando el resto (0/${tareas.length})…`, 'pending');
@@ -1170,8 +1267,11 @@ async function cargarGanados(filtros, desde, hasta) {
       type: 'leads', view: 'performance', date_from: desde, date_to: hasta, filter_by: 'closed_at',
       pipeline_ids: filtros.pipelineIds, agent_ids: filtros.agentIds, tag_ids: filtros.tagIds,
     });
-    renderGanados(extractPayload(data, 'por_embudo'));
+    const payloadG = extractPayload(data, 'por_embudo');
+    renderGanados(payloadG);
+    resumenDato('ganados', payloadG);
   } catch (err) {
+    resumenDato('ganados', { error: true });
     els.ganadosTable.innerHTML = '<div class="empty">No se pudo cargar ganados: ' + err.message + '</div>';
     console.error(err);
   }
@@ -1188,13 +1288,16 @@ async function cargarLeadsCampanas(filtros, desde, hasta) {
   try {
     if (!tagsCampanaIds.length) throw new Error('no se encontraron las etiquetas de campaña en el catálogo');
     const efectivas = filtros.tagIds.length ? tagsCampanaIds.filter(id => filtros.tagIds.includes(id)) : tagsCampanaIds;
-    if (!efectivas.length) { renderLeadsPorPeriodo({ leads_por_asesor: {}, leads_por_embudo: {} }); return; }
+    if (!efectivas.length) { renderLeadsPorPeriodo({ leads_por_asesor: {}, leads_por_embudo: {} }); resumenDato('leadsCamp', { leads_por_embudo: {} }); return; }
     const data = await callWebhook({
       type: 'leads', view: 'performance', date_from: desde, date_to: hasta, filter_by: filterBy,
       pipeline_ids: filtros.pipelineIds, agent_ids: filtros.agentIds, tag_ids: efectivas,
     });
-    renderLeadsPorPeriodo(extractPayload(data, 'por_embudo'));
+    const payloadLc = extractPayload(data, 'por_embudo');
+    renderLeadsPorPeriodo(payloadLc);
+    resumenDato('leadsCamp', payloadLc);
   } catch (err) {
+    resumenDato('leadsCamp', { error: true });
     els.leadsPorAsesorTable.innerHTML = '<div class="empty">No se pudo cargar: ' + err.message + '</div>';
     els.leadsPorEmbudoTable.innerHTML = '';
     console.error(err);
@@ -1230,9 +1333,12 @@ async function cargarLeadsVivos(filtros) {
       type: 'leads', view: 'live_leads',
       pipeline_ids: filtros.pipelineIds, agent_ids: filtros.agentIds, tag_ids: filtros.tagIds,
     });
-    renderLeadsVivos(extractPayload(data, 'por_embudo'));
+    const payloadV = extractPayload(data, 'por_embudo');
+    renderLeadsVivos(payloadV);
+    resumenDato('vivos', payloadV);
     els.rawJsonLeadsVivos.textContent = JSON.stringify(data, null, 2);
   } catch (err) {
+    resumenDato('vivos', { error: true });
     els.leadsVivosTable.innerHTML = '<div class="empty">No se pudo cargar leads vivos: ' + err.message + '</div>';
     els.leadsVivosAsesorTable.innerHTML = '';
     els.leadsVivosStats.innerHTML = '';
@@ -1807,8 +1913,10 @@ async function cargarComparativaParcial(filtros, desdeStr, hastaStr) {
     const resultados = await fetchPeriodosPerformance(periodos, 'created_at', filtros);
     const datos = resultados.map(r => ({ label: r.label, titulo: r.titulo, ...sumarEmbudos(r.payload) }));
     renderComparativaParcial(datos);
+    resumenDato('parcial', datos);
     els.rawJsonComparativaParcial.textContent = JSON.stringify(datos, null, 2);
   } catch (err) {
+    resumenDato('parcial', 'error');
     els.comparativaParcialTable.innerHTML = '<div class="empty">No se pudo cargar la comparativa: ' + err.message + '</div>';
     els.comparativaParcialStats.innerHTML = '';
     console.error(err);
@@ -2329,8 +2437,11 @@ async function cargarSeguimientoSemanal(filtros, desde, hasta) {
       pipeline_ids: filtros.pipelineIds, agent_ids: filtros.agentIds, tag_ids: filtros.tagIds,
     });
     els.rawJsonSemana.textContent = JSON.stringify(data, null, 2);
-    renderSeguimientoSemanal(extractPayload(data, 'resumen'));
+    const payloadSem = extractPayload(data, 'resumen');
+    renderSeguimientoSemanal(payloadSem);
+    resumenDato('semana', payloadSem);
   } catch (err) {
+    resumenDato('semana', { error: true });
     els.semanaTabla.innerHTML = '<div class="empty">No se pudo cargar el seguimiento de los primeros 10 días: ' + escHtml(err.message) + '</div>';
     console.error(err);
   }
@@ -2519,6 +2630,7 @@ async function cargarComparativaTiempos(filtros, desde, hasta) {
 function pintarComparativaTiempos() {
   pintarTablaComparativaTiempos();
   pintarPastillasTiempos();
+  programarResumen();
 }
 
 function pintarTablaComparativaTiempos() {
@@ -2844,7 +2956,349 @@ function mostrarVistaResultados() {
   if (panelRes) panelRes.scrollIntoView({ block: 'start' });
 }
 
-/* ---- Pestañas del reporte (Leads / Ejecución comercial / Oportunidades / Tendencias) ---- */
+
+/* ============================== RESUMEN (semáforo + tableros de la pestaña inicial) ============================== */
+// Todo sale de los datos que ya cargan los tableros de las otras pestañas: aquí no se pide nada nuevo salvo el
+// periodo anterior de ventas (por fecha de cierre) para su variación.
+const RES = {};
+let resumenTimer = null;
+function resumenReiniciar(desde, hasta) {
+  Object.keys(RES).forEach(k => delete RES[k]);
+  RES.desde = desde; RES.hasta = hasta; RES.filterBy = filterBy; RES.calificadosMode = calificadosMode;
+  pintarResumen();
+}
+function resumenDato(clave, valor) {
+  RES[clave] = valor;
+  programarResumen();
+}
+function programarResumen() { clearTimeout(resumenTimer); resumenTimer = setTimeout(pintarResumen, 0); }
+
+// Meses "equivalentes" del rango: un mes calendario completo = 1; un rango parcial = fracción de los días de cada mes que toca.
+function mesesEquivalentes(desde, hasta) {
+  const [y1, m1, d1] = desde.split('-').map(Number), [y2, m2, d2] = hasta.split('-').map(Number);
+  let total = 0, y = y1, m = m1;
+  while (y < y2 || (y === y2 && m <= m2)) {
+    const dim = new Date(y, m, 0).getDate();
+    const ini = (y === y1 && m === m1) ? d1 : 1;
+    const fin = (y === y2 && m === m2) ? d2 : dim;
+    total += Math.max(0, fin - ini + 1) / dim;
+    m++; if (m > 12) { m = 1; y++; }
+  }
+  return total || 1;
+}
+
+const SEM_UMBRALES = {
+  leads:        { verde: 0.90, naranja: 0.70 },   // % de la meta del periodo
+  tiempo:       { verde: 15,   naranja: 30 },     // minutos (promedio en horario laboral); menos es mejor
+  llamadas:     { verde: 1000, naranja: 900 },    // llamadas por mes
+  seguimientos: { verde: 5,    naranja: 4 },      // seguimientos promedio por lead
+};
+function nivelMayor(v, verde, naranja) { return v >= verde ? 'verde' : (v >= naranja ? 'naranja' : 'rojo'); }
+function nivelMenor(v, verde, naranja) { return v <= verde ? 'verde' : (v <= naranja ? 'naranja' : 'rojo'); }
+const SEM_TEXTO = { verde: 'Verde', naranja: 'Naranja', rojo: 'Rojo', gris: 'Sin datos' };
+const nMx = v => Math.round(v).toLocaleString('es-MX');
+
+// "12–31 oct" si es el mismo mes; "28 oct – 5 nov" si cruza de mes.
+function rangoCortoSinAnio(desde, hasta) {
+  const [, m1, d1] = desde.split('-').map(Number), [, m2, d2] = hasta.split('-').map(Number);
+  if (desde === hasta) return d1 + ' ' + MESES_ABREV[m1 - 1];
+  return m1 === m2 ? d1 + '–' + d2 + ' ' + MESES_ABREV[m1 - 1] : d1 + ' ' + MESES_ABREV[m1 - 1] + ' – ' + d2 + ' ' + MESES_ABREV[m2 - 1];
+}
+function irATablero(tab, panelId) {
+  const btn = document.getElementById('tabBtn-' + tab);
+  if (btn) btn.click();
+  setTimeout(() => { const el = document.getElementById(panelId); if (el) el.scrollIntoView({ block: 'start', behavior: 'smooth' }); }, 60);
+}
+
+function semCard({ nombre, nivel, valor, detalle, regla, tab, panel }) {
+  return '<div class="sem-card ' + nivel + '">' +
+    '<div class="sem-head"><span class="sem-nombre">' + nombre + '</span><span class="sem-pill"><i></i>' + SEM_TEXTO[nivel] + '</span></div>' +
+    '<div class="sem-valor">' + valor + '</div>' +
+    '<div class="sem-detalle">' + detalle + '</div>' +
+    '<div class="sem-regla">' + regla + '</div>' +
+    '<button type="button" class="sem-link" data-ir-tab="' + tab + '" data-ir-panel="' + panel + '">Ver tablero →</button></div>';
+}
+function semCargando(nombre, regla, tab, panel, errorMsg) {
+  return semCard({ nombre, nivel: 'gris', valor: '—', detalle: errorMsg || 'Cargando…', regla, tab, panel });
+}
+
+function pintarSemaforo() {
+  const m = mesesEquivalentes(RES.desde, RES.hasta);
+  const U = SEM_UMBRALES;
+  const tarjetas = [];
+
+  // 1) Leads recibidos (campañas) vs meta mensual por embudo, ajustada a los días del periodo
+  const reglaLeads = 'Verde: 90% de la meta o más · Naranja: 70% a menos de 90% · Rojo: menos de 70%';
+  const lc = RES.leadsCamp;
+  if (!lc) tarjetas.push(semCargando('Leads recibidos', reglaLeads, 'leads', 'tab-leads'));
+  else if (lc.error) tarjetas.push(semCargando('Leads recibidos', reglaLeads, 'leads', 'tab-leads', 'No se pudo cargar el tablero.'));
+  else {
+    const porEmbudo = lc.leads_por_embudo || {};
+    let leads = 0, metaMes = 0;
+    Object.entries(porEmbudo).forEach(([k, v]) => { if (METAS_MENSUALES[k]) { leads += v; metaMes += METAS_MENSUALES[k]; } });
+    const meta = metaMes * m;
+    if (!meta) tarjetas.push(semCargando('Leads recibidos', reglaLeads, 'leads', 'tab-leads', 'Sin embudos con meta en este periodo.'));
+    else {
+      const ratio = leads / meta;
+      const pctMeta = Math.round(ratio * 1000) / 10;
+      tarjetas.push(semCard({
+        nombre: 'Leads recibidos', nivel: nivelMayor(Math.round(ratio * 1000) / 1000, U.leads.verde, U.leads.naranja),
+        valor: nMx(leads) + '<small>leads</small>',
+        detalle: pctMeta.toLocaleString('es-MX', { maximumFractionDigits: 1 }) + '% de la meta del periodo (' + nMx(meta) + ' leads' + (Math.abs(m - 1) > 0.01 ? ': ' + nMx(metaMes) + ' al mes ajustados a los días del periodo' : '') + ').',
+        regla: reglaLeads, tab: 'leads', panel: 'tab-leads',
+      }));
+    }
+  }
+
+  // 2) Tiempos de respuesta: promedio en horario laboral, en minutos
+  const reglaT = 'Verde: hasta 15 min · Naranja: 16 a 30 min · Rojo: 31 min o más';
+  if (!RES.resp) tarjetas.push(semCargando('Tiempos de respuesta', reglaT, 'ejecucion', 'respTimesPanel'));
+  else {
+    const r = resumenTiempos(RES.resp);
+    if (r.prom == null) tarjetas.push(semCargando('Tiempos de respuesta', reglaT, 'ejecucion', 'respTimesPanel', 'Sin leads contactados en este periodo.'));
+    else {
+      const min = Math.round(r.prom / 60);
+      tarjetas.push(semCard({
+        nombre: 'Tiempos de respuesta', nivel: nivelMenor(min, U.tiempo.verde, U.tiempo.naranja),
+        valor: nMx(min) + '<small>min</small>',
+        detalle: 'Promedio en horario laboral · ' + nMx(r.contactados) + ' de ' + nMx(r.entrantes) + ' leads entrantes contactados.',
+        regla: reglaT, tab: 'ejecucion', panel: 'respTimesPanel',
+      }));
+    }
+  }
+
+  // 3) Volumen de llamadas (total del periodo)
+  const reglaL = 'Verde: 1,000 llamadas o más · Naranja: 900 a 999 · Rojo: menos de 900 (por mes)';
+  if (!RES.calls) tarjetas.push(semCargando('Volumen de llamadas', reglaL, 'ejecucion', 'callsPanel'));
+  else {
+    const total = Object.values(RES.calls.por_creador || {}).reduce((s, a) => s + (a.total || 0), 0);
+    const verde = U.llamadas.verde * m, naranja = U.llamadas.naranja * m;
+    tarjetas.push(semCard({
+      nombre: 'Volumen de llamadas', nivel: nivelMayor(total, Math.round(verde), Math.round(naranja)),
+      valor: nMx(total) + '<small>llamadas</small>',
+      detalle: Math.abs(m - 1) > 0.01 ? 'Umbrales ajustados a los días del periodo: verde desde ' + nMx(verde) + ', naranja desde ' + nMx(naranja) + '.' : 'Entrantes y salientes de todos los asesores.',
+      regla: reglaL, tab: 'ejecucion', panel: 'callsPanel',
+    }));
+  }
+
+  // 4) Número de seguimientos: promedio por lead evaluado (Seguimiento en la primera semana)
+  const ventana = (RES.semana && RES.semana.ventana_dias) || 10;
+  const reglaS = 'Verde: 5 seguimientos o más · Naranja: 4 · Rojo: 3 o menos (en los primeros ' + ventana + ' días del lead)';
+  const sm = RES.semana;
+  if (!sm) tarjetas.push(semCargando('Número de seguimientos', reglaS, 'ejecucion', 'semanaPanel'));
+  else if (sm.error) tarjetas.push(semCargando('Número de seguimientos', reglaS, 'ejecucion', 'semanaPanel', 'No se pudo cargar el tablero.'));
+  else {
+    const leads = sm.leads || [];
+    if (!leads.length) tarjetas.push(semCargando('Número de seguimientos', reglaS, 'ejecucion', 'semanaPanel', 'Sin leads evaluados en este periodo.'));
+    else {
+      const prom = Math.round((leads.reduce((s, l) => s + l.seguimientos, 0) / leads.length) * 10) / 10;
+      tarjetas.push(semCard({
+        nombre: 'Número de seguimientos', nivel: nivelMayor(prom, U.seguimientos.verde, U.seguimientos.naranja),
+        valor: prom.toLocaleString('es-MX', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + '<small>por lead</small>',
+        detalle: 'Promedio sobre ' + nMx(leads.length) + ' leads evaluados en sus primeros ' + ventana + ' días (mensajes o llamadas en días distintos).',
+        regla: reglaS, tab: 'ejecucion', panel: 'semanaPanel',
+      }));
+    }
+  }
+  els.semaforoGrid.innerHTML = tarjetas.join('');
+}
+
+function sumaPerf(payload) {
+  const emb = Object.values((payload && payload.por_embudo) || {});
+  return emb.reduce((a, e) => ({
+    total: a.total + (e.total || 0), efectivo: a.efectivo + (e.efectivo || 0), cotizacion: a.cotizacion + (e.cotizacion || 0),
+    calificado: a.calificado + (e.calificado || 0), ganado: a.ganado + (e.ganado || 0), monto: a.monto + (e.monto_ganado || 0),
+  }), { total: 0, efectivo: 0, cotizacion: 0, calificado: 0, ganado: 0, monto: 0 });
+}
+const sinDato = '<span class="sub-line">Cargando…</span>';
+
+function pintarResumenKpis() {
+  const perf = RES.perf ? sumaPerf(RES.perf) : null;
+  const parcial = Array.isArray(RES.parcial) && RES.parcial.length > 1 ? RES.parcial : null;
+  const previoLeads = parcial ? parcial[parcial.length - 2] : null;
+
+  // Leads recibidos (todos los embudos del reporte), contra el mismo tramo del mes anterior
+  let subLeads = sinDato;
+  if (perf) {
+    if (RES.filterBy !== 'created_at') subLeads = '<span>Filtrado por fecha de cierre</span>';
+    else if (previoLeads) subLeads = deltaPctPastilla(perf.total, previoLeads.leads, true, false, 0) + '<span>vs ' + previoLeads.label + '</span>';
+    else if (RES.parcial === 'error') subLeads = '<span>Sin comparativa</span>';
+    else subLeads = '<span>Comparando…</span>';
+  }
+
+  // Ventas cerradas (por fecha de cierre) + cuántas son de leads del periodo y cuántas de leads anteriores
+  const g = RES.ganados;
+  let valVentas = '—', subVentas = sinDato;
+  if (g && g.error) subVentas = '<span class="sub-line">No se pudo cargar.</span>';
+  else if (g) {
+    const emb = Object.values(g.por_embudo || {});
+    const n = emb.reduce((x, e) => x + (e.ganado || 0), 0), monto = emb.reduce((x, e) => x + (e.monto_ganado || 0), 0);
+    valVentas = nMx(n);
+    const prev = RES.ventasPrev && !RES.ventasPrev.error ? RES.ventasPrev : null;
+    const delta = prev ? deltaPctPastilla(n, prev.ganado, true, false, 0) + '<span>vs ' + prev.label + '</span>' : '';
+    subVentas = '<span>$' + nMx(monto) + ' en ventas</span>' + delta;
+    if (perf && RES.filterBy === 'created_at') {
+      const delPeriodo = Math.min(n, perf.ganado);
+      subVentas += '<span class="sub-line">' + nMx(delPeriodo) + ' de leads que llegaron en el periodo · ' + nMx(n - delPeriodo) + ' de leads anteriores</span>';
+    }
+  }
+
+  // Leads vivos + calificados
+  const v = RES.vivos;
+  let valVivos = '—', subVivos = sinDato;
+  if (v && v.error) subVivos = '<span class="sub-line">No se pudo cargar.</span>';
+  else if (v) {
+    const tot = v.total_leads_vivos != null ? v.total_leads_vivos : Object.values(v.por_embudo || {}).reduce((x, e) => x + (e.leads_vivos || 0), 0);
+    valVivos = nMx(tot);
+    const cal = RES.cross && RES.cross.totales ? RES.cross.totales.leads_calificados : null;
+    subVivos = cal == null ? '<span>Foto de hoy</span>' : '<span>' + nMx(cal) + (RES.calificadosMode === 'actual' ? ' calificados hoy' : ' calificados en el periodo') + '</span>';
+  }
+
+  // Respuesta promedio y atendidos en 5 min (vs el periodo anterior inmediato, como en Tiempos de respuesta)
+  const rt = RES.resp ? resumenTiempos(RES.resp) : null;
+  const comp = respTimesComparativa;
+  const prevT = Array.isArray(comp) ? comp[1] : null;
+  let valProm = '—', subProm = sinDato, valOk = '—', subOk = sinDato;
+  if (rt) {
+    valProm = rt.prom == null ? '—' : fmtDuracionTabla(rt.prom);
+    valOk = rt.pctOk == null ? '—' : fmtPct1(rt.pctOk) + '%';
+    const estado = comp === 'error' ? 'Sin comparativa' : 'Comparando…';
+    const etiqPrev = prevT ? 'vs ' + rangoCortoSinAnio(prevT.desde, prevT.hasta) : '';
+    subProm = prevT
+      ? (prevT.prom == null || rt.prom == null ? '<span>Sin comparativa</span>' : deltaPctPastilla(rt.prom, prevT.prom, false, false, 0) + '<span>' + etiqPrev + '</span>')
+      : '<span>' + estado + '</span>';
+    subOk = prevT
+      ? (prevT.pctOk == null || rt.pctOk == null ? '<span>Sin comparativa</span>' : deltaPuntosPastilla(rt.pctOk, prevT.pctOk) + '<span>' + etiqPrev + '</span>')
+      : '<span>' + estado + '</span>';
+  }
+
+  els.resumenKpis.innerHTML = '<div class="stats-row cinco">' +
+    pastillaTiempos('Leads recibidos', perf ? nMx(perf.total) : '—', subLeads) +
+    pastillaTiempos('Ventas cerradas', valVentas, subVentas) +
+    pastillaTiempos('Leads vivos', valVivos, subVivos) +
+    pastillaTiempos('Respuesta promedio', valProm, subProm) +
+    pastillaTiempos('Atendidos en 5 min', valOk, subOk) +
+    '</div>';
+}
+
+function pintarParaAtender() {
+  const items = [];
+  const cargando = (titulo, tab, panel) => items.push({ nivel: 'gris', ico: '…', tit: titulo, sub: 'Cargando…', tab, panel });
+
+  // 1) Leads entrantes sin atención (meta de respuesta vencida y ningún mensaje/llamada de un asesor)
+  if (!RES.resp) cargando('Leads entrantes sin atención', 'ejecucion', 'respTimesPanel');
+  else {
+    const fuera = Array.isArray(RES.resp.leads_fuera_de_meta) ? RES.resp.leads_fuera_de_meta : [];
+    const sin = fuera.filter(l => l.estado === 'sin_atender').length;
+    items.push({
+      nivel: sin ? 'rojo' : 'verde', ico: sin ? '!' : '✓',
+      tit: sin ? nMx(sin) + (sin === 1 ? ' lead entrante sin atención' : ' leads entrantes sin atención') : 'Todos los leads entrantes tienen atención',
+      sub: sin ? 'Sin mensaje saliente de un asesor y con la meta de respuesta vencida' : 'Ningún lead entrante sigue sin respuesta con la meta vencida',
+      tab: 'ejecucion', panel: 'respTimesFueraMeta',
+    });
+    // 3) atendidos después de 5 min
+    const tarde = fuera.filter(l => l.estado === 'tarde').length;
+    const rt = resumenTiempos(RES.resp);
+    items.push({
+      nivel: tarde ? 'naranja' : 'verde', ico: tarde ? '!' : '✓',
+      tit: tarde ? nMx(tarde) + (tarde === 1 ? ' lead atendido después de 5 min' : ' leads atendidos después de 5 min') : 'Todos los leads se atendieron en 5 min',
+      sub: rt.prom == null ? '—' : 'Promedio en horario: ' + fmtDuracionTabla(rt.prom),
+      tab: 'ejecucion', panel: 'respTimesFueraMeta',
+    });
+  }
+  // 2) leads sin seguimiento en su primera semana (se coloca en 2.º lugar)
+  const sm = RES.semana;
+  let itemSemana;
+  if (!sm) itemSemana = { nivel: 'gris', ico: '…', tit: 'Leads sin seguimiento', sub: 'Cargando…', tab: 'ejecucion', panel: 'semanaPanel' };
+  else if (sm.error) itemSemana = { nivel: 'gris', ico: '…', tit: 'Leads sin seguimiento', sub: 'No se pudo cargar.', tab: 'ejecucion', panel: 'semanaPanel' };
+  else {
+    const r = sm.resumen || {};
+    const n = r.sin_seguimiento || 0, ev = r.evaluados || 0, vd = sm.ventana_dias || 10;
+    const p = ev ? (n / ev) * 100 : 0;
+    itemSemana = {
+      nivel: !n ? 'verde' : (p >= 25 ? 'rojo' : 'naranja'), ico: n ? '!' : '✓',
+      tit: n ? nMx(n) + (n === 1 ? ' lead sin seguimiento en sus primeros ' : ' leads sin seguimiento en sus primeros ') + vd + ' días' : 'Todos los leads tuvieron seguimiento',
+      sub: ev ? (n ? 'Recibieron el primer mensaje y nadie les volvió a escribir ni llamar en ' + vd + ' días (' + fmtPct1(p) + '% de ' + nMx(ev) + ' evaluados)' : nMx(ev) + ' leads evaluados con al menos un seguimiento') : 'Sin leads evaluados en este periodo',
+      tab: 'ejecucion', panel: 'semanaPanel',
+    };
+  }
+  // orden final: sin atención, sin seguimiento, atendidos tarde, ventas
+  const ordenado = [];
+  if (items.length >= 2) ordenado.push(items[0], itemSemana, items[1]); else ordenado.push(items[0], itemSemana);
+
+  // 4) ventas cerradas
+  const g = RES.ganados;
+  if (!g) ordenado.push({ nivel: 'gris', ico: '…', tit: 'Ventas cerradas en el periodo', sub: 'Cargando…', tab: 'ventas', panel: 'tab-ventas' });
+  else if (g.error) ordenado.push({ nivel: 'gris', ico: '…', tit: 'Ventas cerradas en el periodo', sub: 'No se pudo cargar.', tab: 'ventas', panel: 'tab-ventas' });
+  else {
+    const emb = Object.values(g.por_embudo || {});
+    const n = emb.reduce((x, e) => x + (e.ganado || 0), 0), monto = emb.reduce((x, e) => x + (e.monto_ganado || 0), 0);
+    ordenado.push({
+      nivel: n ? 'verde' : 'gris', ico: n ? '✓' : '–',
+      tit: nMx(n) + (n === 1 ? ' venta cerrada en el periodo' : ' ventas cerradas en el periodo'),
+      sub: n ? '$' + nMx(monto) + ' · ticket promedio $' + nMx(monto / n) : 'Sin ventas cerradas en este periodo',
+      tab: 'ventas', panel: 'tab-ventas',
+    });
+  }
+  els.atenderLista.innerHTML = ordenado.map((it, i) =>
+    '<button type="button" class="atender-item ' + it.nivel + '" data-ir-tab="' + it.tab + '" data-ir-panel="' + it.panel + '">' +
+    '<span class="atender-ico" aria-hidden="true">' + it.ico + '</span>' +
+    '<span class="atender-txt"><span class="atender-tit">' + it.tit + '</span><span class="atender-sub" style="display:block">' + it.sub + '</span></span>' +
+    '<span class="atender-chev" aria-hidden="true">›</span></button>').join('');
+}
+
+function pintarEmbudoPeriodo() {
+  const rango = RES.desde ? (RES.desde === RES.hasta ? rangoCortoSinAnio(RES.desde, RES.hasta) : rangoCortoSinAnio(RES.desde, RES.desde).split(' ').join(' ') + ' – ' + rangoCortoSinAnio(RES.hasta, RES.hasta)) : '';
+  els.embudoPeriodoTitulo.innerHTML = 'Embudo del periodo <span style="font-weight:400;color:var(--ink-soft)">· ' + rango + '</span><span class="info-tip" title="Cada barra cuenta los leads que llegaron a esa etapa o más adelante. Es la misma cifra de la tabla Conversión dentro del embudo.">i</span>';
+  els.embudoPeriodoSub.textContent = RES.filterBy === 'created_at' ? 'Leads creados en el periodo · etapa más avanzada alcanzada' : 'Leads cerrados en el periodo · etapa más avanzada alcanzada';
+  if (!RES.perf) { els.embudoPeriodoBars.innerHTML = '<div class="empty loading"><span class="spinner" aria-hidden="true"></span>Cargando…</div>'; return; }
+  const t = sumaPerf(RES.perf);
+  if (!t.total) { els.embudoPeriodoBars.innerHTML = '<div class="empty">Sin leads en este periodo con estos filtros.</div>'; return; }
+  const filas = [
+    { cls: 'leads', nom: 'Leads', n: t.total, nota: 'todos los embudos' },
+    { cls: '', nom: 'Efectivo', n: t.efectivo },
+    { cls: '', nom: 'Cotización', n: t.cotizacion },
+    { cls: '', nom: 'Calificado', n: t.calificado },
+    { cls: 'ganado', nom: 'Ganados', n: t.ganado },
+  ];
+  els.embudoPeriodoBars.innerHTML = filas.map(f => {
+    const w = Math.max(f.n ? 1.5 : 0, (f.n / t.total) * 100);
+    const pctTxt = f.nota ? f.nota : '<b>' + fmtPct1((f.n / t.total) * 100) + '%</b> del total';
+    return '<div class="fun-fila ' + f.cls + '"><span class="fun-nom">' + f.nom + '</span>' +
+      '<span class="fun-barra"><span class="fun-fill" style="width:calc(' + w + '% - 52px)"></span><span class="fun-n">' + nMx(f.n) + '</span></span>' +
+      '<span class="fun-pct">' + pctTxt + '</span></div>';
+  }).join('');
+}
+
+function pintarResumen() {
+  if (!els.semaforoGrid) return;
+  if (!RES.desde) { els.resumenKpis.innerHTML = ''; els.semaforoGrid.innerHTML = ''; els.atenderLista.innerHTML = ''; els.embudoPeriodoBars.innerHTML = ''; return; }
+  pintarResumenKpis(); pintarSemaforo(); pintarParaAtender(); pintarEmbudoPeriodo();
+}
+document.getElementById('tab-resumen').addEventListener('click', e => {
+  const b = e.target.closest('[data-ir-tab]');
+  if (b) irATablero(b.dataset.irTab, b.dataset.irPanel);
+});
+document.getElementById('embudoVerDetalle').addEventListener('click', () => irATablero('ejecucion', 'iconDesempeno'));
+paintIcon('iconSemaforo', 'target', 'var(--ink-soft)');
+paintIcon('iconAtender', 'zap', 'var(--ink-soft)');
+paintIcon('iconEmbudoPeriodo', 'barChart', 'var(--ink-soft)');
+
+async function cargarVentasPrevias(filtros, desde, hasta) {
+  try {
+    const per = periodosComparables(desde, hasta, 2)[0];
+    const data = await callWebhook({
+      type: 'leads', view: 'performance', date_from: per.date_from, date_to: per.date_to, filter_by: 'closed_at',
+      pipeline_ids: filtros.pipelineIds, agent_ids: filtros.agentIds, tag_ids: filtros.tagIds,
+    });
+    resumenDato('ventasPrev', { ...sumarEmbudos(extractPayload(data, 'por_embudo')), label: per.label });
+  } catch (err) {
+    resumenDato('ventasPrev', { error: true });
+    console.error(err);
+  }
+}
+
+/* ---- Pestañas del reporte (Resumen / Leads / Ejecución comercial / Oportunidades / Ventas / Comparativos) ---- */
 (function iniciarPestanas() {
   const barra = document.getElementById('tabsBar');
   const tabs = [...barra.querySelectorAll('[role="tab"]')];
