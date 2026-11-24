@@ -357,6 +357,8 @@
   @media (max-width: 640px) { .stats-row.cinco > .stat-card:last-child:nth-child(odd) { grid-column: 1 / -1; } .fun-fila { grid-template-columns: 74px minmax(0, 1fr) auto; gap: 8px; } }
 
   /* ---- Seguimiento en la primera semana ---- */
+  #semanaPanel .panel-head { flex-wrap: wrap; }
+  #semanaPanel .panel-title { flex: 1 1 300px; }
   .semana-grid { display: grid; grid-template-columns: minmax(280px, 1fr) minmax(280px, 1fr); gap: 24px 32px; margin: 6px 0 22px; }
   .semana-grid h3 { font-family: var(--display); font-size: 13px; color: var(--ink); font-weight: 600; margin: 0 0 10px; }
   .sem-bar { display: grid; grid-template-columns: 130px 1fr 44px; align-items: center; gap: 12px; padding: 5px 0; font-size: 13.5px; color: var(--ink-soft); }
@@ -679,9 +681,9 @@
     <div class="panel" id="semanaPanel">
       <div class="panel-head">
         <div class="panel-icon" id="iconSemana"></div>
-        <div class="panel-title"><h2>Seguimiento en la primera semana</h2><p class="panel-sub">Leads creados en el periodo · días en que se les volvió a escribir o llamar en sus primeros 10 días</p></div>
+        <div class="panel-title"><h2>Seguimiento en la primera semana</h2><p class="panel-sub">Todos los leads entrantes que se queden en la parte alta del embudo, requieren 5 toques en máximo 10 días. Eso ayuda a calificar y descalificar de forma efectiva.</p></div>
       </div>
-      <p class="help">Cuenta cuántos días distintos se le volvió a escribir o llamar a cada lead durante sus primeros 10 días de vida. Un seguimiento es un día calendario distinto del día del primer contacto en el que un usuario (no un robot) envió al menos un mensaje saliente o hizo una llamada saliente; varios mensajes o llamadas el mismo día cuentan como uno. Los mensajes y llamadas se atribuyen por contacto (todos los contactos del lead) y por el propio lead. Solo se evalúa a los leads que ya cumplieron sus 10 días y que no se ganaron ni se perdieron dentro de ellos. Audita los embudos Web Edu/DC, Talleres de venta, Agentes de venta y Campañas publicitarias y respeta los filtros de embudos, agentes y etiquetas.</p>
+      <p class="help"><b style="color:var(--ink-soft)">Objetivo: 5 seguimientos en máximo 10 días</b><br>Parámetro: solo aplica a los leads que se quedan en la parte alta del embudo, es decir, los que hoy están en Contactado/Frío o Respondió/Calificando y los que se descalificaron habiendo pasado por ahí sin llegar nunca a una etapa posterior (cotización, calificado, etc.). En Agentes de venta la parte alta incluye también Prospectar y Contactado. Cuenta cuántos días distintos se le volvió a escribir o llamar a cada lead durante sus primeros 10 días de vida. Un seguimiento es un día calendario distinto del día del primer contacto en el que un usuario (no un robot) envió al menos un mensaje saliente o hizo una llamada saliente; varios mensajes o llamadas el mismo día cuentan como uno. Los mensajes y llamadas se atribuyen por contacto (todos los contactos del lead) y por el propio lead. Solo se evalúa a los leads de la parte alta que ya cumplieron sus 10 días y que no se descalificaron dentro de ellos. Los que avanzaron más allá de Respondió/Calificando, se ganaron o nunca salieron de Leads entrantes quedan fuera. Audita los embudos Web Edu/DC, Talleres de venta, Agentes de venta y Campañas publicitarias y respeta los filtros de embudos, agentes y etiquetas.</p>
       <div id="semanaStats"></div>
       <div class="semana-grid" id="semanaGrid" hidden>
         <div><h3>Seguimientos en los primeros 10 días</h3><div id="semanaBars"></div></div>
@@ -2468,7 +2470,7 @@ function renderSeguimientoSemanal(payload) {
     '<div class="track"><div class="fill" style="width:' + (d.leads ? Math.max(1.5, (d.leads / max) * 100) : 0) + '%"></div></div><span class="n">' + d.leads + '</span></div>').join('');
   els.semanaLeer.innerHTML =
     '<p>Un lead con <b>0 seguimientos</b> recibió el primer mensaje y nadie le volvió a escribir ni llamar en sus primeros 10 días.</p>' +
-    '<p>Fuera de la evaluación: ' + r.aun_no_cumplen_semana + ' leads aún no cumplen sus 10 días; ' + r.cerrados_en_semana + ' se ganaron o perdieron dentro de sus primeros 10 días.</p>';
+    '<p>Fuera de la evaluación: ' + r.fuera_parte_alta + ' leads no se quedaron en la parte alta (avanzaron a cotización o más, se ganaron o siguen en Leads entrantes); ' + r.aun_no_cumplen_semana + ' aún no cumplen sus 10 días; ' + r.cerrados_en_semana + ' se descalificaron dentro de sus primeros 10 días.</p>';
   els.semanaGrid.hidden = false;
   renderSemanaTabla();
 }
