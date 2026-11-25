@@ -2111,12 +2111,11 @@ function renderLlamadas(payload) {
 
   els.callsStats.innerHTML = '<div class="stats-row">' +
     statCard('users', 'var(--ink-soft)', 'Asesores', agentes.length, 'Activos en el periodo') +
-    statCard('arrowUpRight', 'var(--ink-soft)', 'Salientes', totales.salientes) +
     statCard('phone', 'var(--ink-soft)', 'Llamadas por lead', payload.llamadas_por_lead == null ? '—' : payload.llamadas_por_lead.toLocaleString('es-MX', { minimumFractionDigits: 1, maximumFractionDigits: 1 }), payload.llamadas_por_lead == null ? 'Sin llamadas a leads' : payload.salientes_a_leads.toLocaleString('es-MX') + ' salientes a ' + payload.leads_llamados.toLocaleString('es-MX') + ' leads distintos') +
     statCard('checkCircle', 'var(--c-positive)', 'Contacto efectivo', pctEfectivo + '%', totales.efectivas + ' de ' + totales.salientes + ' salientes contestadas') +
     statCard('target', 'var(--c-positive)', 'Meta de llamadas', pctMetaLlamadas + '%', totales.total + ' de ' + METAS_LLAMADAS_MENSUAL + ' llamadas/mes') +
+    statCard('arrowUpRight', 'var(--ink-soft)', 'Salientes', totales.salientes) +
     statCard('arrowDownLeft', 'var(--ink-soft)', 'Entrantes', totales.entrantes) +
-    statCard('phone', 'var(--ink-soft)', 'Total llamadas', totales.total) +
     statCard('clock', 'var(--ink-soft)', 'Tiempo total', fmtDuracion(totales.duracion_segundos)) +
     statCard('phone', 'var(--c-positive)', 'Prom. por llamada efectiva', promLlamadaEfectiva == null ? '—' : fmtMinSeg(promLlamadaEfectiva), totales.efectivas + ' llamadas conectadas (más de 15 s)') +
     '</div>';
