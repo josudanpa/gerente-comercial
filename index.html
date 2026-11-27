@@ -326,6 +326,7 @@
   .sem-card.gris .sem-link { background: var(--surface-2); }
   .resumen-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
   .resumen-grid > .panel { margin-bottom: 0; }
+  .resumen-grid { margin-bottom: 16px; }
   .atender-lista { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
   .atender-item { display: flex; align-items: center; gap: 14px; width: 100%; text-align: left; padding: 13px 14px; border: none; border-radius: var(--radius-md); background: var(--surface-2); cursor: pointer; font: inherit; color: inherit; }
   .atender-item:hover { background: var(--surface-hover); }
@@ -605,6 +606,15 @@
         </div>
         <div id="embudoPeriodoBars"></div>
       </div>
+    </div>
+    <div class="panel" id="resumenConversionPanel">
+      <div class="panel-head">
+        <div class="panel-icon" id="iconResumenConv"></div>
+        <div class="panel-title"><h2>Conversión dentro del embudo</h2><p class="panel-sub">Mide la conversión en etapas clave del embudo.</p></div>
+      </div>
+      <p class="help">Cuántos leads entraron, cuántos tuvieron contacto efectivo, cuántos llegaron a cotización/calificado, y cuántos se ganaron o se descalificaron. Contacto efectivo = lead entrante que pasó por la etapa Respondió/Calificando (o Respondió, según el embudo) o por cualquier etapa posterior (cotización, calificado, llamadas, trámites, etc.), o que hoy está en una de ellas. Los ganados y descalificados cuentan solo si pasaron por alguna de esas etapas.</p>
+      <div id="resumenConvStats"></div>
+      <div id="resumenConvTable"></div>
     </div>
     </section>
     <section class="tabpanel" role="tabpanel" id="tab-leads" aria-labelledby="tabBtn-leads" hidden>
@@ -3218,10 +3228,19 @@ function pintarEmbudoPeriodo() {
   }).join('');
 }
 
+// Conversión dentro del embudo: es el mismo tablero de Ejecución comercial, se copia ya pintado para no repetir el cálculo.
+function pintarConversionResumen() {
+  const st = document.getElementById('resumenConvStats'), tb = document.getElementById('resumenConvTable');
+  if (!st || !tb) return;
+  if (!RES.perf) { st.innerHTML = ''; tb.innerHTML = '<div class="empty loading"><span class="spinner" aria-hidden="true"></span>Cargando…</div>'; return; }
+  st.innerHTML = els.resultsStats.innerHTML;
+  tb.innerHTML = els.resultsTable.innerHTML;
+}
+
 function pintarResumen() {
   if (!els.semaforoGrid) return;
-  if (!RES.desde) { els.semaforoGrid.innerHTML = ''; els.atenderLista.innerHTML = ''; els.embudoPeriodoBars.innerHTML = ''; return; }
-  pintarSemaforo(); pintarParaAtender(); pintarEmbudoPeriodo();
+  if (!RES.desde) { document.getElementById('resumenConvStats').innerHTML = ''; document.getElementById('resumenConvTable').innerHTML = ''; els.semaforoGrid.innerHTML = ''; els.atenderLista.innerHTML = ''; els.embudoPeriodoBars.innerHTML = ''; return; }
+  pintarSemaforo(); pintarParaAtender(); pintarEmbudoPeriodo(); pintarConversionResumen();
 }
 document.getElementById('tab-resumen').addEventListener('click', e => {
   const b = e.target.closest('[data-ir-tab]');
@@ -3231,6 +3250,7 @@ document.getElementById('embudoVerDetalle').addEventListener('click', () => irAT
 paintIcon('iconSemaforo', 'target', 'var(--ink-soft)');
 paintIcon('iconAtender', 'zap', 'var(--ink-soft)');
 paintIcon('iconEmbudoPeriodo', 'barChart', 'var(--ink-soft)');
+paintIcon('iconResumenConv', 'layers', 'var(--ink-soft)');
 
 
 /* ---- Pestañas del reporte (Resumen / Leads / Ejecución comercial / Oportunidades / Ventas / Comparativos) ---- */
