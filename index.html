@@ -700,6 +700,7 @@
         <div><h3>Seguimientos en los primeros 10 días</h3><div id="semanaBars"></div></div>
         <div><h3>Cómo leerlo</h3><div class="semana-leer" id="semanaLeer"></div></div>
       </div>
+      <div id="semanaAsesorTabla"></div>
       <div id="semanaTabla"></div>
       <details><summary>JSON crudo</summary><pre id="rawJsonSemana"></pre></details>
     </div>
@@ -949,6 +950,7 @@ const els = {
   semanaBars: document.getElementById('semanaBars'),
   semanaLeer: document.getElementById('semanaLeer'),
   semanaTabla: document.getElementById('semanaTabla'),
+  semanaAsesorTabla: document.getElementById('semanaAsesorTabla'),
   rawJsonSemana: document.getElementById('rawJsonSemana'),
   protocoloNota: document.getElementById('protocoloNota'),
   cotizacionStats: document.getElementById('cotizacionStats'),
@@ -2443,6 +2445,7 @@ const SEMANA_COLUMNAS = {
 async function cargarSeguimientoSemanal(filtros, desde, hasta) {
   els.semanaStats.innerHTML = '';
   els.semanaGrid.hidden = true;
+  els.semanaAsesorTabla.innerHTML = '';
   els.semanaTabla.innerHTML = '<div class="empty loading"><span class="spinner" aria-hidden="true"></span>Cargando…</div>';
   try {
     const data = await callWebhook({
@@ -2473,6 +2476,7 @@ function renderSeguimientoSemanal(payload) {
     '</div>';
   if (!r.creados) {
     els.semanaGrid.hidden = true;
+    els.semanaAsesorTabla.innerHTML = '';
     els.semanaTabla.innerHTML = '<div class="empty">Sin leads creados en este periodo con estos filtros.</div>';
     return;
   }
@@ -2484,7 +2488,87 @@ function renderSeguimientoSemanal(payload) {
     '<p>Un lead con <b>0 seguimientos</b> recibió el primer mensaje y nadie le volvió a escribir ni llamar en sus primeros 10 días.</p>' +
     '<p>Fuera de la evaluación: ' + r.fuera_parte_alta + ' leads no se quedaron en la parte alta (avanzaron a cotización o más, se ganaron o siguen en Leads entrantes); ' + r.aun_no_cumplen_semana + ' aún no cumplen sus 10 días; ' + r.cerrados_en_semana + ' se descalificaron dentro de sus primeros 10 días.</p>';
   els.semanaGrid.hidden = false;
+  semanaAsesorOrden = { col: 'evaluados', dir: 'desc' };
+  renderSemanaAsesor();
   renderSemanaTabla();
+}
+
+/* ---- Desglose "Por asesor" del tablero Seguimiento en la primera semana ---- */
+// Asesor = responsable actual del lead evaluado. Se calcula en la página con la misma lista de leads evaluados.
+let semanaAsesorData = [];
+let semanaAsesorOrden = { col: 'evaluados', dir: 'desc' };
+const SEMANA_ASESOR_COLUMNAS = {
+  asesor:    { titulo: 'Asesor',                  valor: r => r.nombre.toLowerCase() },
+  evaluados: { titulo: 'Leads evaluados',         valor: r => r.evaluados, num: true },
+  sin:       { titulo: 'Sin seguimiento',         valor: r => r.sin, num: true },
+  m3:        { titulo: 'Menos de 3',              valor: r => r.m3, num: true },
+  m5:        { titulo: 'Menos de 5',              valor: r => r.m5, num: true },
+  prom:      { titulo: 'Promedio de seguimientos', valor: r => r.prom, num: true },
+};
+function renderSemanaAsesor() {
+  const cont = els.semanaAsesorTabla;
+  const leads = (semanaPayload && semanaPayload.leads) || [];
+  if (!leads.length) { cont.innerHTML = ''; semanaAsesorData = []; return; }
+  const porAs = {};
+  leads.forEach(l => {
+    const id = l.responsible_user_id || 0;
+    const a = porAs[id] || (porAs[id] = { nombre: id ? nombreAgente(id) : 'Sin asignar', evaluados: 0, sin: 0, m3: 0, m5: 0, suma: 0 });
+    a.evaluados++; a.suma += l.seguimientos;
+    if (l.seguimientos === 0) a.sin++;
+    if (l.seguimientos < 3) a.m3++;
+    if (l.seguimientos < 5) a.m5++;
+  });
+  semanaAsesorData = Object.values(porAs).map(a => ({ ...a, prom: a.evaluados ? Math.round((a.suma / a.evaluados) * 10) / 10 : null }));
+  renderSemanaAsesorTabla();
+}
+function renderSemanaAsesorTabla() {
+  const cont = els.semanaAsesorTabla;
+  if (!semanaAsesorData.length) { cont.innerHTML = ''; return; }
+  const { col, dir } = semanaAsesorOrden;
+  const f = dir === 'asc' ? 1 : -1;
+  const valor = SEMANA_ASESOR_COLUMNAS[col].valor;
+  const filas = [...semanaAsesorData].sort((a, b) => {
+    const x = valor(a), y = valor(b);
+    if (x == null && y == null) return 0;
+    if (x == null) return 1;
+    if (y == null) return -1;
+    const c = x < y ? -1 : x > y ? 1 : 0;
+    return c !== 0 ? c * f : a.nombre.localeCompare(b.nombre, 'es');
+  });
+  const th = k => {
+    const c = SEMANA_ASESOR_COLUMNAS[k], activa = col === k;
+    const flecha = activa ? (dir === 'asc' ? '▲' : '▼') : '↕';
+    const aria = activa ? (dir === 'asc' ? 'ascending' : 'descending') : 'none';
+    return `<th class="sortable${activa ? ' activa' : ''}${c.num ? ' num' : ''}" data-col="${k}" aria-sort="${aria}" tabindex="0" title="Clic o Enter para ordenar">${c.titulo}<span class="sort-ind">${flecha}</span></th>`;
+  };
+  const celda = (n, ev) => `<td class="num"><span class="numval">${n}</span><span class="pct">${fmtPct1((n / ev) * 100)}%</span></td>`;
+  const rows = filas.map(r => `
+    <tr>
+      <td><span class="person-cell">${avatarHtml(r.nombre)}${r.nombre}</span></td>
+      <td class="num">${r.evaluados}</td>
+      ${celda(r.sin, r.evaluados)}
+      ${celda(r.m3, r.evaluados)}
+      ${celda(r.m5, r.evaluados)}
+      <td class="num">${r.prom == null ? '—' : r.prom.toLocaleString('es-MX', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</td>
+    </tr>`).join('');
+  cont.innerHTML = `
+    <h3 style="font-family:var(--display); font-size:13px; color:var(--ink-soft); font-weight:600; margin:4px 0 8px; letter-spacing:-.005em;">Por asesor</h3>
+    <div class="table-scroll" style="margin-bottom:22px;">
+    <table>
+      <thead><tr>${Object.keys(SEMANA_ASESOR_COLUMNAS).map(th).join('')}</tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    </div>`;
+  cont.querySelectorAll('th.sortable').forEach(h => {
+    const ordenar = conTeclado => {
+      const k = h.dataset.col;
+      semanaAsesorOrden = { col: k, dir: semanaAsesorOrden.col === k && semanaAsesorOrden.dir === 'asc' ? 'desc' : (semanaAsesorOrden.col === k ? 'asc' : (k === 'asesor' ? 'asc' : 'desc')) };
+      renderSemanaAsesorTabla();
+      if (conTeclado) { const nuevo = cont.querySelector('th[data-col="' + k + '"]'); if (nuevo) nuevo.focus(); }
+    };
+    h.addEventListener('click', () => ordenar(false));
+    h.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); ordenar(true); } });
+  });
 }
 
 function semanaListaActual() {
