@@ -668,6 +668,7 @@
       <div id="respTimesStats"></div>
       <div id="respTimesComparativa"></div>
       <div id="respTimesTable"></div>
+      <div id="respTimesAsesorTable"></div>
       <div id="respTimesFueraMeta"></div>
       <div class="help" id="respTimesNota" style="margin-top:10px;"></div>
       <details><summary>JSON crudo</summary><pre id="rawJsonRespTimes"></pre></details>
@@ -956,6 +957,7 @@ const els = {
   respTimesComparativa: document.getElementById('respTimesComparativa'),
   respTimesTable: document.getElementById('respTimesTable'),
   respTimesFueraMeta: document.getElementById('respTimesFueraMeta'),
+  respTimesAsesorTable: document.getElementById('respTimesAsesorTable'),
   respTimesNota: document.getElementById('respTimesNota'),
   rawJsonRespTimes: document.getElementById('rawJsonRespTimes'),
 };
@@ -2804,9 +2806,70 @@ function renderTablaTiemposEmbudo() {
   });
 }
 
+/* ---- Tabla "Por asesor" del tablero de Tiempos de respuesta (columnas ordenables) ---- */
+// Asesor = responsable actual del lead entrante (el mismo "Responsable" del listado de leads fuera de meta).
+let respTimesAsesorData = [];
+let respTimesAsesorOrden = { col: 'entrantes', dir: 'desc' };
+const TIEMPOS_ASESOR_COLUMNAS = {
+  asesor:      { titulo: 'Asesor',                     valor: r => r.nombre.toLowerCase() },
+  entrantes:   { titulo: 'Entrantes',                  valor: r => r.entrantes, num: true },
+  contactados: { titulo: 'Contactados',                valor: r => r.contactados, num: true },
+  habil:       { titulo: 'Promedio (horario laboral)', valor: r => r.habil, num: true },
+  reloj:       { titulo: 'Promedio (reloj)',           valor: r => r.reloj, num: true },
+  ok5:         { titulo: 'En 5 min',                   valor: r => r.ok5, num: true },
+};
+function renderTablaTiemposAsesor() {
+  const cont = els.respTimesAsesorTable;
+  if (!respTimesAsesorData.length) { cont.innerHTML = ''; return; }
+  const { col, dir } = respTimesAsesorOrden;
+  const f = dir === 'asc' ? 1 : -1;
+  const valor = TIEMPOS_ASESOR_COLUMNAS[col].valor;
+  const filas = [...respTimesAsesorData].sort((a, b) => {
+    const x = valor(a), y = valor(b);
+    if (x == null && y == null) return 0;
+    if (x == null) return 1;
+    if (y == null) return -1;
+    const c = x < y ? -1 : x > y ? 1 : 0;
+    return c !== 0 ? c * f : a.nombre.localeCompare(b.nombre, 'es');
+  });
+  const th = k => {
+    const c = TIEMPOS_ASESOR_COLUMNAS[k], activa = col === k;
+    const flecha = activa ? (dir === 'asc' ? '▲' : '▼') : '↕';
+    const aria = activa ? (dir === 'asc' ? 'ascending' : 'descending') : 'none';
+    return `<th class="sortable${activa ? ' activa' : ''}${c.num ? ' num' : ''}" data-col="${k}" aria-sort="${aria}" tabindex="0" title="Clic o Enter para ordenar">${c.titulo}<span class="sort-ind">${flecha}</span></th>`;
+  };
+  const rows = filas.map(r => `
+    <tr>
+      <td><span class="person-cell">${avatarHtml(r.nombre)}${r.nombre}</span></td>
+      <td class="num">${r.entrantes}</td>
+      <td class="num">${r.contactados}</td>
+      <td class="num">${fmtDuracionTabla(r.habil)}</td>
+      <td class="num">${fmtDuracionTabla(r.reloj)}</td>
+      <td class="num">${r.ok5 == null ? '—' : r.ok5.toLocaleString('es-MX', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + '%'}</td>
+    </tr>`).join('');
+  cont.innerHTML = `
+    <h3 style="font-family:var(--display); font-size:13px; color:var(--ink-soft); font-weight:600; margin:22px 0 8px; letter-spacing:-.005em;">Por asesor</h3>
+    <div class="table-scroll">
+    <table>
+      <thead><tr>${Object.keys(TIEMPOS_ASESOR_COLUMNAS).map(th).join('')}</tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    </div>`;
+  cont.querySelectorAll('th.sortable').forEach(h => {
+    const ordenar = conTeclado => {
+      const k = h.dataset.col;
+      respTimesAsesorOrden = { col: k, dir: respTimesAsesorOrden.col === k && respTimesAsesorOrden.dir === 'asc' ? 'desc' : (respTimesAsesorOrden.col === k ? 'asc' : (k === 'asesor' ? 'asc' : 'desc')) };
+      renderTablaTiemposAsesor();
+      if (conTeclado) { const nuevo = cont.querySelector('th[data-col="' + k + '"]'); if (nuevo) nuevo.focus(); }
+    };
+    h.addEventListener('click', () => ordenar(false));
+    h.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); ordenar(true); } });
+  });
+}
+
 function renderTiemposRespuesta(payload) {
   const embudos = Object.values(payload.por_embudo || {});
-  if (!embudos.length) { respTimesActual = null; els.respTimesComparativa.innerHTML = ''; els.respTimesStats.innerHTML = ''; els.respTimesFueraMeta.innerHTML = ''; els.respTimesTable.innerHTML = '<div class="empty">Sin datos en este periodo.</div>'; return; }
+  if (!embudos.length) { respTimesActual = null; els.respTimesComparativa.innerHTML = ''; els.respTimesStats.innerHTML = ''; els.respTimesAsesorTable.innerHTML = ''; els.respTimesFueraMeta.innerHTML = ''; els.respTimesTable.innerHTML = '<div class="empty">Sin datos en este periodo.</div>'; return; }
 
   const totalEntrantes = embudos.reduce((s, e) => s + e.leads_entrantes, 0);
 
@@ -2828,6 +2891,16 @@ function renderTiemposRespuesta(payload) {
   }));
   respTimesEmbudoOrden = { col: 'entrantes', dir: 'desc' };
   renderTablaTiemposEmbudo();
+  respTimesAsesorData = Object.values(payload.por_asesor || {}).map(a => ({
+    nombre: a.asesor_id ? nombreAgente(a.asesor_id) : 'Sin asignar',
+    entrantes: a.leads_entrantes,
+    contactados: a.leads_con_respuesta,
+    habil: a.leads_con_respuesta ? a.promedio_segundos_habiles : null,
+    reloj: a.leads_con_respuesta ? a.promedio_segundos_real : null,
+    ok5: a.leads_entrantes ? Math.round(((a.leads_entrantes - (a.fuera_de_meta || 0)) / a.leads_entrantes) * 1000) / 10 : null,
+  }));
+  respTimesAsesorOrden = { col: 'entrantes', dir: 'desc' };
+  renderTablaTiemposAsesor();
   els.respTimesNota.textContent = payload.nota_metodologica || '';
   renderLeadsFueraDeMeta(payload, totalEntrantes);
 }
